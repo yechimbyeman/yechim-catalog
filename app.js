@@ -370,8 +370,7 @@ function renderHome() {
           .includes('нов')
       )
       .slice(0, 8);
-
-  document.querySelector(
+    document.querySelector(
     '#app'
   ).innerHTML = `
 
@@ -628,6 +627,7 @@ function renderHome() {
   updateCartBadge();
 }
 
+
 /* =========================
    BRAND CATEGORIES
 ========================= */
@@ -839,6 +839,7 @@ function renderBrandCategories() {
   updateCartBadge();
 }
 
+
 /* =========================
    CATEGORY PRODUCTS
 ========================= */
@@ -994,6 +995,7 @@ function renderCategoryProducts() {
 
   updateCartBadge();
 }
+
 
 /* =========================
    SEARCH
@@ -1167,7 +1169,6 @@ function renderSearchResults() {
 
   updateCartBadge();
 }
-
 /* =========================
    PRODUCT CARD
 ========================= */
@@ -1277,6 +1278,7 @@ function productCard(p) {
     </article>
   `;
 }
+
 
 /* =========================
    DETAIL
@@ -1648,6 +1650,7 @@ function renderDetail() {
   updateCartBadge();
 }
 
+
 /* =========================
    SHARE
 ========================= */
@@ -1691,6 +1694,7 @@ async function shareProduct() {
     /* cancelled */
   }
 }
+
 
 /* =========================
    CART
@@ -1957,69 +1961,106 @@ function renderCart() {
       sendRequest;
   }
 }
+/* =========================
+   EXCEL EXPORT
+========================= */
 
 async function loadXlsxLibrary() {
+
   if (window.XLSX) {
     return window.XLSX;
   }
 
   await new Promise((resolve, reject) => {
-    const existing = document.querySelector(
-      'script[data-yechim-xlsx="true"]'
-    );
+
+    const existing =
+      document.querySelector(
+        'script[data-yechim-xlsx="true"]'
+      );
 
     if (existing) {
-      existing.addEventListener('load', resolve, { once: true });
+
       existing.addEventListener(
-        'error',
-        () => reject(
-          new Error('Не удалось загрузить Excel-модуль.')
-        ),
+        'load',
+        resolve,
         { once: true }
       );
+
+      existing.addEventListener(
+        'error',
+        () =>
+          reject(
+            new Error(
+              'Не удалось загрузить Excel-модуль.'
+            )
+          ),
+        { once: true }
+      );
+
       return;
     }
 
-    const script = document.createElement('script');
+    const script =
+      document.createElement(
+        'script'
+      );
 
     script.src =
       'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 
     script.async = true;
-    script.dataset.yechimXlsx = 'true';
 
-    script.onload = resolve;
+    script.dataset.yechimXlsx =
+      'true';
 
-    script.onerror = () =>
-      reject(
-        new Error(
-          'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
-        )
-      );
+    script.onload =
+      resolve;
 
-    document.head.appendChild(script);
+    script.onerror =
+      () =>
+        reject(
+          new Error(
+            'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
+          )
+        );
+
+    document.head.appendChild(
+      script
+    );
   });
 
   if (!window.XLSX) {
-    throw new Error('Excel-модуль загрузился некорректно.');
+
+    throw new Error(
+      'Excel-модуль загрузился некорректно.'
+    );
   }
 
   return window.XLSX;
 }
 
 
+/* =========================
+   SEND REQUEST
+========================= */
+
 async function sendRequest() {
 
   const items =
     Object.entries(cart)
-      .map(([id, quantity]) => ({
-        p: state.products.find(
-          (product) =>
-            String(product.id) ===
-            String(id)
-        ),
-        q: Number(quantity)
-      }))
+      .map(
+        ([id, quantity]) => ({
+
+          p: state.products.find(
+            (product) =>
+              String(product.id) ===
+              String(id)
+          ),
+
+          q: Number(quantity)
+
+        })
+      )
       .filter(
         (item) =>
           item.p &&
@@ -2030,63 +2071,82 @@ async function sendRequest() {
     return;
   }
 
+
   /*
-   * Группируем одинаковые артикулы.
-   * Например:
-   * A123 = 2
-   * A123 = 3
-   * превратится в:
-   * A123 = 5
+   * Объединяем одинаковые артикулы.
    */
 
-  const rowsBySku = new Map();
+  const rowsBySku =
+    new Map();
 
-  items.forEach(({ p, q }) => {
+  items.forEach(
+    ({ p, q }) => {
 
-    const sku = String(
-      p.sku ||
-      p.name ||
-      p.id
-    ).trim();
+      const sku =
+        String(
+          p.sku ||
+          p.name ||
+          p.id
+        ).trim();
 
-    rowsBySku.set(
-      sku,
-      (rowsBySku.get(sku) || 0) + q
+      rowsBySku.set(
+        sku,
+        (
+          rowsBySku.get(sku) ||
+          0
+        ) + q
+      );
+
+    }
+  );
+
+
+  /*
+   * Формируем строки Excel.
+   */
+
+  const rows =
+    Array.from(
+      rowsBySku,
+      ([sku, quantity]) => ({
+
+        'Артикул': sku,
+
+        'Количество':
+          quantity
+
+      })
     );
-  });
 
 
   /*
-   * Создаём строки Excel
+   * Итоговое количество.
    */
 
-  const rows = Array.from(
-    rowsBySku,
-    ([sku, quantity]) => ({
-      'Артикул': sku,
-      'Количество': quantity
-    })
-  );
+  const total =
+    rows.reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row['Количество'] ||
+          0
+        ),
+      0
+    );
 
 
   /*
-   * Считаем общее количество
-   */
-
-  const total = rows.reduce(
-    (sum, row) =>
-      sum + Number(row['Количество'] || 0),
-    0
-  );
-
-
-  /*
-   * Добавляем Итого
+   * Добавляем Итого.
    */
 
   rows.push({
-    'Артикул': 'Итого',
-    'Количество': total
+
+    'Артикул':
+      'Итого',
+
+    'Количество':
+      total
+
   });
 
 
@@ -2097,25 +2157,34 @@ async function sendRequest() {
 
 
     /*
-     * Создаём лист
+     * Создаём лист.
      */
 
     const worksheet =
-      XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.json_to_sheet(
+        rows
+      );
 
 
     /*
-     * Ширина колонок
+     * Ширина колонок.
      */
 
     worksheet['!cols'] = [
-      { wch: 24 },
-      { wch: 14 }
+
+      {
+        wch: 24
+      },
+
+      {
+        wch: 14
+      }
+
     ];
 
 
     /*
-     * Создаём книгу
+     * Создаём книгу.
      */
 
     const workbook =
@@ -2130,13 +2199,20 @@ async function sendRequest() {
 
 
     /*
-     * Имя файла
+     * Имя файла.
      */
 
-    const now = new Date();
+    const now =
+      new Date();
 
-    const pad = (value) =>
-      String(value).padStart(2, '0');
+    const pad =
+      (value) =>
+        String(
+          value
+        ).padStart(
+          2,
+          '0'
+        );
 
     const filename =
       `YECHIM_Request_${now.getFullYear()}-${pad(
@@ -2151,7 +2227,7 @@ async function sendRequest() {
 
 
     /*
-     * Скачиваем Excel
+     * Скачать Excel.
      */
 
     XLSX.writeFile(
@@ -2161,8 +2237,8 @@ async function sendRequest() {
 
 
     /*
-     * После успешного создания файла
-     * очищаем корзину
+     * После успешного
+     * скачивания очищаем корзину.
      */
 
     clearCart();
@@ -2181,20 +2257,9 @@ async function sendRequest() {
   }
 }
 
-    alert(
-      'Список заявки скопирован. Укажите Telegram username менеджера в supabase-config.js.'
-    );
-
-    return;
-  }
-
-
-
-  clearCart();
-}
 
 /* =========================
-   BUTTON: ADD TO CART
+   ADD TO CART
 ========================= */
 
 document.addEventListener(
@@ -2211,6 +2276,7 @@ document.addEventListener(
     }
 
     event.preventDefault();
+
     event.stopPropagation();
 
     add(
@@ -2219,8 +2285,11 @@ document.addEventListener(
       ),
       1
     );
+
   }
 );
+
+
 /* =========================
    INIT
 ========================= */
@@ -2229,6 +2298,7 @@ document.querySelector(
   '#cartButton'
 ).onclick =
   renderCart;
+
 
 (async () => {
 
