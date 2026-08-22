@@ -1958,7 +1958,57 @@ function renderCart() {
   }
 }
 
-function sendRequest() {
+async function loadXlsxLibrary() {
+  if (window.XLSX) {
+    return window.XLSX;
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector(
+      'script[data-yechim-xlsx="true"]'
+    );
+
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener(
+        'error',
+        () => reject(
+          new Error('Не удалось загрузить Excel-модуль.')
+        ),
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+
+    script.src =
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+    script.async = true;
+    script.dataset.yechimXlsx = 'true';
+
+    script.onload = resolve;
+
+    script.onerror = () =>
+      reject(
+        new Error(
+          'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
+        )
+      );
+
+    document.head.appendChild(script);
+  });
+
+  if (!window.XLSX) {
+    throw new Error('Excel-модуль загрузился некорректно.');
+  }
+
+  return window.XLSX;
+}
+
+
+async function sendRequest() {
 
   const items =
     Object.entries(cart)
@@ -1968,8 +2018,7 @@ function sendRequest() {
             String(product.id) ===
             String(id)
         ),
-        q:
-          Number(quantity)
+        q: Number(quantity)
       }))
       .filter(
         (item) =>
@@ -1981,41 +2030,156 @@ function sendRequest() {
     return;
   }
 
-  const lines =
-    items
-      .map(
-        ({p, q}) =>
-          `${
-            p.sku ||
-            p.name ||
-            p.id
-          } — ${q} шт.`
-      )
-      .join('\n');
+  /*
+   * Группируем одинаковые артикулы.
+   * Например:
+   * A123 = 2
+   * A123 = 3
+   * превратится в:
+   * A123 = 5
+   */
 
-  const text =
-    `Заявка из YECHIM Catalog\n\n${lines}`;
+  const rowsBySku = new Map();
 
-  const username =
-    String(
-      CONFIG.telegramManagerUsername ||
-      ''
-    )
-      .replace(/^@/, '')
-      .trim();
+  items.forEach(({ p, q }) => {
 
-  if (
-    !username ||
-    username.includes(
-      'YOUR_'
-    )
-  ) {
+    const sku = String(
+      p.sku ||
+      p.name ||
+      p.id
+    ).trim();
 
-    navigator.clipboard?.writeText(
-      text
+    rowsBySku.set(
+      sku,
+      (rowsBySku.get(sku) || 0) + q
+    );
+  });
+
+
+  /*
+   * Создаём строки Excel
+   */
+
+  const rows = Array.from(
+    rowsBySku,
+    ([sku, quantity]) => ({
+      'Артикул': sku,
+      'Количество': quantity
+    })
+  );
+
+
+  /*
+   * Считаем общее количество
+   */
+
+  const total = rows.reduce(
+    (sum, row) =>
+      sum + Number(row['Количество'] || 0),
+    0
+  );
+
+
+  /*
+   * Добавляем Итого
+   */
+
+  rows.push({
+    'Артикул': 'Итого',
+    'Количество': total
+  });
+
+
+  try {
+
+    const XLSX =
+      await loadXlsxLibrary();
+
+
+    /*
+     * Создаём лист
+     */
+
+    const worksheet =
+      XLSX.utils.json_to_sheet(rows);
+
+
+    /*
+     * Ширина колонок
+     */
+
+    worksheet['!cols'] = [
+      { wch: 24 },
+      { wch: 14 }
+    ];
+
+
+    /*
+     * Создаём книгу
+     */
+
+    const workbook =
+      XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Заявка'
     );
 
+
+    /*
+     * Имя файла
+     */
+
+    const now = new Date();
+
+    const pad = (value) =>
+      String(value).padStart(2, '0');
+
+    const filename =
+      `YECHIM_Request_${now.getFullYear()}-${pad(
+        now.getMonth() + 1
+      )}-${pad(
+        now.getDate()
+      )}_${pad(
+        now.getHours()
+      )}-${pad(
+        now.getMinutes()
+      )}.xlsx`;
+
+
+    /*
+     * Скачиваем Excel
+     */
+
+    XLSX.writeFile(
+      workbook,
+      filename
+    );
+
+
+    /*
+     * После успешного создания файла
+     * очищаем корзину
+     */
+
     clearCart();
+
+  } catch (error) {
+
+    console.error(
+      'Excel export error:',
+      error
+    );
+
+    alert(
+      error.message ||
+      'Не удалось создать Excel-файл.'
+    );
+  }
+}
 
     alert(
       'Список заявки скопирован. Укажите Telegram username менеджера в supabase-config.js.'
@@ -2024,14 +2188,7 @@ function sendRequest() {
     return;
   }
 
-  window.open(
-    `https://t.me/${encodeURIComponent(
-      username
-    )}?text=${encodeURIComponent(
-      text
-    )}`,
-    '_blank'
-  );
+
 
   clearCart();
 }
