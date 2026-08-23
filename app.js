@@ -152,7 +152,8 @@ function readRoute() {
 
   return {
     product: params.get('product'),
-    brand: params.get('brand')
+    brand: params.get('brand'),
+    category: params.get('category')
   };
 }
 
@@ -161,27 +162,36 @@ function renderRoute() {
   const route =
     readRoute();
 
-state.productId =
-  route.product;
+  state.productId =
+    route.product;
 
-state.selectedBrand =
-  route.brand;
+  state.selectedBrand =
+    route.brand;
 
-state.selectedCategory =
-  null;
+  state.selectedCategory =
+    route.category;
 
-if (route.product) {
+  if (route.product) {
 
-  renderDetail();
+    renderDetail();
 
-} else if (route.brand) {
+  } else if (
+    route.brand &&
+    route.category
+  ) {
 
-  renderCategoryProducts();
+    renderCategoryProducts();
 
-} else {
+  } else if (route.brand) {
 
-  renderHome();
+    renderBrandCategories();
+
+  } else {
+
+    renderHome();
+  }
 }
+
 window.addEventListener(
   'popstate',
   renderRoute
@@ -622,12 +632,7 @@ function renderHome() {
    BRAND CATEGORIES
 ========================= */
 
-
-/* =========================
-   BRAND PRODUCTS
-========================= */
-
-function renderCategoryProducts() {
+function renderBrandCategories() {
 
   const brand =
     state.selectedBrand;
@@ -637,6 +642,24 @@ function renderCategoryProducts() {
       (p) =>
         normalize(p.brand) ===
         normalize(brand)
+    );
+
+  const categories =
+    [
+      ...new Set(
+        products
+          .map(
+            (p) =>
+              p.category
+          )
+          .filter(Boolean)
+      )
+    ].sort(
+      (a, b) =>
+        String(a).localeCompare(
+          String(b),
+          'ru'
+        )
     );
 
   document.title =
@@ -652,7 +675,7 @@ function renderCategoryProducts() {
 
         <a
           href="./"
-          id="brandHome"
+          id="backHome"
         >
           Каталог
         </a>
@@ -665,65 +688,94 @@ function renderCategoryProducts() {
 
       </div>
 
-
       <div class="section-head">
 
-        <div>
-
-          <div class="eyebrow">
-            ${esc(brand)}
-          </div>
-
-          <h1>
-            ${esc(brand)}
-          </h1>
-
-          <p class="muted">
-            ${
-              currentLanguage === 'uz'
-                ? `Kategoriyada ${products.length} ta mahsulot mavjud`
-                : `${products.length} товаров`
-            }
-          </p>
-
-        </div>
-
+        <h1>
+          ${esc(brand)}
+        </h1>
 
         <button
           class="btn btn-ghost"
-          id="backToCatalog"
+          id="backBrand"
           type="button"
         >
-          ${
-            currentLanguage === 'uz'
-              ? 'Orqaga'
-              : 'Назад'
-          }
+          Назад
         </button>
 
       </div>
 
+      <p class="muted">
+        Категории товаров
+      </p>
 
       <section
-        class="products"
+        class="category-grid"
       >
 
         ${
-          products.length
-            ? products
-                .map(productCard)
-                .join('')
+          categories.length
+            ? categories
+                .map(
+                  (category) => {
 
+                    const count =
+                      products.filter(
+                        (p) =>
+                          normalize(
+                            p.category
+                          ) ===
+                          normalize(
+                            category
+                          )
+                      ).length;
+
+                    return `
+                      <button
+                        class="category-card"
+                        data-category="${esc(
+                          category
+                        )}"
+                        type="button"
+                      >
+
+                        <div
+                          class="category-card-title"
+                        >
+                          ${esc(
+                            category
+                          )}
+                        </div>
+
+                        <div
+                          class="category-card-count"
+                        >
+                          ${count}
+                          ${
+                            count === 1
+                              ? 'товар'
+                              : 'товаров'
+                          }
+                        </div>
+
+                      </button>
+                    `;
+                  }
+                )
+                .join('')
             : `
               <div class="panel">
 
                 <b>
-                  ${
-                    currentLanguage === 'uz'
-                      ? 'Bu brendda hozircha mahsulotlar yo‘q.'
-                      : 'У этого бренда пока нет товаров.'
-                  }
+                  Категории пока не определены.
                 </b>
+
+                <div class="muted">
+
+                  Для этого бренда
+                  в текущем источнике
+                  ещё нет детальной категории.
+
+                </div>
 
               </div>
             `
@@ -734,9 +786,8 @@ function renderCategoryProducts() {
     </div>
   `;
 
-
   document.querySelector(
-    '#brandHome'
+    '#backHome'
   ).onclick = (event) => {
 
     event.preventDefault();
@@ -750,9 +801,8 @@ function renderCategoryProducts() {
     renderRoute();
   };
 
-
   document.querySelector(
-    '#backToCatalog'
+    '#backBrand'
   ).onclick = () => {
 
     history.pushState(
@@ -764,18 +814,186 @@ function renderCategoryProducts() {
     renderRoute();
   };
 
+  document
+    .querySelectorAll(
+      '[data-category]'
+    )
+    .forEach((button) => {
+
+      button.onclick = () => {
+
+        history.pushState(
+          {},
+          '',
+          `?brand=${encodeURIComponent(
+            brand
+          )}&category=${encodeURIComponent(
+            button.dataset.category
+          )}`
+        );
+
+        renderRoute();
+      };
+    });
 
   updateCartBadge();
+}
 
-  /*
-   * Переводим динамический текст,
-   * если выбран узбекский язык.
-   */
 
-  setTimeout(
-    translatePage,
-    0
-  );
+/* =========================
+   CATEGORY PRODUCTS
+========================= */
+
+function renderCategoryProducts() {
+
+  const brand =
+    state.selectedBrand;
+
+  const category =
+    state.selectedCategory;
+
+  const products =
+    state.products.filter(
+      (p) =>
+        normalize(p.brand) ===
+          normalize(brand) &&
+        normalize(p.category) ===
+          normalize(category)
+    );
+
+  document.title =
+    `YECHIM — ${category}`;
+
+  document.querySelector(
+    '#app'
+  ).innerHTML = `
+
+    <div class="shell">
+
+      <div class="breadcrumbs">
+
+        <a
+          href="./"
+          id="categoryHome"
+        >
+          Каталог
+        </a>
+
+        <span>›</span>
+
+        <a
+          href="#"
+          id="categoryBrand"
+        >
+          ${esc(brand)}
+        </a>
+
+        <span>›</span>
+
+        <b>
+          ${esc(category)}
+        </b>
+
+      </div>
+
+      <div class="section-head">
+
+        <div>
+
+          <div class="eyebrow">
+            ${esc(brand)}
+          </div>
+
+          <h1>
+            ${esc(category)}
+          </h1>
+
+        </div>
+
+        <button
+          class="btn btn-ghost"
+          id="backToCategories"
+          type="button"
+        >
+          Категории
+        </button>
+
+      </div>
+
+      <section
+        class="products"
+      >
+
+        ${
+          products.length
+            ? products
+                .map(productCard)
+                .join('')
+            : `
+              <div class="panel">
+
+                <b>
+                  В этой категории пока
+                  нет опубликованных товаров.
+                </b>
+
+              </div>
+            `
+        }
+
+      </section>
+
+    </div>
+  `;
+
+  document.querySelector(
+    '#categoryHome'
+  ).onclick = (event) => {
+
+    event.preventDefault();
+
+    history.pushState(
+      {},
+      '',
+      './'
+    );
+
+    renderRoute();
+  };
+
+  document.querySelector(
+    '#categoryBrand'
+  ).onclick = (event) => {
+
+    event.preventDefault();
+
+    history.pushState(
+      {},
+      '',
+      `?brand=${encodeURIComponent(
+        brand
+      )}`
+    );
+
+    renderRoute();
+  };
+
+  document.querySelector(
+    '#backToCategories'
+  ).onclick = () => {
+
+    history.pushState(
+      {},
+      '',
+      `?brand=${encodeURIComponent(
+        brand
+      )}`
+    );
+
+    renderRoute();
+  };
+
+  updateCartBadge();
 }
 
 
