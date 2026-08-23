@@ -2523,7 +2523,31 @@ const TRANSLATIONS = {
       'Bu kategoriyada hozircha e’lon qilingan mahsulotlar yo‘q.',
 
     'Для этого бренда в текущем источнике ещё нет детальной категории.':
-      'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.'
+      'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.',
+    
+    'Контакты':
+    'Kontaktlar',
+
+'Системы хранения и механизмы для кухни, гардеробных и другой мебели.':
+  'Oshxona, garderob va boshqa mebellar uchun saqlash tizimlari va mexanizmlar.',
+
+'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
+  'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
+
+'Для этого бренда в текущем источнике ещё нет детальной категории.':
+  'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.',
+
+'Мебельные ручки':
+  'Mebel tutqichlari',
+
+'Крепёж и соединительные решения для производства мебели.':
+  'Mebel ishlab chiqarish uchun mahkamlash va biriktirish yechimlari.',
+
+'Петли, направляющие и механизмы для современной мебели.':
+  'Zamonaviy mebel uchun menteşalar, yo‘naltirgichlar va mexanizmlar.',
+
+'Мебельная подсветка и световые решения для современной мебели.':
+  'Zamonaviy mebel yoritgichi va yorug‘lik yechimlari.'
   }
 
 };
