@@ -2531,6 +2531,9 @@ const TRANSLATIONS = {
 'Системы хранения и механизмы для кухни, гардеробных и другой мебели.':
   'Oshxona, garderob va boshqa mebellar uchun saqlash tizimlari va mexanizmlar.',
 
+'Мебельные ручки и крючки для стильных мебельных решений.':
+  'Zamonaviy mebel uchun mebel tutqichlari va ilgaklar.',
+
 'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
   'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
 
