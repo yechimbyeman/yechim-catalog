@@ -2533,7 +2533,21 @@ const TRANSLATIONS = {
 
 'Мебельные ручки и крючки для стильных мебельных решений.':
   'Zamonaviy mebel uchun mebel tutqichlari va ilgaklar.',
+'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
+  'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni katalogning o‘zidan turib menejerga yuboring.',
 
+'795 товаров в каталоге':
+  'Katalogda 795 ta mahsulot',
+
+'позиций':
+  'mahsulot turi',
+
+'шт.':
+  'dona',
+
+'товаров':
+  'mahsulot',
+    
 'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
   'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
 
