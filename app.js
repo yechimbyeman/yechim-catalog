@@ -152,8 +152,7 @@ function readRoute() {
 
   return {
     product: params.get('product'),
-    brand: params.get('brand'),
-    category: params.get('category')
+    brand: params.get('brand')
   };
 }
 
@@ -162,36 +161,27 @@ function renderRoute() {
   const route =
     readRoute();
 
-  state.productId =
-    route.product;
+state.productId =
+  route.product;
 
-  state.selectedBrand =
-    route.brand;
+state.selectedBrand =
+  route.brand;
 
-  state.selectedCategory =
-    route.category;
+state.selectedCategory =
+  null;
 
-  if (route.product) {
+if (route.product) {
 
-    renderDetail();
+  renderDetail();
 
-  } else if (
-    route.brand &&
-    route.category
-  ) {
+} else if (route.brand) {
 
-    renderCategoryProducts();
+  renderCategoryProducts();
 
-  } else if (route.brand) {
+} else {
 
-    renderBrandCategories();
-
-  } else {
-
-    renderHome();
-  }
+  renderHome();
 }
-
 window.addEventListener(
   'popstate',
   renderRoute
@@ -632,7 +622,12 @@ function renderHome() {
    BRAND CATEGORIES
 ========================= */
 
-function renderBrandCategories() {
+
+/* =========================
+   BRAND PRODUCTS
+========================= */
+
+function renderCategoryProducts() {
 
   const brand =
     state.selectedBrand;
@@ -642,24 +637,6 @@ function renderBrandCategories() {
       (p) =>
         normalize(p.brand) ===
         normalize(brand)
-    );
-
-  const categories =
-    [
-      ...new Set(
-        products
-          .map(
-            (p) =>
-              p.category
-          )
-          .filter(Boolean)
-      )
-    ].sort(
-      (a, b) =>
-        String(a).localeCompare(
-          String(b),
-          'ru'
-        )
     );
 
   document.title =
@@ -675,7 +652,7 @@ function renderBrandCategories() {
 
         <a
           href="./"
-          id="backHome"
+          id="brandHome"
         >
           Каталог
         </a>
@@ -688,213 +665,6 @@ function renderBrandCategories() {
 
       </div>
 
-      <div class="section-head">
-
-        <h1>
-          ${esc(brand)}
-        </h1>
-
-        <button
-          class="btn btn-ghost"
-          id="backBrand"
-          type="button"
-        >
-          Назад
-        </button>
-
-      </div>
-
-      <p class="muted">
-        Категории товаров
-      </p>
-
-      <section
-        class="category-grid"
-      >
-
-        ${
-          categories.length
-            ? categories
-                .map(
-                  (category) => {
-
-                    const count =
-                      products.filter(
-                        (p) =>
-                          normalize(
-                            p.category
-                          ) ===
-                          normalize(
-                            category
-                          )
-                      ).length;
-
-                    return `
-                      <button
-                        class="category-card"
-                        data-category="${esc(
-                          category
-                        )}"
-                        type="button"
-                      >
-
-                        <div
-                          class="category-card-title"
-                        >
-                          ${esc(
-                            category
-                          )}
-                        </div>
-
-                        <div
-                          class="category-card-count"
-                        >
-                          ${count}
-                          ${
-                            count === 1
-                              ? 'товар'
-                              : 'товаров'
-                          }
-                        </div>
-
-                      </button>
-                    `;
-                  }
-                )
-                .join('')
-            : `
-              <div class="panel">
-
-                <b>
-                  Категории пока не определены.
-                </b>
-
-                <div class="muted">
-
-                  Для этого бренда
-                  в текущем источнике
-                  ещё нет детальной категории.
-
-                </div>
-
-              </div>
-            `
-        }
-
-      </section>
-
-    </div>
-  `;
-
-  document.querySelector(
-    '#backHome'
-  ).onclick = (event) => {
-
-    event.preventDefault();
-
-    history.pushState(
-      {},
-      '',
-      './'
-    );
-
-    renderRoute();
-  };
-
-  document.querySelector(
-    '#backBrand'
-  ).onclick = () => {
-
-    history.pushState(
-      {},
-      '',
-      './'
-    );
-
-    renderRoute();
-  };
-
-  document
-    .querySelectorAll(
-      '[data-category]'
-    )
-    .forEach((button) => {
-
-      button.onclick = () => {
-
-        history.pushState(
-          {},
-          '',
-          `?brand=${encodeURIComponent(
-            brand
-          )}&category=${encodeURIComponent(
-            button.dataset.category
-          )}`
-        );
-
-        renderRoute();
-      };
-    });
-
-  updateCartBadge();
-}
-
-
-/* =========================
-   CATEGORY PRODUCTS
-========================= */
-
-function renderCategoryProducts() {
-
-  const brand =
-    state.selectedBrand;
-
-  const category =
-    state.selectedCategory;
-
-  const products =
-    state.products.filter(
-      (p) =>
-        normalize(p.brand) ===
-          normalize(brand) &&
-        normalize(p.category) ===
-          normalize(category)
-    );
-
-  document.title =
-    `YECHIM — ${category}`;
-
-  document.querySelector(
-    '#app'
-  ).innerHTML = `
-
-    <div class="shell">
-
-      <div class="breadcrumbs">
-
-        <a
-          href="./"
-          id="categoryHome"
-        >
-          Каталог
-        </a>
-
-        <span>›</span>
-
-        <a
-          href="#"
-          id="categoryBrand"
-        >
-          ${esc(brand)}
-        </a>
-
-        <span>›</span>
-
-        <b>
-          ${esc(category)}
-        </b>
-
-      </div>
 
       <div class="section-head">
 
@@ -905,20 +675,34 @@ function renderCategoryProducts() {
           </div>
 
           <h1>
-            ${esc(category)}
+            ${esc(brand)}
           </h1>
+
+          <p class="muted">
+            ${
+              currentLanguage === 'uz'
+                ? `Kategoriyada ${products.length} ta mahsulot mavjud`
+                : `${products.length} товаров`
+            }
+          </p>
 
         </div>
 
+
         <button
           class="btn btn-ghost"
-          id="backToCategories"
+          id="backToCatalog"
           type="button"
         >
-          Категории
+          ${
+            currentLanguage === 'uz'
+              ? 'Orqaga'
+              : 'Назад'
+          }
         </button>
 
       </div>
+
 
       <section
         class="products"
@@ -929,12 +713,16 @@ function renderCategoryProducts() {
             ? products
                 .map(productCard)
                 .join('')
+
             : `
               <div class="panel">
 
                 <b>
-                  В этой категории пока
-                  нет опубликованных товаров.
+                  ${
+                    currentLanguage === 'uz'
+                      ? 'Bu brendda hozircha mahsulotlar yo‘q.'
+                      : 'У этого бренда пока нет товаров.'
+                  }
                 </b>
 
               </div>
@@ -946,8 +734,9 @@ function renderCategoryProducts() {
     </div>
   `;
 
+
   document.querySelector(
-    '#categoryHome'
+    '#brandHome'
   ).onclick = (event) => {
 
     event.preventDefault();
@@ -961,39 +750,32 @@ function renderCategoryProducts() {
     renderRoute();
   };
 
-  document.querySelector(
-    '#categoryBrand'
-  ).onclick = (event) => {
-
-    event.preventDefault();
-
-    history.pushState(
-      {},
-      '',
-      `?brand=${encodeURIComponent(
-        brand
-      )}`
-    );
-
-    renderRoute();
-  };
 
   document.querySelector(
-    '#backToCategories'
+    '#backToCatalog'
   ).onclick = () => {
 
     history.pushState(
       {},
       '',
-      `?brand=${encodeURIComponent(
-        brand
-      )}`
+      './'
     );
 
     renderRoute();
   };
 
+
   updateCartBadge();
+
+  /*
+   * Переводим динамический текст,
+   * если выбран узбекский язык.
+   */
+
+  setTimeout(
+    translatePage,
+    0
+  );
 }
 
 
