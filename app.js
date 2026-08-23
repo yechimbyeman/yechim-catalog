@@ -2309,3 +2309,609 @@ document.querySelector(
   updateCartBadge();
 
 })();
+/* =========================
+   LANGUAGE SWITCHER
+========================= */
+
+const LANG_KEY = 'yechim_language';
+
+let currentLanguage =
+  localStorage.getItem(LANG_KEY) || 'ru';
+
+
+const TRANSLATIONS = {
+
+  ru: {
+
+    'Каталог':
+      'Каталог',
+
+    'Решения для вашей мебели':
+      'Решения для вашей мебели',
+
+    'Найти товар или артикул':
+      'Найти товар или артикул',
+
+    'Найти':
+      'Найти',
+
+    'Бренды':
+      'Бренды',
+
+    'Смотреть категории →':
+      'Смотреть категории →',
+
+    'Популярные решения':
+      'Популярные решения',
+
+    'Новинки':
+      'Новинки',
+
+    'Найдите нужное решение':
+      'Найдите нужное решение',
+
+    'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
+      'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.',
+
+    'товаров в каталоге':
+      'товаров в каталоге',
+
+    'Категории товаров':
+      'Категории товаров',
+
+    'Назад':
+      'Назад',
+
+    'Категории':
+      'Категории',
+
+    'Поиск':
+      'Поиск',
+
+    'Найдено:':
+      'Найдено:',
+
+    'Название или артикул':
+      'Название или артикул',
+
+    'Ничего не найдено.':
+      'Ничего не найдено.',
+
+    'Попробуйте другой запрос.':
+      'Попробуйте другой запрос.',
+
+    'Фото товара':
+      'Фото товара',
+
+    'Артикул:':
+      'Артикул:',
+
+    'Цена уточняется':
+      'Цена уточняется',
+
+    'В корзину':
+      'В корзину',
+
+    'Поделиться':
+      'Поделиться',
+
+    'Схема присадки':
+      'Схема присадки',
+
+    'Корзина':
+      'Корзина',
+
+    'Закрыть':
+      'Закрыть',
+
+    'Корзина пока пустая.':
+      'Корзина пока пустая.',
+
+    'Отправить заявку':
+      'Отправить заявку',
+
+    'Каталог временно недоступен.':
+      'Каталог временно недоступен.',
+
+    'Категории пока не определены.':
+      'Категории пока не определены.',
+
+    'В этой категории пока нет опубликованных товаров.':
+      'В этой категории пока нет опубликованных товаров.',
+
+    'Для этого бренда в текущем источнике ещё нет детальной категории.':
+      'Для этого бренда в текущем источнике ещё нет детальной категории.'
+  },
+
+
+  uz: {
+
+    'Каталог':
+      'Katalog',
+
+    'Решения для вашей мебели':
+      'Mebelingiz uchun yechimlar',
+
+    'Найти товар или артикул':
+      'Mahsulot yoki artikulni qidiring',
+
+    'Найти':
+      'Qidirish',
+
+    'Бренды':
+      'Brendlar',
+
+    'Смотреть категории →':
+      'Kategoriyalarni ko‘rish →',
+
+    'Популярные решения':
+      'Mashhur yechimlar',
+
+    'Новинки':
+      'Yangi mahsulotlar',
+
+    'Найдите нужное решение':
+      'Kerakli yechimni toping',
+
+    'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
+      'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
+
+    'товаров в каталоге':
+      'katalogdagi mahsulot',
+
+    'Категории товаров':
+      'Mahsulot kategoriyalari',
+
+    'Назад':
+      'Orqaga',
+
+    'Категории':
+      'Kategoriyalar',
+
+    'Поиск':
+      'Qidiruv',
+
+    'Найдено:':
+      'Topildi:',
+
+    'Название или артикул':
+      'Nomi yoki artikuli',
+
+    'Ничего не найдено.':
+      'Hech narsa topilmadi.',
+
+    'Попробуйте другой запрос.':
+      'Boshqa so‘rovni sinab ko‘ring.',
+
+    'Фото товара':
+      'Mahsulot rasmi',
+
+    'Артикул:':
+      'Artikul:',
+
+    'Цена уточняется':
+      'Narxi aniqlanadi',
+
+    'В корзину':
+      'Savatga',
+
+    'Поделиться':
+      'Ulashish',
+
+    'Схема присадки':
+      'Montaj sxemasi',
+
+    'Корзина':
+      'Savat',
+
+    'Закрыть':
+      'Yopish',
+
+    'Корзина пока пустая.':
+      'Savat hozircha bo‘sh.',
+
+    'Отправить заявку':
+      'So‘rov yuborish',
+
+    'Каталог временно недоступен.':
+      'Katalog vaqtincha mavjud emas.',
+
+    'Категории пока не определены.':
+      'Kategoriyalar hali aniqlanmagan.',
+
+    'В этой категории пока нет опубликованных товаров.':
+      'Bu kategoriyada hozircha e’lon qilingan mahsulotlar yo‘q.',
+
+    'Для этого бренда в текущем источнике ещё нет детальной категории.':
+      'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.'
+  }
+
+};
+
+
+/* =========================
+   TRANSLATION ENGINE
+========================= */
+
+function translateTextNode(
+  node
+) {
+
+  const original =
+    node.nodeValue;
+
+  if (!original) {
+    return;
+  }
+
+  const trimmed =
+    original.trim();
+
+  if (!trimmed) {
+    return;
+  }
+
+  const translated =
+    TRANSLATIONS[
+      currentLanguage
+    ][trimmed];
+
+  if (
+    translated &&
+    translated !== trimmed
+  ) {
+
+    node.nodeValue =
+      original.replace(
+        trimmed,
+        translated
+      );
+  }
+}
+
+
+/* =========================
+   TRANSLATE PAGE
+========================= */
+
+function translatePage() {
+
+  const walker =
+    document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT
+    );
+
+  const nodes = [];
+
+  let node;
+
+  while (
+    (node = walker.nextNode())
+  ) {
+
+    nodes.push(node);
+  }
+
+  nodes.forEach(
+    translateTextNode
+  );
+
+
+  /*
+   * Placeholders.
+   */
+
+  const placeholders = {
+
+    'Найти товар или артикул':
+      'Mahsulot yoki artikulni qidiring',
+
+    'Название или артикул':
+      'Nomi yoki artikuli'
+
+  };
+
+  document
+    .querySelectorAll(
+      'input[placeholder]'
+    )
+    .forEach(
+      (input) => {
+
+        const ru =
+          input.getAttribute(
+            'data-ru-placeholder'
+          ) ||
+          input.placeholder;
+
+        if (
+          !input.hasAttribute(
+            'data-ru-placeholder'
+          )
+        ) {
+
+          input.setAttribute(
+            'data-ru-placeholder',
+            ru
+          );
+        }
+
+        if (
+          currentLanguage === 'uz' &&
+          placeholders[ru]
+        ) {
+
+          input.placeholder =
+            placeholders[ru];
+
+        } else {
+
+          input.placeholder =
+            input.getAttribute(
+              'data-ru-placeholder'
+            );
+        }
+      }
+    );
+}
+
+
+/* =========================
+   LANGUAGE SWITCHER UI
+========================= */
+
+function initLanguageSwitcher() {
+
+  const nav =
+    document.querySelector(
+      '.topbar .nav'
+    );
+
+  if (!nav) {
+    return;
+  }
+
+  if (
+    document.querySelector(
+      '#languageSwitcher'
+    )
+  ) {
+    return;
+  }
+
+
+  const switcher =
+    document.createElement(
+      'div'
+    );
+
+  switcher.id =
+    'languageSwitcher';
+
+  switcher.innerHTML = `
+
+    <button
+      type="button"
+      class="language-btn"
+      data-lang="ru"
+    >
+      RU
+    </button>
+
+    <span class="language-divider">
+      |
+    </span>
+
+    <button
+      type="button"
+      class="language-btn"
+      data-lang="uz"
+    >
+      UZ
+    </button>
+
+  `;
+
+
+  /*
+   * Ставим переключатель
+   * перед кнопкой корзины.
+   */
+
+  const cartButton =
+    document.querySelector(
+      '#cartButton'
+    );
+
+  if (cartButton) {
+
+    cartButton.parentNode.insertBefore(
+      switcher,
+      cartButton
+    );
+
+  } else {
+
+    nav.appendChild(
+      switcher
+    );
+  }
+
+
+  switcher
+    .querySelectorAll(
+      '[data-lang]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          currentLanguage =
+            button.dataset.lang;
+
+          localStorage.setItem(
+            LANG_KEY,
+            currentLanguage
+          );
+
+          updateLanguageSwitcher();
+
+          /*
+           * Перерисовываем текущий
+           * экран, чтобы тексты
+           * обновились.
+           */
+
+          renderRoute();
+
+          /*
+           * На всякий случай
+           * переводим после renderRoute.
+           */
+
+          setTimeout(
+            translatePage,
+            0
+          );
+        };
+      }
+    );
+
+
+  updateLanguageSwitcher();
+}
+
+
+/* =========================
+   UPDATE SWITCHER
+========================= */
+
+function updateLanguageSwitcher() {
+
+  document
+    .querySelectorAll(
+      '#languageSwitcher .language-btn'
+    )
+    .forEach(
+      (button) => {
+
+        button.classList.toggle(
+          'active',
+          button.dataset.lang ===
+            currentLanguage
+        );
+      }
+    );
+}
+
+
+/* =========================
+   OBSERVE DYNAMIC CONTENT
+========================= */
+
+const languageObserver =
+  new MutationObserver(
+    () => {
+
+      translatePage();
+
+    }
+  );
+
+
+languageObserver.observe(
+  document.body,
+  {
+    childList: true,
+    subtree: true
+  }
+);
+
+
+/* =========================
+   LANGUAGE STYLES
+========================= */
+
+const languageStyles =
+  document.createElement(
+    'style'
+  );
+
+languageStyles.textContent = `
+
+  #languageSwitcher {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-right: 10px;
+
+    white-space: nowrap;
+
+  }
+
+  #languageSwitcher
+  .language-btn {
+
+    border: 0;
+
+    background: transparent;
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .75
+    );
+
+    font: inherit;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    padding: 3px 4px;
+
+  }
+
+  #languageSwitcher
+  .language-btn.active {
+
+    color: #fff;
+
+  }
+
+  #languageSwitcher
+  .language-divider {
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .35
+    );
+
+  }
+
+`;
+
+
+document.head.appendChild(
+  languageStyles
+);
+
+
+/* =========================
+   START LANGUAGE SYSTEM
+========================= */
+
+initLanguageSwitcher();
+
+translatePage();
