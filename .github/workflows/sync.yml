@@ -1,7 +1,7 @@
 name: YECHIM daily Eman sync
 on:
   schedule:
-    - cron: '0 3 * * *' # 08:00 Asia/Tashkent (UTC+5)
+    - cron: '0 1 * * *' # Runs at 01:00 UTC = 06:00 Asia/Tashkent (UTC+5)
   workflow_dispatch:
 permissions:
   contents: write
