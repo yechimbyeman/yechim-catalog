@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-27T11:15:20.743794+00:00",
+  "generated_at": "2026-08-28T12:48:39.645505+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -8300,14 +8300,14 @@
     {
       "eman_id": "/ru/product/10048",
       "source_url": "https://www.eman.uz/ru/product/10048/",
-      "sku": "102-07-04-306",
+      "sku": "",
       "name": "102-07-04-306 уголок коричневый",
       "brand": "MESAN",
       "eman_group": "Mesan",
       "category": "Mesan",
-      "price": 900,
+      "price": 0.09,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/102-07-04-306_%D1%83%D0%B3%D0%BE%D0%BB%D0%BE%D0%BA_%D0%BA%D0%BE%D1%80%D0%B8%D1%87%D0%BD%D0%B5%D0%B2%D1%8B%D0%B9.png",
+      "image_url": "",
       "extra": {},
       "id": "/ru/product/10048",
       "published": false
