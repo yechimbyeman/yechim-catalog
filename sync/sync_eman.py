@@ -1,20 +1,20 @@
-"""Sync the selected Eman catalog into Supabase.
+"""YECHIM Catalog — Eman → Supabase synchronizer.
 
 Eman is the source of truth for:
-- SKU / article
+- article / SKU
 - product name
 - price
-- base brand
-- category
-- images
+- source brand
+- source category/group
+- main image
 - stock quantity
-- stock locations
+- stock by warehouse
 
-YECHIM-only fields stay in Supabase table yechim_enrichment
-and are never overwritten here.
+YECHIM-specific enrichment is stored separately in Supabase
+and is not overwritten by this synchronizer.
 
-The job is designed for GitHub Actions at
-06:00 Asia/Tashkent (01:00 UTC).
+GitHub Actions schedule:
+01:00 UTC = 06:00 Asia/Tashkent.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ HOME = f'{BASE}/ru/'
 HEADERS = {
     'User-Agent':
         'YECHIM-Catalog-Sync/1.0 '
-        '(+https://github.com/yechimmaterials/yechim-catalog)'
+        '(+https://github.com/yechimbyman/yechim-catalog)'
 }
 
 OUT = (
@@ -64,9 +64,7 @@ class Product:
     eman_id: str
     source_url: str
 
-    # Article / SKU from Eman
     sku: str
-
     name: str
     brand: str
 
@@ -78,10 +76,10 @@ class Product:
 
     image_url: str
 
-    # Total stock from all Eman warehouses
+    # Total stock across all warehouses
     stock_quantity: float | int | None
 
-    # Stock unit
+    # Usually "шт."
     stock_unit: str
 
     # Additional source information
@@ -100,7 +98,7 @@ session.headers.update(
 
 
 # =========================================================
-# HELPERS
+# TEXT HELPERS
 # =========================================================
 
 def clean(
@@ -111,10 +109,10 @@ def clean(
         r'\s+',
         ' ',
         (value or '')
-            .replace(
-                '\xa0',
-                ' '
-            )
+        .replace(
+            '\xa0',
+            ' '
+        )
     ).strip()
 
 
@@ -125,26 +123,29 @@ def to_number(
     if value is None:
         return 0
 
-    value = str(value)
 
-    value = value.replace(
+    text = str(value)
+
+    text = text.replace(
         '\xa0',
         ' '
     )
 
-    value = value.strip()
+    text = text.strip()
 
-    # Remove thousands separators but keep decimal point.
+
     digits = re.sub(
         r'[^0-9.]',
         '',
-        value
+        text
     )
 
-    try:
 
-        if not digits:
-            return 0
+    if not digits:
+        return 0
+
+
+    try:
 
         return (
             float(digits)
@@ -194,7 +195,7 @@ def extract_article(
 ) -> str:
 
     """
-    Extract the visible Eman article.
+    Extract product article from Eman.
 
     Examples:
 
@@ -203,7 +204,7 @@ def extract_article(
         Артикул A4195016111
     """
 
-    article_pattern = re.compile(
+    pattern = re.compile(
         r'\bартикул\b\s*'
         r'[:№#-]?\s*'
         r'([A-Za-zА-Яа-я0-9]'
@@ -213,7 +214,7 @@ def extract_article(
 
 
     # -----------------------------------------------------
-    # 1. Search visible page text
+    # 1. Search visible text around "Артикул"
     # -----------------------------------------------------
 
     for node in page.find_all(
@@ -229,32 +230,34 @@ def extract_article(
             continue
 
 
-        candidates = [
+        candidates = []
 
+
+        candidates.append(
             clean(
                 parent.get_text(
                     ' ',
                     strip=True
                 )
-            ),
+            )
+        )
 
-            (
+
+        if parent.parent:
+
+            candidates.append(
                 clean(
                     parent.parent.get_text(
                         ' ',
                         strip=True
                     )
                 )
-                if parent.parent
-                else ''
             )
-
-        ]
 
 
         for candidate in candidates:
 
-            match = article_pattern.search(
+            match = pattern.search(
                 candidate
             )
 
@@ -265,46 +268,20 @@ def extract_article(
                 )
 
 
-        container = parent.parent
-
-        if container:
-
-            container_text = clean(
-                container.get_text(
-                    ' ',
-                    strip=True
-                )
-            )
-
-
-            match = article_pattern.search(
-                container_text
-            )
-
-
-            if match:
-
-                return clean(
-                    match.group(1)
-                )
-
-
     # -----------------------------------------------------
-    # 2. Structured HTML fallback
+    # 2. Structured HTML
     # -----------------------------------------------------
 
-    selectors = (
+    for selector in (
         '[itemprop="sku"]',
         '[data-article]',
         '[data-sku]'
-    )
-
-
-    for selector in selectors:
+    ):
 
         node = page.select_one(
             selector
         )
+
 
         if not node:
             continue
@@ -342,61 +319,36 @@ def extract_stock(
 ]:
 
     """
-    Extract warehouse stock from the Eman product page.
+    Extract all warehouse stock values from an Eman
+    product page.
 
-    Eman currently displays stock approximately as:
+    Eman can display:
 
         В наличии
 
-        Chinobod 60
-        Jagban 25
-        Корасув 10
-        Рахимова 16
+        Jagban-2 (Yechim Магазин) 25
+        Chilanzar - розничная точка 10
+        Yechim Rakhimova 12
+        Qorasuv - 5 (Розничная точка) 7
+        Chinobod-7 (Розничная точка) 60
+        Chinobod-6 (Yechim) 20
 
-        Характеристики
+    The code does NOT hard-code warehouse names.
 
-    The code intentionally does NOT hard-code warehouse names.
-    It looks for quantity rows between the "В наличии" and
-    "Характеристики" sections.
+    It identifies the "В наличии" section and then
+    searches the following page fragments for rows
+    ending with a numeric quantity.
 
     Returns:
 
-        total_quantity
-        stock_unit
+        total_quantity,
+        stock_unit,
         stock_locations
-
-    Example:
-
-        (
-            111,
-            'шт.',
-            [
-                {
-                    'name': 'Chinobod',
-                    'quantity': 60
-                },
-                {
-                    'name': 'Jagban',
-                    'quantity': 25
-                },
-                {
-                    'name': 'Корасув',
-                    'quantity': 10
-                },
-                {
-                    'name': 'Рахимова',
-                    'quantity': 16
-                }
-            ]
-        )
     """
 
 
-    # -----------------------------------------------------
-    # Build clean visible text fragments
-    # -----------------------------------------------------
-
     fragments = []
+
 
     for fragment in page.stripped_strings:
 
@@ -404,7 +356,9 @@ def extract_stock(
             fragment
         )
 
+
         if value:
+
             fragments.append(
                 value
             )
@@ -420,11 +374,10 @@ def extract_stock(
 
 
     # -----------------------------------------------------
-    # Locate stock section
+    # Find "В наличии"
     # -----------------------------------------------------
 
     start_index = None
-    end_index = None
 
 
     for index, fragment in enumerate(
@@ -438,7 +391,28 @@ def extract_stock(
         ):
 
             start_index = index + 1
+
             break
+
+
+    # If the exact standalone heading was not found,
+    # try a less strict match.
+
+    if start_index is None:
+
+        for index, fragment in enumerate(
+            fragments
+        ):
+
+            if re.search(
+                r'\bв\s+наличии\b',
+                fragment,
+                re.I
+            ):
+
+                start_index = index + 1
+
+                break
 
 
     if start_index is None:
@@ -451,22 +425,30 @@ def extract_stock(
 
 
     # -----------------------------------------------------
-    # Locate the next logical section
+    # Find the end of the availability block
     # -----------------------------------------------------
 
-    section_end_patterns = (
+    end_index = len(
+        fragments
+    )
+
+
+    end_patterns = (
         r'^характеристики$',
+        r'^все характеристики$',
         r'^описание$',
-        r'^рекомендуем',
+        r'^подробнее$',
         r'^комментарии$',
         r'^оставить отзыв$',
+        r'^сравнение$',
+        r'^избранное$'
     )
 
 
     for index in range(
         start_index,
         min(
-            start_index + 40,
+            start_index + 50,
             len(fragments)
         )
     ):
@@ -480,19 +462,12 @@ def extract_stock(
                 fragment,
                 re.I
             )
-            for pattern in section_end_patterns
+            for pattern in end_patterns
         ):
 
             end_index = index
+
             break
-
-
-    if end_index is None:
-
-        end_index = min(
-            start_index + 20,
-            len(fragments)
-        )
 
 
     stock_fragments = fragments[
@@ -501,7 +476,14 @@ def extract_stock(
 
 
     # -----------------------------------------------------
-    # Find warehouse rows
+    # Find rows:
+    #
+    # Warehouse name + final number
+    #
+    # Examples:
+    #
+    # Chinobod-6 (Yechim) 20
+    # Jagban-2 (Yechim Магазин) 25
     # -----------------------------------------------------
 
     locations = []
@@ -514,37 +496,28 @@ def extract_stock(
         )
 
 
-        # Ignore obvious interface text.
-
         if not value:
             continue
 
 
+        # Skip UI text.
+
         if re.fullmatch(
-            r'(в наличии|характеристики|'
+            r'(в наличии|'
+            r'характеристики|'
             r'все характеристики|'
             r'подробнее|'
+            r'описание|'
             r'сравнение|'
             r'избранное|'
-            r'описание)',
+            r'комментарии|'
+            r'оставить отзыв)',
             value,
             re.I
         ):
 
             continue
 
-
-        # -------------------------------------------------
-        # Expected warehouse format:
-        #
-        # Chinobod 60
-        # Jagban 25
-        # Корасув 150
-        # Рахимова 16
-        #
-        # We allow punctuation and words in the name.
-        # The quantity must be the FINAL number.
-        # -------------------------------------------------
 
         match = re.match(
             r'^(.*?)'
@@ -556,6 +529,7 @@ def extract_stock(
 
 
         if not match:
+
             continue
 
 
@@ -570,6 +544,7 @@ def extract_stock(
 
 
         if not warehouse_name:
+
             continue
 
 
@@ -578,27 +553,24 @@ def extract_stock(
         )
 
 
-        # Quantity must actually be numeric.
-
         if quantity < 0:
+
             continue
 
 
-        # Avoid treating unrelated long sentences
-        # as warehouse names.
+        # Avoid treating prices, ratings or
+        # other long blocks as warehouses.
 
         if len(
             warehouse_name
-        ) > 80:
+        ) > 100:
 
             continue
 
 
-        # Remove obvious non-warehouse fragments.
-
         if re.search(
-            r'(so‘m|сум|сўм|'
-            r'руб|dollar|usd|'
+            r'(so‘m|so.?m|сум|сўм|'
+            r'uzs|руб|usd|'
             r'отзыв|рейтинг|'
             r'характеристик|'
             r'описани)',
@@ -621,7 +593,7 @@ def extract_stock(
 
 
     # -----------------------------------------------------
-    # Deduplicate identical warehouse names
+    # Deduplicate warehouse names
     # -----------------------------------------------------
 
     deduped = {}
@@ -638,16 +610,20 @@ def extract_stock(
 
             deduped[key][
                 'quantity'
-            ] += location['quantity']
+            ] += location[
+                'quantity'
+            ]
 
         else:
 
             deduped[key] = {
+
                 'name':
                     location['name'],
 
                 'quantity':
                     location['quantity']
+
             }
 
 
@@ -657,44 +633,28 @@ def extract_stock(
 
 
     # -----------------------------------------------------
-    # No warehouse rows found
+    # No warehouse rows
     # -----------------------------------------------------
 
     if not locations:
 
-        # Sometimes Eman only reports
-        # availability without visible warehouse
-        # numbers.
-
-        for fragment in stock_fragments[:5]:
-
-            if re.search(
-                r'\bв\s+наличии\b',
-                fragment,
-                re.I
-            ):
-
-                return (
-                    None,
-                    '',
-                    []
-                )
-
-
         return (
-            0,
-            'шт.',
+            None,
+            '',
             []
         )
 
 
     # -----------------------------------------------------
-    # Total
+    # Total stock
     # -----------------------------------------------------
 
     total_quantity = sum(
+
         location['quantity']
+
         for location in locations
+
     )
 
 
@@ -718,10 +678,15 @@ def extract_price(
 
 
     for match in re.finditer(
+
         r'([0-9][0-9\s\u00a0.,]*)\s*'
+
         r'(?:so[‘’\'`]?m|сум|сўм|UZS)',
+
         text,
+
         re.I
+
     ):
 
         value = to_number(
@@ -744,117 +709,229 @@ def extract_price(
 
 
     return fallback_price
-
-
 # =========================================================
-# MAIN PRODUCT IMAGE
+# DISCOVER EMAN GROUP LINKS
 # =========================================================
 
-def extract_main_image(
-    page: BeautifulSoup,
-    product_url: str
-) -> str:
+def discover_group_links() -> list[dict]:
 
-    image_candidates = []
-
-
-    html = html_module.unescape(
-        str(page)
+    page = soup(
+        HOME
     )
 
 
-    # -----------------------------------------------------
-    # Absolute URLs
-    # -----------------------------------------------------
+    wanted = {
 
-    absolute_matches = re.findall(
-        r'https://www\.eman\.uz/'
-        r'media/product_images/'
-        r'[^"\')\s<>]+',
-        html,
-        flags=re.I
-    )
+        'Cebi':
+            'CEBI',
 
+        'Starax':
+            'STARAX',
 
-    # -----------------------------------------------------
-    # Relative URLs
-    # -----------------------------------------------------
+        'Mesan':
+            'MESAN',
 
-    relative_matches = re.findall(
-        r'/media/product_images/'
-        r'[^"\')\s<>]+',
-        html,
-        flags=re.I
-    )
+        'Samet':
+            'SAMET',
+
+        'Мебельная подсветка':
+            'YECHIM LIGHTING'
+
+    }
 
 
-    for match in (
-        absolute_matches
-        + relative_matches
+    found = {}
+
+
+    for link in page.find_all(
+        'a',
+        href=True
     ):
 
-        image_url = match
-
-
-        if image_url.startswith('/'):
-
-            image_url = absolute(
-                image_url,
-                product_url
+        text = clean(
+            link.get_text(
+                ' ',
+                strip=True
             )
-
-
-        image_url = (
-            image_url
-            .split('"')[0]
-            .split("'")[0]
-            .split(')')[0]
         )
 
 
-        if image_url not in image_candidates:
+        if (
+            text in wanted
+            and text not in found
+        ):
 
-            image_candidates.append(
-                image_url
-            )
+            found[text] = {
+
+                'brand':
+                    wanted[text],
+
+                'eman_group':
+                    text,
+
+                'url':
+                    absolute(
+                        link['href'],
+                        HOME
+                    )
+
+            }
 
 
-    # -----------------------------------------------------
-    # Filter non-product images
-    # -----------------------------------------------------
-
-    blocked = (
-        'logo',
-        'icon',
-        'sprite',
-        'placeholder',
-        'flag',
-        'language'
+    missing = (
+        set(wanted)
+        - set(found)
     )
 
 
-    for image_url in image_candidates:
+    if missing:
 
-        if not image_url:
+        raise RuntimeError(
+            'Не удалось найти каталоги Eman: '
+            f'{sorted(missing)}'
+        )
+
+
+    return list(
+        found.values()
+    )
+
+
+# =========================================================
+# FIND PRODUCT CARDS
+# =========================================================
+
+def find_product_cards(
+    page: BeautifulSoup
+):
+
+    cards = []
+
+
+    for heading in page.find_all(
+        ['h2', 'h3', 'h4']
+    ):
+
+        link = heading.find(
+            'a',
+            href=True
+        )
+
+
+        if not link:
+
             continue
 
 
-        low = image_url.lower()
+        name = clean(
+            link.get_text(
+                ' ',
+                strip=True
+            )
+        )
 
 
-        if any(
-            item in low
-            for item in blocked
+        href = absolute(
+            link['href'],
+            BASE
+        )
+
+
+        # We need only product pages.
+
+        if (
+            not name
+            or '/product/' not in href
+            or '/list/' in href
         ):
 
             continue
 
 
-        return image_url
+        # -------------------------------------------------
+        # Find a parent block containing the card.
+        # -------------------------------------------------
+
+        block = heading
 
 
-    return ''
-    # =========================================================
+        for _ in range(8):
+
+            if not block:
+
+                break
+
+
+            has_image = bool(
+                block.find(
+                    'img'
+                )
+            )
+
+
+            has_price = bool(
+                block.find(
+                    string=re.compile(
+                        r'(so‘m|so.?m|сум|сўм|UZS)',
+                        re.I
+                    )
+                )
+            )
+
+
+            if (
+                has_image
+                and has_price
+            ):
+
+                break
+
+
+            block = block.parent
+
+
+        cards.append(
+            (
+                name,
+                href,
+                block or heading
+            )
+        )
+
+
+    # -----------------------------------------------------
+    # Remove duplicates.
+    # -----------------------------------------------------
+
+    result = []
+
+    seen = set()
+
+
+    for item in cards:
+
+        url = item[1]
+
+
+        if url in seen:
+
+            continue
+
+
+        seen.add(
+            url
+        )
+
+
+        result.append(
+            item
+        )
+
+
+    return result
+
+
+# =========================================================
 # PARSE PRODUCT DETAIL
 # =========================================================
 
@@ -878,20 +955,38 @@ def parse_detail(
             f'{url}: {error}'
         )
 
+
         return {
-            'sku': '',
-            'name': fallback_name,
-            'image_url': fallback_image,
-            'price': fallback_price,
-            'stock_quantity': None,
-            'stock_unit': '',
-            'stock_locations': [],
-            'extra': {}
+
+            'sku':
+                '',
+
+            'name':
+                fallback_name,
+
+            'image_url':
+                fallback_image,
+
+            'price':
+                fallback_price,
+
+            'stock_quantity':
+                None,
+
+            'stock_unit':
+                '',
+
+            'stock_locations':
+                [],
+
+            'extra':
+                {}
+
         }
 
 
     # -----------------------------------------------------
-    # FULL VISIBLE TEXT
+    # Full visible text
     # -----------------------------------------------------
 
     text = clean(
@@ -903,14 +998,16 @@ def parse_detail(
 
 
     # -----------------------------------------------------
-    # NAME
+    # Product name
     # -----------------------------------------------------
 
     name = fallback_name
 
+
     h1 = page.find(
         'h1'
     )
+
 
     if h1:
 
@@ -921,13 +1018,14 @@ def parse_detail(
             )
         )
 
+
         if h1_text:
 
             name = h1_text
 
 
     # -----------------------------------------------------
-    # ARTICLE / SKU
+    # Article
     # -----------------------------------------------------
 
     sku = extract_article(
@@ -936,7 +1034,7 @@ def parse_detail(
 
 
     # -----------------------------------------------------
-    # PRICE
+    # Price
     # -----------------------------------------------------
 
     price = extract_price(
@@ -946,7 +1044,7 @@ def parse_detail(
 
 
     # -----------------------------------------------------
-    # STOCK
+    # Stock
     # -----------------------------------------------------
 
     (
@@ -959,7 +1057,7 @@ def parse_detail(
 
 
     # -----------------------------------------------------
-    # MAIN IMAGE
+    # Main image
     # -----------------------------------------------------
 
     main_image = extract_main_image(
@@ -974,7 +1072,7 @@ def parse_detail(
 
 
     # -----------------------------------------------------
-    # EXTRA
+    # Extra
     # -----------------------------------------------------
 
     extra = {}
@@ -982,9 +1080,9 @@ def parse_detail(
 
     if stock_locations:
 
-        extra['stock_locations'] = (
-            stock_locations
-        )
+        extra[
+            'stock_locations'
+        ] = stock_locations
 
 
     return {
@@ -1017,208 +1115,6 @@ def parse_detail(
 
 
 # =========================================================
-# PARSE LIST PAGE
-# =========================================================
-
-def parse_list_page(
-    url: str,
-    brand: str,
-    group: str
-):
-
-    page = soup(
-        url
-    )
-
-    results = []
-
-
-    for (
-        name,
-        href,
-        block
-    ) in find_product_cards(
-        page
-    ):
-
-        # -------------------------------------------------
-        # TEXT
-        # -------------------------------------------------
-
-        text = clean(
-            block.get_text(
-                ' ',
-                strip=True
-            )
-        )
-
-
-        # -------------------------------------------------
-        # IMAGE
-        # -------------------------------------------------
-
-        image = ''
-
-
-        if block:
-
-            img = block.find(
-                'img'
-            )
-
-            if img:
-
-                image = absolute(
-                    img.get('src')
-                    or img.get('data-src')
-                    or '',
-                    url
-                )
-
-
-        # -------------------------------------------------
-        # PRICE
-        # -------------------------------------------------
-
-        price_match = re.search(
-
-            r'([0-9][0-9\s\u00a0.,]*)\s*'
-
-            r'(?:so‘m|so\s*m|сум|сўм|UZS)',
-
-            text,
-
-            re.I
-
-        )
-
-
-        price = (
-
-            to_number(
-                price_match.group(1)
-            )
-
-            if price_match
-
-            else 0
-
-        )
-
-
-        # -------------------------------------------------
-        # DETAIL PAGE
-        # -------------------------------------------------
-
-        detail = parse_detail(
-
-            href,
-
-            name,
-
-            image,
-
-            price
-
-        )
-
-
-        # -------------------------------------------------
-        # EMAN ID
-        # -------------------------------------------------
-
-        eman_id = urlparse(
-            href
-        ).path.rstrip('/')
-
-
-        # -------------------------------------------------
-        # PRODUCT
-        # -------------------------------------------------
-
-        results.append(
-
-            Product(
-
-                eman_id,
-
-                href,
-
-                detail['sku'],
-
-                detail['name'],
-
-                brand,
-
-                group,
-
-                group,
-
-                detail['price'],
-
-                'UZS',
-
-                detail['image_url'],
-
-                detail['stock_quantity'],
-
-                detail['stock_unit'],
-
-                detail['extra']
-
-            )
-
-        )
-
-
-    return results
-
-
-# =========================================================
-# PAGINATION
-# =========================================================
-
-def next_page(
-    page: BeautifulSoup,
-    current_url: str
-):
-
-    for link in page.find_all(
-        'a',
-        href=True
-    ):
-
-        text = clean(
-            link.get_text(
-                ' ',
-                strip=True
-            )
-        )
-
-
-        if text in {
-
-            '>',
-
-            'Следующая',
-
-            'Next'
-
-        }:
-
-            return absolute(
-
-                link['href'],
-
-                current_url
-
-            )
-
-
-    return None
-
-
-# =========================================================
 # FETCH GROUP
 # =========================================================
 
@@ -1231,6 +1127,7 @@ def fetch_group(
     url = cfg[
         'url'
     ]
+
 
     visited = set()
 
@@ -1260,7 +1157,7 @@ def fetch_group(
 
             print(
                 f'WARNING: failed to fetch '
-                f'group page {url}: {error}'
+                f'{url}: {error}'
             )
 
             break
@@ -1292,7 +1189,7 @@ def fetch_group(
             try:
 
                 # -----------------------------------------
-                # LISTING TEXT
+                # Listing text
                 # -----------------------------------------
 
                 text = clean(
@@ -1304,22 +1201,18 @@ def fetch_group(
 
 
                 # -----------------------------------------
-                # LISTING IMAGE
+                # Listing image
                 # -----------------------------------------
 
                 image = ''
 
 
                 img = (
-
                     block.find(
                         'img'
                     )
-
                     if block
-
                     else None
-
                 )
 
 
@@ -1341,14 +1234,14 @@ def fetch_group(
 
 
                 # -----------------------------------------
-                # LISTING PRICE
+                # Listing price
                 # -----------------------------------------
 
                 price_match = re.search(
 
                     r'([0-9][0-9\s\u00a0.,]*)\s*'
 
-                    r'(?:so‘m|so\s*m|сум|сўм|UZS)',
+                    r'(?:so‘m|so.?m|сум|сўм|UZS)',
 
                     text,
 
@@ -1373,7 +1266,7 @@ def fetch_group(
 
 
                 # -----------------------------------------
-                # DETAIL PAGE
+                # Product detail
                 # -----------------------------------------
 
                 detail = parse_detail(
@@ -1389,10 +1282,18 @@ def fetch_group(
                 )
 
 
+                # -----------------------------------------
+                # Stable Eman ID
+                # -----------------------------------------
+
                 eman_id = urlparse(
                     href
                 ).path.rstrip('/')
 
+
+                # -----------------------------------------
+                # Build Product object
+                # -----------------------------------------
 
                 product = Product(
 
@@ -1451,15 +1352,8 @@ def fetch_group(
 
 
                 # -----------------------------------------
-                # DEBUG OUTPUT
+                # Debug information
                 # -----------------------------------------
-
-                locations_count = len(
-                    detail[
-                        'stock_locations'
-                    ]
-                )
-
 
                 print(
 
@@ -1474,7 +1368,7 @@ def fetch_group(
                     f'{detail["stock_quantity"]} '
 
                     f'| Locations: '
-                    f'{locations_count}'
+                    f'{len(detail["stock_locations"])}'
 
                 )
 
@@ -1490,13 +1384,16 @@ def fetch_group(
 
 
         # -------------------------------------------------
-        # NEXT PAGE
+        # Next page
         # -------------------------------------------------
 
-        url = next_page(
+        next_url = next_page(
             page,
             url
         )
+
+
+        url = next_url
 
 
         time.sleep(
@@ -1505,10 +1402,88 @@ def fetch_group(
 
 
     return items
+    # =========================================================
+# PAGINATION
+# =========================================================
+
+def next_page(
+    page: BeautifulSoup,
+    current_url: str
+):
+
+    # -----------------------------------------------------
+    # Try to find a standard "next" link.
+    # -----------------------------------------------------
+
+    next_words = {
+        '>',
+        '>>',
+        'следующая',
+        'следующая страница',
+        'next',
+        'next page',
+        '›',
+        '»'
+    }
+
+
+    for link in page.find_all(
+        'a',
+        href=True
+    ):
+
+        text = clean(
+            link.get_text(
+                ' ',
+                strip=True
+            )
+        )
+
+
+        if (
+            text.lower()
+            in next_words
+        ):
+
+            href = link.get(
+                'href'
+            )
+
+
+            if href:
+
+                return absolute(
+                    href,
+                    current_url
+                )
+
+
+    # -----------------------------------------------------
+    # Try rel="next".
+    # -----------------------------------------------------
+
+    link = page.find(
+        'a',
+        attrs={
+            'rel': 'next'
+        },
+        href=True
+    )
+
+
+    if link:
+
+        return absolute(
+            link['href'],
+            current_url
+        )
+
+
+    return None
 
 
 # =========================================================
-# SUPABASE
+# SUPABASE UPSERT
 # =========================================================
 
 def supabase_upsert(
@@ -1526,13 +1501,9 @@ def supabase_upsert(
 
 
     endpoint = (
-
         f'{sb_url}'
-
         '/rest/v1/eman_products'
-
         '?on_conflict=eman_id'
-
     )
 
 
@@ -1540,6 +1511,9 @@ def supabase_upsert(
 
         'apikey':
             key,
+
+        'Authorization':
+            f'Bearer {key}',
 
         'Content-Type':
             'application/json',
@@ -1551,59 +1525,62 @@ def supabase_upsert(
     }
 
 
-    rows = [
+    rows = []
 
-        {
 
-            'eman_id':
-                product.eman_id,
+    for product in products:
 
-            'source_url':
-                product.source_url,
+        rows.append(
 
-            'sku':
-                product.sku,
+            {
 
-            'name':
-                product.name,
+                'eman_id':
+                    product.eman_id,
 
-            'brand':
-                product.brand,
+                'source_url':
+                    product.source_url,
 
-            'eman_group':
-                product.eman_group,
+                'sku':
+                    product.sku,
 
-            'category':
-                product.category,
+                'name':
+                    product.name,
 
-            'price':
-                product.price,
+                'brand':
+                    product.brand,
 
-            'currency':
-                product.currency,
+                'eman_group':
+                    product.eman_group,
 
-            'image_url':
-                product.image_url,
+                'category':
+                    product.category,
 
-            'stock_quantity':
-                product.stock_quantity,
+                'price':
+                    product.price,
 
-            'stock_unit':
-                product.stock_unit,
+                'currency':
+                    product.currency,
 
-            'extra':
-                product.extra,
+                'image_url':
+                    product.image_url,
 
-            'synced_at':
-                datetime.now(
-                    timezone.utc
-                ).isoformat()
+                'stock_quantity':
+                    product.stock_quantity,
 
-        }
+                'stock_unit':
+                    product.stock_unit,
 
-        for product in products
+                'extra':
+                    product.extra,
 
-    ]
+                'synced_at':
+                    datetime.now(
+                        timezone.utc
+                    ).isoformat()
+
+            }
+
+        )
 
 
     print(
@@ -1613,14 +1590,22 @@ def supabase_upsert(
     )
 
 
-    for i in range(
+    # -----------------------------------------------------
+    # Upload in batches.
+    # -----------------------------------------------------
+
+    batch_size = 500
+
+
+    for start in range(
         0,
         len(rows),
-        500
+        batch_size
     ):
 
         batch = rows[
-            i:i + 500
+            start:
+            start + batch_size
         ]
 
 
@@ -1642,264 +1627,32 @@ def supabase_upsert(
             print(
                 'Supabase error:',
                 response.status_code,
-                response.text[:1000]
+                response.text[:2000]
             )
 
 
         response.raise_for_status()
 
 
-        print(
+        uploaded = min(
+            start + batch_size,
+            len(rows)
+        )
 
+        print(
             f'Uploaded '
-            f'{i + len(batch)} / '
+            f'{uploaded} / '
             f'{len(rows)}'
-
         )
+
 
 # =========================================================
-# MAIN
+# FALLBACK SNAPSHOT
 # =========================================================
 
-def main():
-
-    # -----------------------------------------------------
-    # Environment
-    # -----------------------------------------------------
-
-    for env in (
-        'SUPABASE_URL',
-        'SUPABASE_SERVICE_ROLE_KEY'
-    ):
-
-        if not os.getenv(env):
-
-            raise RuntimeError(
-                f'Missing required environment variable: {env}'
-            )
-
-
-    # -----------------------------------------------------
-    # Discover Eman catalogs
-    # -----------------------------------------------------
-
-    groups = discover_group_links()
-
-
-    print(
-        f'Discovered {len(groups)} Eman catalogs.'
-    )
-
-
-    # -----------------------------------------------------
-    # Fetch all products
-    # -----------------------------------------------------
-
-    all_products = []
-
-
-    for cfg in groups:
-
-        print(
-            ''
-        )
-
-        print(
-            '=' * 60
-        )
-
-        print(
-            f"SYNCING: {cfg['brand']}"
-        )
-
-        print(
-            f"URL: {cfg['url']}"
-        )
-
-        print(
-            '=' * 60
-        )
-
-
-        try:
-
-            group_products = fetch_group(
-                cfg
-            )
-
-
-            print(
-                f"Completed {cfg['brand']}: "
-                f'{len(group_products)} products'
-            )
-
-
-            all_products.extend(
-                group_products
-            )
-
-
-        except Exception as error:
-
-            print(
-                f"ERROR while syncing "
-                f"{cfg['brand']}: {error}"
-            )
-
-
-    # -----------------------------------------------------
-    # Safety check
-    # -----------------------------------------------------
-
-    if not all_products:
-
-        raise RuntimeError(
-            'No products were collected from Eman. '
-            'Aborting to protect existing Supabase data.'
-        )
-
-
-    # -----------------------------------------------------
-    # DEDUPE BY EMAN ID
-    # -----------------------------------------------------
-
-    unique = {}
-
-
-    for product in all_products:
-
-        unique[
-            product.eman_id
-        ] = product
-
-
-    products = list(
-        unique.values()
-    )
-
-
-    print(
-        ''
-    )
-
-
-    print(
-        f'Total unique products: '
-        f'{len(products)}'
-    )
-
-
-    # -----------------------------------------------------
-    # STOCK SUMMARY
-    # -----------------------------------------------------
-
-    products_with_stock = [
-
-        product
-
-        for product in products
-
-        if (
-            product.stock_quantity is not None
-            and product.stock_quantity > 0
-        )
-
-    ]
-
-
-    products_without_stock = [
-
-        product
-
-        for product in products
-
-        if (
-            product.stock_quantity is None
-            or product.stock_quantity <= 0
-        )
-
-    ]
-
-
-    total_stock = sum(
-
-        product.stock_quantity or 0
-
-        for product in products
-
-    )
-
-
-    print(
-        f'Products with positive stock: '
-        f'{len(products_with_stock)}'
-    )
-
-
-    print(
-        f'Products without positive stock: '
-        f'{len(products_without_stock)}'
-    )
-
-
-    print(
-        f'Total parsed stock quantity: '
-        f'{total_stock}'
-    )
-
-
-    # -----------------------------------------------------
-    # SKU SUMMARY
-    # -----------------------------------------------------
-
-    products_with_sku = [
-
-        product
-
-        for product in products
-
-        if product.sku
-
-    ]
-
-
-    print(
-        f'Products with Eman article: '
-        f'{len(products_with_sku)}'
-    )
-
-
-    # -----------------------------------------------------
-    # SUPABASE
-    # -----------------------------------------------------
-
-    print(
-        ''
-    )
-
-    print(
-        'Uploading products to Supabase...'
-    )
-
-
-    supabase_upsert(
-        products
-    )
-
-
-    print(
-        'Supabase upload completed.'
-    )
-
-
-    # -----------------------------------------------------
-    # FALLBACK SNAPSHOT
-    # -----------------------------------------------------
-
-    print(
-        'Writing fallback snapshot...'
-    )
-
+def write_snapshot(
+    products
+):
 
     snapshot = {
 
@@ -1944,9 +1697,13 @@ def main():
     OUT.write_text(
 
         json.dumps(
+
             snapshot,
+
             ensure_ascii=False,
+
             indent=2
+
         ),
 
         encoding='utf-8'
@@ -1954,13 +1711,470 @@ def main():
     )
 
 
-    # -----------------------------------------------------
-    # FINAL REPORT
-    # -----------------------------------------------------
+    print(
+        f'Fallback snapshot written: {OUT}'
+    )
+
+
+# =========================================================
+# STOCK REPORT
+# =========================================================
+
+def print_stock_report(
+    products
+):
+
+    products_with_stock = [
+
+        product
+
+        for product in products
+
+        if (
+            product.stock_quantity is not None
+            and product.stock_quantity > 0
+        )
+
+    ]
+
+
+    products_without_stock = [
+
+        product
+
+        for product in products
+
+        if (
+            product.stock_quantity is None
+            or product.stock_quantity <= 0
+        )
+
+    ]
+
+
+    products_with_sku = [
+
+        product
+
+        for product in products
+
+        if product.sku
+
+    ]
+
+
+    total_stock = sum(
+
+        product.stock_quantity or 0
+
+        for product in products
+
+    )
+
 
     print(
         ''
     )
+
+
+    print(
+        'STOCK REPORT'
+    )
+
+
+    print(
+        '-' * 50
+    )
+
+
+    print(
+        'Products:',
+        len(products)
+    )
+
+
+    print(
+        'Products with article:',
+        len(products_with_sku)
+    )
+
+
+    print(
+        'Products with positive stock:',
+        len(products_with_stock)
+    )
+
+
+    print(
+        'Products without positive stock:',
+        len(products_without_stock)
+    )
+
+
+    print(
+        'Total parsed stock:',
+        total_stock
+    )
+
+
+    print(
+        '-' * 50
+    )
+
+
+    # -----------------------------------------------------
+    # Print a few real examples.
+    # This makes GitHub Actions easy to inspect.
+    # -----------------------------------------------------
+
+    examples = [
+
+        product
+
+        for product in products
+
+        if (
+            product.stock_quantity is not None
+            and product.stock_quantity > 0
+        )
+
+    ][:10]
+
+
+    if examples:
+
+        print(
+            'STOCK EXAMPLES:'
+        )
+
+
+        for product in examples:
+
+            locations = product.extra.get(
+                'stock_locations',
+                []
+            )
+
+
+            print(
+
+                f'- {product.name} '
+                f'| SKU: {product.sku or "-"} '
+                f'| Total: '
+                f'{product.stock_quantity} '
+                f'{product.stock_unit or ""} '
+                f'| Warehouses: '
+                f'{len(locations)}'
+
+            )
+
+
+# =========================================================
+# SAFETY CHECK
+# =========================================================
+
+def validate_products(
+    products
+):
+
+    if not products:
+
+        raise RuntimeError(
+            'No products were collected from Eman. '
+            'Sync aborted to protect existing data.'
+        )
+
+
+    # -----------------------------------------------------
+    # Prevent an accidentally broken parser from
+    # replacing the whole catalog with a tiny dataset.
+    # -----------------------------------------------------
+
+    if len(products) < 100:
+
+        print(
+
+            'WARNING: only '
+            f'{len(products)} products were collected. '
+
+            'This is unusually low for the Eman catalog.'
+
+        )
+
+
+    # -----------------------------------------------------
+    # Check for invalid records.
+    # -----------------------------------------------------
+
+    invalid = [
+
+        product
+
+        for product in products
+
+        if (
+            not product.eman_id
+            or not product.source_url
+            or not product.name
+        )
+
+    ]
+
+
+    if invalid:
+
+        raise RuntimeError(
+
+            'Invalid product records found: '
+            f'{len(invalid)}'
+
+        )
+# =========================================================
+# MAIN
+# =========================================================
+
+def main():
+
+    # -----------------------------------------------------
+    # Check environment variables
+    # -----------------------------------------------------
+
+    required_env = (
+        'SUPABASE_URL',
+        'SUPABASE_SERVICE_ROLE_KEY'
+    )
+
+
+    for env_name in required_env:
+
+        if not os.getenv(
+            env_name
+        ):
+
+            raise RuntimeError(
+                f'Missing required environment variable: '
+                f'{env_name}'
+            )
+
+
+    # -----------------------------------------------------
+    # Discover Eman catalogs
+    # -----------------------------------------------------
+
+    print(
+        'Discovering Eman catalogs...'
+    )
+
+
+    groups = discover_group_links()
+
+
+    print(
+        f'Discovered '
+        f'{len(groups)} '
+        f'Eman catalogs.'
+    )
+
+
+    # -----------------------------------------------------
+    # Fetch all products
+    # -----------------------------------------------------
+
+    all_products = []
+
+
+    for cfg in groups:
+
+        print('')
+
+        print(
+            '=' * 60
+        )
+
+        print(
+            f"SYNCING: {cfg['brand']}"
+        )
+
+        print(
+            f"URL: {cfg['url']}"
+        )
+
+        print(
+            '=' * 60
+        )
+
+
+        try:
+
+            group_products = fetch_group(
+                cfg
+            )
+
+
+            print(
+
+                f"Completed "
+                f"{cfg['brand']}: "
+                f"{len(group_products)} "
+                f"products"
+
+            )
+
+
+            all_products.extend(
+                group_products
+            )
+
+
+        except Exception as error:
+
+            print(
+
+                f"ERROR while syncing "
+                f"{cfg['brand']}: "
+                f"{error}"
+
+            )
+
+
+    # -----------------------------------------------------
+    # Safety check
+    # -----------------------------------------------------
+
+    if not all_products:
+
+        raise RuntimeError(
+
+            'No products were collected from Eman. '
+            'Sync aborted to protect existing Supabase data.'
+
+        )
+
+
+    # -----------------------------------------------------
+    # DEDUPLICATION
+    # -----------------------------------------------------
+
+    unique = {}
+
+
+    for product in all_products:
+
+        unique[
+            product.eman_id
+        ] = product
+
+
+    products = list(
+        unique.values()
+    )
+
+
+    print('')
+
+    print(
+        f'Total unique products: '
+        f'{len(products)}'
+    )
+
+
+    # -----------------------------------------------------
+    # Validate
+    # -----------------------------------------------------
+
+    validate_products(
+        products
+    )
+
+
+    # -----------------------------------------------------
+    # Stock report BEFORE upload
+    # -----------------------------------------------------
+
+    print_stock_report(
+        products
+    )
+
+
+    # -----------------------------------------------------
+    # Supabase upload
+    # -----------------------------------------------------
+
+    print('')
+
+    print(
+        '=' * 60
+    )
+
+    print(
+        'Uploading catalog to Supabase...'
+    )
+
+    print(
+        '=' * 60
+    )
+
+
+    supabase_upsert(
+        products
+    )
+
+
+    print(
+        'Supabase upload completed.'
+    )
+
+
+    # -----------------------------------------------------
+    # Fallback snapshot
+    # -----------------------------------------------------
+
+    write_snapshot(
+        products
+    )
+
+
+    # -----------------------------------------------------
+    # Final report
+    # -----------------------------------------------------
+
+    products_with_sku = [
+
+        product
+
+        for product in products
+
+        if product.sku
+
+    ]
+
+
+    products_with_stock = [
+
+        product
+
+        for product in products
+
+        if (
+            product.stock_quantity
+            is not None
+            and
+            product.stock_quantity > 0
+        )
+
+    ]
+
+
+    total_stock = sum(
+
+        product.stock_quantity or 0
+
+        for product in products
+
+    )
+
+
+    print('')
 
     print(
         '=' * 60
@@ -1985,18 +2199,13 @@ def main():
     )
 
     print(
-        f'Positive stock products: '
+        f'Products with positive stock: '
         f'{len(products_with_stock)}'
     )
 
     print(
         f'Total stock quantity: '
         f'{total_stock}'
-    )
-
-    print(
-        f'Fallback snapshot: '
-        f'{OUT}'
     )
 
     print(
