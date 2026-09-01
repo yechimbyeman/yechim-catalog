@@ -1209,6 +1209,7 @@ function productCard(p) {
 
         </div>
 
+
         <div
           class="product-body"
         >
@@ -1217,20 +1218,30 @@ function productCard(p) {
             ${esc(p.brand)}
           </div>
 
+
           <h3>
             ${esc(p.name)}
           </h3>
 
+
           ${
             p.sku
               ? `
-                <div class="sku">
-                  Артикул:
-                  ${esc(p.sku)}
+                <div class="product-sku">
+
+                  <span class="product-sku-label">
+                    Артикул
+                  </span>
+
+                  <span class="product-sku-value">
+                    ${esc(p.sku)}
+                  </span>
+
                 </div>
               `
               : ''
           }
+
 
           ${
             p.badge
@@ -1242,17 +1253,21 @@ function productCard(p) {
               : ''
           }
 
+
           <div class="price">
+
             ${
               p.price
                 ? money(p.price)
                 : 'Цена уточняется'
             }
+
           </div>
 
         </div>
 
       </a>
+
 
       <div
         class="product-body"
@@ -1343,7 +1358,9 @@ function renderDetail() {
 
       </div>
 
+
       <div class="detail">
+
 
         <div class="gallery">
 
@@ -1371,6 +1388,7 @@ function renderDetail() {
 
           </div>
 
+
           ${
             thumbs.length > 1
               ? `
@@ -1379,6 +1397,7 @@ function renderDetail() {
                   ${thumbs
                     .map(
                       (u, i) => `
+
                         <button
                           class="thumb ${
                             i === 0
@@ -1399,6 +1418,7 @@ function renderDetail() {
                           >
 
                         </button>
+
                       `
                     )
                     .join('')}
@@ -1408,7 +1428,9 @@ function renderDetail() {
               : ''
           }
 
+
         </div>
+
 
         <div class="info">
 
@@ -1416,20 +1438,30 @@ function renderDetail() {
             ${esc(p.brand)}
           </div>
 
+
           <h1>
             ${esc(p.name)}
           </h1>
 
+
           ${
             p.sku
               ? `
-                <div class="sku">
-                  Артикул:
-                  ${esc(p.sku)}
+                <div class="product-sku product-sku-detail">
+
+                  <span class="product-sku-label">
+                    Артикул
+                  </span>
+
+                  <span class="product-sku-value">
+                    ${esc(p.sku)}
+                  </span>
+
                 </div>
               `
               : ''
           }
+
 
           ${
             p.badge
@@ -1441,15 +1473,19 @@ function renderDetail() {
               : ''
           }
 
+
           <div
             class="price detail-price"
           >
+
             ${
               p.price
                 ? money(p.price)
                 : 'Цена уточняется'
             }
+
           </div>
+
 
           <div class="buyline">
 
@@ -1463,9 +1499,11 @@ function renderDetail() {
                 −
               </button>
 
+
               <b>
                 ${cart[p.id] || 0}
               </b>
+
 
               <button
                 class="btn btn-ghost"
@@ -1477,6 +1515,7 @@ function renderDetail() {
 
             </div>
 
+
             <button
               class="btn btn-primary grow-btn"
               id="addToCart"
@@ -1484,6 +1523,7 @@ function renderDetail() {
             >
               В корзину
             </button>
+
 
             <button
               class="btn btn-ghost"
@@ -1494,6 +1534,7 @@ function renderDetail() {
             </button>
 
           </div>
+
 
           ${
             p.description
@@ -1507,6 +1548,7 @@ function renderDetail() {
               : ''
           }
 
+
           ${
             Object.keys(
               p.specs || {}
@@ -1519,6 +1561,7 @@ function renderDetail() {
                   )
                     .map(
                       ([k, v]) => `
+
                         <div class="spec">
 
                           <b>
@@ -1530,6 +1573,7 @@ function renderDetail() {
                           </span>
 
                         </div>
+
                       `
                     )
                     .join('')}
@@ -1538,6 +1582,7 @@ function renderDetail() {
               `
               : ''
           }
+
 
           ${
             p.mounting_scheme
@@ -1549,6 +1594,7 @@ function renderDetail() {
                   <h3>
                     Схема присадки
                   </h3>
+
 
                   <a
                     href="${esc(
@@ -1573,12 +1619,14 @@ function renderDetail() {
               : ''
           }
 
+
         </div>
 
       </div>
 
     </div>
   `;
+
 
   document.querySelector(
     '#detailHome'
@@ -1595,6 +1643,7 @@ function renderDetail() {
     renderRoute();
   };
 
+
   document
     .querySelectorAll('.thumb')
     .forEach((button) => {
@@ -1607,9 +1656,11 @@ function renderDetail() {
           );
 
         if (img) {
+
           img.src =
             button.dataset.img;
         }
+
 
         document
           .querySelectorAll(
@@ -1621,31 +1672,37 @@ function renderDetail() {
             )
           );
 
+
         button.classList.add(
           'active'
         );
       };
     });
 
+
   document.querySelector(
     '#minus'
   ).onclick = () =>
     add(p.id, -1);
+
 
   document.querySelector(
     '#plus'
   ).onclick = () =>
     add(p.id, 1);
 
+
   document.querySelector(
     '#addToCart'
   ).onclick = () =>
     add(p.id, 1);
 
+
   document.querySelector(
     '#share'
   ).onclick =
     shareProduct;
+
 
   updateCartBadge();
 }
@@ -1663,11 +1720,13 @@ async function shareProduct() {
   const url =
     location.href;
 
+
   try {
 
     if (navigator.share) {
 
       await navigator.share({
+
         title:
           p?.name ||
           'YECHIM',
@@ -1678,6 +1737,7 @@ async function shareProduct() {
             : 'Товар YECHIM',
 
         url
+
       });
 
     } else {
@@ -1691,7 +1751,9 @@ async function shareProduct() {
     }
 
   } catch {
+
     /* cancelled */
+
   }
 }
 
@@ -1704,37 +1766,48 @@ function renderCart() {
 
   const items =
     Object.entries(cart)
-      .map(([id, quantity]) => ({
-        p: state.products.find(
-          (product) =>
-            String(product.id) ===
-            String(id)
-        ),
-        q:
-          Number(quantity)
-      }))
+      .map(
+        ([id, quantity]) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(product.id) ===
+                String(id)
+            ),
+
+          q:
+            Number(quantity)
+
+        })
+      )
       .filter(
         (item) =>
           item.p &&
           item.q > 0
       );
 
+
   const old =
     document.querySelector(
       '.cart-drawer'
     );
 
+
   if (old) {
     old.remove();
   }
+
 
   const drawer =
     document.createElement(
       'aside'
     );
 
+
   drawer.className =
     'cart-drawer';
+
 
   drawer.innerHTML = `
 
@@ -1747,17 +1820,23 @@ function renderCart() {
         </h3>
 
         <span class="muted">
+
           ${items.length}
+
           ${
             items.length === 1
               ? 'позиция'
               : 'позиций'
           }
+
           ·
+
           ${cartQty()} шт.
+
         </span>
 
       </div>
+
 
       <div
         class="cart-head-actions"
@@ -1777,6 +1856,7 @@ function renderCart() {
             : ''
         }
 
+
         <button
           class="btn btn-ghost"
           id="closeCart"
@@ -1789,11 +1869,12 @@ function renderCart() {
 
     </div>
 
+
     ${
       items.length
         ? items
             .map(
-              ({p, q}) => `
+              ({ p, q }) => `
 
                 <div class="cart-row">
 
@@ -1805,11 +1886,13 @@ function renderCart() {
                       )}
                     </b>
 
+
                     <div>
                       ${esc(
                         p.name
                       )}
                     </div>
+
 
                     ${
                       p.sku
@@ -1817,6 +1900,7 @@ function renderCart() {
                           <div
                             class="muted"
                           >
+                            Артикул:
                             ${esc(
                               p.sku
                             )}
@@ -1826,6 +1910,7 @@ function renderCart() {
                     }
 
                   </div>
+
 
                   <div
                     class="cart-item-actions"
@@ -1841,9 +1926,11 @@ function renderCart() {
                       −
                     </button>
 
+
                     <b>
                       ${q}
                     </b>
+
 
                     <button
                       class="btn btn-ghost"
@@ -1858,6 +1945,7 @@ function renderCart() {
                   </div>
 
                 </div>
+
               `
             )
             .join('')
@@ -1867,6 +1955,7 @@ function renderCart() {
           </div>
         `
     }
+
 
     ${
       items.length
@@ -1888,19 +1977,23 @@ function renderCart() {
 
   `;
 
+
   document.body.append(
     drawer
   );
+
 
   drawer.querySelector(
     '#closeCart'
   ).onclick = () =>
     drawer.remove();
 
+
   const clearButton =
     drawer.querySelector(
       '#clearCart'
     );
+
 
   if (clearButton) {
 
@@ -1911,6 +2004,7 @@ function renderCart() {
       updateCartBadge();
     };
   }
+
 
   drawer
     .querySelectorAll(
@@ -1931,6 +2025,7 @@ function renderCart() {
       };
     });
 
+
   drawer
     .querySelectorAll(
       '[data-cart-plus]'
@@ -1950,10 +2045,12 @@ function renderCart() {
       };
     });
 
+
   const sendButton =
     drawer.querySelector(
       '#sendRequest'
     );
+
 
   if (sendButton) {
 
@@ -2110,7 +2207,8 @@ async function sendRequest() {
       rowsBySku,
       ([sku, quantity]) => ({
 
-        'Артикул': sku,
+        'Артикул':
+          sku,
 
         'Количество':
           quantity
@@ -2214,6 +2312,7 @@ async function sendRequest() {
           '0'
         );
 
+
     const filename =
       `YECHIM_Request_${now.getFullYear()}-${pad(
         now.getMonth() + 1
@@ -2294,10 +2393,16 @@ document.addEventListener(
    INIT
 ========================= */
 
-document.querySelector(
-  '#cartButton'
-).onclick =
-  renderCart;
+const cartButton =
+  document.querySelector(
+    '#cartButton'
+  );
+
+if (cartButton) {
+
+  cartButton.onclick =
+    renderCart;
+}
 
 
 (async () => {
@@ -2316,7 +2421,9 @@ document.querySelector(
 const LANG_KEY = 'yechim_language';
 
 let currentLanguage =
-  localStorage.getItem(LANG_KEY) || 'ru';
+  localStorage.getItem(
+    LANG_KEY
+  ) || 'ru';
 
 
 const TRANSLATIONS = {
@@ -2383,6 +2490,9 @@ const TRANSLATIONS = {
     'Фото товара':
       'Фото товара',
 
+    'Артикул':
+      'Артикул',
+
     'Артикул:':
       'Артикул:',
 
@@ -2420,7 +2530,40 @@ const TRANSLATIONS = {
       'В этой категории пока нет опубликованных товаров.',
 
     'Для этого бренда в текущем источнике ещё нет детальной категории.':
-      'Для этого бренда в текущем источнике ещё нет детальной категории.'
+      'Для этого бренда в текущем источнике ещё нет детальной категории.',
+
+    'Контакты':
+      'Контакты',
+
+    'Системы хранения и механизмы для кухни, гардеробных и другой мебели.':
+      'Системы хранения и механизмы для кухни, гардеробных и другой мебели.',
+
+    'Мебельные ручки и крючки для стильных мебельных решений.':
+      'Мебельные ручки и крючки для стильных мебельных решений.',
+
+    '795 товаров в каталоге':
+      '795 товаров в каталоге',
+
+    'позиций':
+      'позиций',
+
+    'шт.':
+      'шт.',
+
+    'товаров':
+      'товаров',
+
+    'Мебельные ручки':
+      'Мебельные ручки',
+
+    'Крепёж и соединительные решения для производства мебели.':
+      'Крепёж и соединительные решения для производства мебели.',
+
+    'Петли, направляющие и механизмы для современной мебели.':
+      'Петли, направляющие и механизмы для современной мебели.',
+
+    'Мебельная подсветка и световые решения для современной мебели.':
+      'Мебельная подсветка и световые решения для современной мебели.'
   },
 
 
@@ -2454,7 +2597,7 @@ const TRANSLATIONS = {
       'Kerakli yechimni toping',
 
     'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
-      'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
+      'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni katalogning o‘zidan turib menejerga yuboring.',
 
     'товаров в каталоге':
       'katalogdagi mahsulot',
@@ -2485,6 +2628,9 @@ const TRANSLATIONS = {
 
     'Фото товара':
       'Mahsulot rasmi',
+
+    'Артикул':
+      'Artikul',
 
     'Артикул:':
       'Artikul:',
@@ -2524,47 +2670,39 @@ const TRANSLATIONS = {
 
     'Для этого бренда в текущем источнике ещё нет детальной категории.':
       'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.',
-    
+
     'Контакты':
-    'Kontaktlar',
+      'Kontaktlar',
 
-'Системы хранения и механизмы для кухни, гардеробных и другой мебели.':
-  'Oshxona, garderob va boshqa mebellar uchun saqlash tizimlari va mexanizmlar.',
+    'Системы хранения и механизмы для кухни, гардеробных и другой мебели.':
+      'Oshxona, garderob va boshqa mebellar uchun saqlash tizimlari va mexanizmlar.',
 
-'Мебельные ручки и крючки для стильных мебельных решений.':
-  'Zamonaviy mebel uchun mebel tutqichlari va ilgaklar.',
-'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
-  'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni katalogning o‘zidan turib menejerga yuboring.',
+    'Мебельные ручки и крючки для стильных мебельных решений.':
+      'Zamonaviy mebel uchun mebel tutqichlari va ilgaklar.',
 
-'795 товаров в каталоге':
-  'Katalogda 795 ta mahsulot',
+    '795 товаров в каталоге':
+      'Katalogda 795 ta mahsulot',
 
-'позиций':
-  'mahsulot turi',
+    'позиций':
+      'mahsulot turi',
 
-'шт.':
-  'dona',
+    'шт.':
+      'dona',
 
-'товаров':
-  'mahsulot',
-    
-'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
-  'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni bevosita katalogdan yuboring.',
+    'товаров':
+      'mahsulot',
 
-'Для этого бренда в текущем источнике ещё нет детальной категории.':
-  'Bu brend uchun hozircha batafsil kategoriyalar mavjud emas.',
+    'Мебельные ручки':
+      'Mebel tutqichlari',
 
-'Мебельные ручки':
-  'Mebel tutqichlari',
+    'Крепёж и соединительные решения для производства мебели.':
+      'Mebel ishlab chiqarish uchun mahkamlash va biriktirish yechimlari.',
 
-'Крепёж и соединительные решения для производства мебели.':
-  'Mebel ishlab chiqarish uchun mahkamlash va biriktirish yechimlari.',
+    'Петли, направляющие и механизмы для современной мебели.':
+      'Zamonaviy mebel uchun menteşalar, yo‘naltirgichlar va mexanizmlar.',
 
-'Петли, направляющие и механизмы для современной мебели.':
-  'Zamonaviy mebel uchun menteşalar, yo‘naltirgichlar va mexanizmlar.',
-
-'Мебельная подсветка и световые решения для современной мебели.':
-  'Zamonaviy mebel yoritgichi va yorug‘lik yechimlari.'
+    'Мебельная подсветка и световые решения для современной мебели.':
+      'Zamonaviy mebel yoritgichi va yorug‘lik yechimlari.'
   }
 
 };
@@ -2653,6 +2791,7 @@ function translatePage() {
 
   };
 
+
   document
     .querySelectorAll(
       'input[placeholder]'
@@ -2666,6 +2805,7 @@ function translatePage() {
           ) ||
           input.placeholder;
 
+
         if (
           !input.hasAttribute(
             'data-ru-placeholder'
@@ -2677,6 +2817,7 @@ function translatePage() {
             ru
           );
         }
+
 
         if (
           currentLanguage === 'uz' &&
@@ -2709,9 +2850,11 @@ function initLanguageSwitcher() {
       '.topbar .nav'
     );
 
+
   if (!nav) {
     return;
   }
+
 
   if (
     document.querySelector(
@@ -2727,8 +2870,10 @@ function initLanguageSwitcher() {
       'div'
     );
 
+
   switcher.id =
     'languageSwitcher';
+
 
   switcher.innerHTML = `
 
@@ -2765,6 +2910,7 @@ function initLanguageSwitcher() {
       '#cartButton'
     );
 
+
   if (cartButton) {
 
     cartButton.parentNode.insertBefore(
@@ -2792,12 +2938,15 @@ function initLanguageSwitcher() {
           currentLanguage =
             button.dataset.lang;
 
+
           localStorage.setItem(
             LANG_KEY,
             currentLanguage
           );
 
+
           updateLanguageSwitcher();
+
 
           /*
            * Перерисовываем текущий
@@ -2806,6 +2955,7 @@ function initLanguageSwitcher() {
            */
 
           renderRoute();
+
 
           /*
            * На всякий случай
@@ -2816,7 +2966,9 @@ function initLanguageSwitcher() {
             translatePage,
             0
           );
+
         };
+
       }
     );
 
@@ -2843,6 +2995,7 @@ function updateLanguageSwitcher() {
           button.dataset.lang ===
             currentLanguage
         );
+
       }
     );
 }
@@ -2869,6 +3022,8 @@ languageObserver.observe(
     subtree: true
   }
 );
+    }
+  );
 
 
 /* =========================
@@ -2938,6 +3093,78 @@ languageStyles.textContent = `
       255,
       .35
     );
+
+  }
+
+
+  /* =========================
+     PRODUCT SKU
+  ========================= */
+
+  .product-sku {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border: 1px solid #b7dfcf;
+
+    border-radius: 5px;
+
+    background: #f5fbf8;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+  }
+
+
+  .product-sku-label {
+
+    color: #078451;
+
+    font-weight: 700;
+
+  }
+
+
+  .product-sku-value {
+
+    color: #222;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+  }
+
+
+  .product-sku-detail {
+
+    margin-top: 9px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .product-sku-detail
+  .product-sku-value {
+
+    font-size: 12px;
 
   }
 
