@@ -36,14 +36,17 @@ try {
   cart = {};
 }
 
+
 /* =========================
    BRAND PRESENTATION
 ========================= */
 
 const BRANDS = {
+
   'STARAX': {
     logo: './assets/brands/STARAX.png',
-    background: './assets/backgrounds/STARAX BACKGROUND.jpg',
+    background:
+      './assets/backgrounds/STARAX BACKGROUND.jpg',
     title: 'STARAX',
     description:
       'Системы хранения и механизмы для кухни, гардеробных и другой мебели.'
@@ -51,7 +54,8 @@ const BRANDS = {
 
   'SAMET': {
     logo: './assets/brands/SAMET.png',
-    background: './assets/backgrounds/SAMET BACKGROUND.webp',
+    background:
+      './assets/backgrounds/SAMET BACKGROUND.webp',
     title: 'SAMET',
     description:
       'Петли, направляющие и механизмы для современной мебели.'
@@ -59,7 +63,8 @@ const BRANDS = {
 
   'CEBI': {
     logo: './assets/brands/CEBI.png',
-    background: './assets/backgrounds/CEBI BACKGROUND.png',
+    background:
+      './assets/backgrounds/CEBI BACKGROUND.png',
     title: 'CEBI',
     description:
       'Мебельные ручки и крючки для стильных мебельных решений.'
@@ -67,21 +72,25 @@ const BRANDS = {
 
   'MESAN': {
     logo: './assets/brands/MESAN.png',
-    background: './assets/backgrounds/MESAN BACKGROUND.webp',
+    background:
+      './assets/backgrounds/MESAN BACKGROUND.webp',
     title: 'MESAN',
     description:
       'Крепёж и соединительные решения для производства мебели.'
   },
 
   'YECHIM LIGHTING': {
-    logo: './assets/brands/YECHIM LIGHTING.png',
+    logo:
+      './assets/brands/YECHIM LIGHTING.png',
     background:
       './assets/backgrounds/YECHIM LIGHTING BACKGROUND.jpg',
     title: 'YECHIM LIGHTING',
     description:
       'Мебельная подсветка и световые решения для современной мебели.'
   }
+
 };
+
 
 /* =========================
    HELPERS
@@ -100,14 +109,119 @@ const esc = (s) =>
       }[c])
   );
 
+
 const money = (v) =>
-  Number(v || 0).toLocaleString('ru-RU') + ' сум';
+  Number(v || 0)
+    .toLocaleString('ru-RU') +
+  ' сум';
+
 
 const normalize = (x) =>
-  String(x ?? '').toLowerCase().trim();
+  String(x ?? '')
+    .toLowerCase()
+    .trim();
+
 
 const productUrl = (id) =>
   `?product=${encodeURIComponent(id)}`;
+
+
+/* =========================
+   STOCK DISPLAY
+========================= */
+
+function stockMarkup(
+  p,
+  detail = false
+) {
+
+  if (
+    p.stock_quantity === null ||
+    p.stock_quantity === undefined ||
+    p.stock_quantity === ''
+  ) {
+
+    return '';
+
+  }
+
+
+  const quantity = Number(
+    p.stock_quantity
+  );
+
+
+  const unit =
+    p.stock_unit ||
+    'шт.';
+
+
+  if (quantity > 0) {
+
+    return `
+
+      <div
+        class="${
+          detail
+            ? 'stock-status stock-status-detail'
+            : 'stock-status'
+        } stock-in"
+      >
+
+        <span class="stock-dot">
+          ✓
+        </span>
+
+        <span>
+
+          В наличии:
+
+          <b>
+            ${esc(
+              quantity.toLocaleString(
+                'ru-RU'
+              )
+            )}
+          </b>
+
+          ${esc(unit)}
+
+        </span>
+
+      </div>
+
+    `;
+
+  }
+
+
+  return `
+
+    <div
+      class="${
+        detail
+          ? 'stock-status stock-status-detail'
+          : 'stock-status'
+      } stock-out"
+    >
+
+      <span class="stock-dot">
+        ×
+      </span>
+
+      <span>
+        Нет в наличии
+      </span>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================
+   CART HELPERS
+========================= */
 
 function saveCart() {
 
@@ -119,25 +233,37 @@ function saveCart() {
   updateCartBadge();
 }
 
+
 function cartQty() {
 
-  return Object.values(cart)
-    .reduce(
-      (total, quantity) =>
-        total + Number(quantity || 0),
-      0
-    );
+  return Object.values(
+    cart
+  ).reduce(
+    (total, quantity) =>
+      total +
+      Number(quantity || 0),
+    0
+  );
+
 }
+
 
 function updateCartBadge() {
 
   const el =
-    document.querySelector('#cartCount');
+    document.querySelector(
+      '#cartCount'
+    );
 
   if (el) {
-    el.textContent = cartQty();
+
+    el.textContent =
+      cartQty();
+
   }
+
 }
+
 
 /* =========================
    ROUTER
@@ -150,26 +276,40 @@ function readRoute() {
       location.search
     );
 
+
   return {
-    product: params.get('product'),
-    brand: params.get('brand'),
-    category: params.get('category')
+
+    product:
+      params.get('product'),
+
+    brand:
+      params.get('brand'),
+
+    category:
+      params.get('category')
+
   };
+
 }
+
 
 function renderRoute() {
 
   const route =
     readRoute();
 
+
   state.productId =
     route.product;
+
 
   state.selectedBrand =
     route.brand;
 
+
   state.selectedCategory =
     route.category;
+
 
   if (route.product) {
 
@@ -182,20 +322,26 @@ function renderRoute() {
 
     renderCategoryProducts();
 
-  } else if (route.brand) {
+  } else if (
+    route.brand
+  ) {
 
     renderBrandCategories();
 
   } else {
 
     renderHome();
+
   }
+
 }
+
 
 window.addEventListener(
   'popstate',
   renderRoute
 );
+
 
 /* =========================
    DATA
@@ -214,52 +360,90 @@ async function loadProducts() {
         'get_public_catalog'
       );
 
+
       if (error) {
         throw error;
       }
 
+
       state.products =
-        (data || []).map((p) => ({
-          id: p.eman_id,
-          eman_id: p.eman_id,
-          source_url: p.source_url,
+        (data || []).map(
+          (p) => ({
 
-          sku: p.yechim_sku || p.sku || '',
+            id:
+              p.eman_id,
 
-          name: p.name,
+            eman_id:
+              p.eman_id,
 
-          brand: p.brand,
+            source_url:
+              p.source_url,
 
-          category:
-            p.category || 'Без категории',
+            sku:
+              p.yechim_sku ||
+              p.sku ||
+              '',
 
-          subcategory:
-            p.subcategory || '',
+            name:
+              p.name,
 
-          price: p.price,
+            brand:
+              p.brand,
 
-          currency: p.currency,
+            category:
+              p.category ||
+              'Без категории',
 
-          image: p.image_url,
+            subcategory:
+              p.subcategory ||
+              '',
 
-          description:
-            p.description,
+            price:
+              p.price,
 
-          specs:
-            p.specs || {},
+            currency:
+              p.currency,
 
-          mounting_scheme:
-            p.mounting_scheme_url,
+            image:
+              p.image_url,
 
-          additional_images:
-            p.additional_images || [],
+            stock_quantity:
+              p.stock_quantity !== null &&
+              p.stock_quantity !== undefined
+                ? p.stock_quantity
+                : null,
 
-          badge:
-            p.badge,
+            stock_unit:
+              p.stock_unit ||
+              'шт.',
 
-          sort_order:
-            p.sort_order || 0
-        }));
+            stock_locations:
+              p.stock_locations ||
+              [],
+
+            description:
+              p.description,
+
+            specs:
+              p.specs ||
+              {},
+
+            mounting_scheme:
+              p.mounting_scheme_url,
+
+            additional_images:
+              p.additional_images ||
+              [],
+
+            badge:
+              p.badge,
+
+            sort_order:
+              p.sort_order ||
+              0
+
+          })
+        );
 
     } else {
 
@@ -268,72 +452,129 @@ async function loadProducts() {
           'data/products.json'
         );
 
+
       const raw =
         await r.json();
 
+
       state.products =
-        raw.products || [];
+        (raw.products || []).map(
+          (p) => ({
+
+            ...p,
+
+            stock_quantity:
+              p.stock_quantity !== null &&
+              p.stock_quantity !== undefined
+                ? p.stock_quantity
+                : null,
+
+            stock_unit:
+              p.stock_unit ||
+              'шт.',
+
+            stock_locations:
+              p.stock_locations ||
+              []
+
+          })
+        );
+
     }
 
   } catch (e) {
 
     state.products = [];
 
+
     document.querySelector(
       '#app'
     ).innerHTML = `
+
       <div class="shell">
+
         <div class="panel error">
+
           <b>
             Каталог временно недоступен.
           </b>
 
           <div class="muted">
+
             ${esc(
               e.message || e
             )}
+
           </div>
+
         </div>
+
       </div>
+
     `;
 
   } finally {
 
     state.loading = false;
+
   }
+
 }
+
 
 /* =========================
    CART
 ========================= */
 
-function add(id, delta = 1) {
+function add(
+  id,
+  delta = 1
+) {
 
-  const key = String(id);
+  const key =
+    String(id);
+
 
   const current =
-    Number(cart[key] || 0);
+    Number(
+      cart[key] || 0
+    );
+
 
   const next =
     current +
     Number(delta || 0);
 
+
   if (next <= 0) {
+
     delete cart[key];
+
   } else {
-    cart[key] = next;
+
+    cart[key] =
+      next;
+
   }
 
+
   saveCart();
+
 
   if (
     state.productId
   ) {
+
     renderDetail();
+
   } else {
+
     renderRoute();
+
   }
+
 }
+
 
 function clearCart() {
 
@@ -342,7 +583,9 @@ function clearCart() {
   saveCart();
 
   renderCart();
+
 }
+
 
 /* =========================
    HOME
@@ -350,33 +593,55 @@ function clearCart() {
 
 function renderHome() {
 
-  state.productId = null;
+  state.productId =
+    null;
+
 
   document.title =
     'YECHIM — Решения для вашей мебели';
 
+
   const popular =
     state.products
-      .filter((p) =>
-        normalize(p.badge)
-          .includes('популяр')
+      .filter(
+        (p) =>
+          normalize(
+            p.badge
+          ).includes(
+            'популяр'
+          )
       )
-      .slice(0, 8);
+      .slice(
+        0,
+        8
+      );
+
 
   const newProducts =
     state.products
-      .filter((p) =>
-        normalize(p.badge)
-          .includes('нов')
+      .filter(
+        (p) =>
+          normalize(
+            p.badge
+          ).includes(
+            'нов'
+          )
       )
-      .slice(0, 8);
-    document.querySelector(
+      .slice(
+        0,
+        8
+      );
+
+
+  document.querySelector(
     '#app'
   ).innerHTML = `
 
     <div class="shell">
 
-      <section class="catalog-head">
+      <section
+        class="catalog-head"
+      >
 
         <div>
 
@@ -390,12 +655,14 @@ function renderHome() {
 
         </div>
 
+
         <div class="search wide">
 
           <input
             id="q"
             placeholder="Найти товар или артикул"
           >
+
 
           <button
             class="btn btn-primary"
@@ -412,13 +679,16 @@ function renderHome() {
 
       <section>
 
-        <div class="section-head">
+        <div
+          class="section-head"
+        >
 
           <h2>
             Бренды
           </h2>
 
         </div>
+
 
         <div class="brand-grid">
 
@@ -430,7 +700,9 @@ function renderHome() {
 
                 <article
                   class="brand-card"
-                  data-brand="${esc(brand)}"
+                  data-brand="${esc(
+                    brand
+                  )}"
                 >
 
                   <div
@@ -451,6 +723,7 @@ function renderHome() {
 
                   </div>
 
+
                   <div
                     class="brand-description"
                   >
@@ -463,6 +736,7 @@ function renderHome() {
                       )}
                     </div>
 
+
                     <div
                       class="brand-description-text"
                     >
@@ -470,6 +744,7 @@ function renderHome() {
                         data.description
                       )}
                     </div>
+
 
                     <span
                       class="brand-arrow"
@@ -480,6 +755,7 @@ function renderHome() {
                   </div>
 
                 </article>
+
               `
             )
             .join('')}
@@ -495,7 +771,9 @@ function renderHome() {
 
             <section>
 
-              <div class="section-head">
+              <div
+                class="section-head"
+              >
 
                 <h2>
                   Популярные решения
@@ -503,10 +781,15 @@ function renderHome() {
 
               </div>
 
-              <div class="products">
+
+              <div
+                class="products"
+              >
 
                 ${popular
-                  .map(productCard)
+                  .map(
+                    productCard
+                  )
                   .join('')}
 
               </div>
@@ -524,7 +807,9 @@ function renderHome() {
 
             <section>
 
-              <div class="section-head">
+              <div
+                class="section-head"
+              >
 
                 <h2>
                   Новинки
@@ -532,10 +817,15 @@ function renderHome() {
 
               </div>
 
-              <div class="products">
+
+              <div
+                class="products"
+              >
 
                 ${newProducts
-                  .map(productCard)
+                  .map(
+                    productCard
+                  )
                   .join('')}
 
               </div>
@@ -557,6 +847,7 @@ function renderHome() {
             Найдите нужное решение
           </h2>
 
+
           <p>
             Ищите товар по названию
             или артикулу и отправляйте
@@ -566,20 +857,29 @@ function renderHome() {
 
         </div>
 
+
         <div
           class="home-promo-stat"
         >
+
           ${state.products.length}
+
           товаров в каталоге
+
         </div>
 
       </section>
 
     </div>
+
   `;
 
+
   const searchInput =
-    document.querySelector('#q');
+    document.querySelector(
+      '#q'
+    );
+
 
   document.querySelector(
     '#searchBtn'
@@ -589,42 +889,56 @@ function renderHome() {
       searchInput.value.trim();
 
     renderSearchResults();
+
   };
 
-  searchInput.onkeydown = (
-    event
-  ) => {
 
-    if (event.key === 'Enter') {
+  searchInput.onkeydown =
+    (event) => {
 
-      state.query =
-        event.target.value.trim();
+      if (
+        event.key ===
+        'Enter'
+      ) {
 
-      renderSearchResults();
-    }
-  };
+        state.query =
+          event.target.value.trim();
+
+        renderSearchResults();
+
+      }
+
+    };
+
 
   document
     .querySelectorAll(
       '[data-brand]'
     )
-    .forEach((card) => {
+    .forEach(
+      (card) => {
 
-      card.onclick = () => {
+        card.onclick = () => {
 
-        history.pushState(
-          {},
-          '',
-          `?brand=${encodeURIComponent(
-            card.dataset.brand
-          )}`
-        );
+          history.pushState(
+            {},
+            '',
+            `?brand=${encodeURIComponent(
+              card.dataset.brand
+            )}`
+          );
 
-        renderRoute();
-      };
-    });
+
+          renderRoute();
+
+        };
+
+      }
+    );
+
 
   updateCartBadge();
+
 }
 
 
@@ -637,12 +951,18 @@ function renderBrandCategories() {
   const brand =
     state.selectedBrand;
 
+
   const products =
     state.products.filter(
       (p) =>
-        normalize(p.brand) ===
-        normalize(brand)
+        normalize(
+          p.brand
+        ) ===
+        normalize(
+          brand
+        )
     );
+
 
   const categories =
     [
@@ -662,8 +982,10 @@ function renderBrandCategories() {
         )
     );
 
+
   document.title =
     `YECHIM — ${brand}`;
+
 
   document.querySelector(
     '#app'
@@ -671,7 +993,9 @@ function renderBrandCategories() {
 
     <div class="shell">
 
-      <div class="breadcrumbs">
+      <div
+        class="breadcrumbs"
+      >
 
         <a
           href="./"
@@ -680,7 +1004,9 @@ function renderBrandCategories() {
           Каталог
         </a>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <b>
           ${esc(brand)}
@@ -688,11 +1014,15 @@ function renderBrandCategories() {
 
       </div>
 
-      <div class="section-head">
+
+      <div
+        class="section-head"
+      >
 
         <h1>
           ${esc(brand)}
         </h1>
+
 
         <button
           class="btn btn-ghost"
@@ -704,9 +1034,11 @@ function renderBrandCategories() {
 
       </div>
 
+
       <p class="muted">
         Категории товаров
       </p>
+
 
       <section
         class="category-grid"
@@ -729,7 +1061,9 @@ function renderBrandCategories() {
                           )
                       ).length;
 
+
                     return `
+
                       <button
                         class="category-card"
                         data-category="${esc(
@@ -746,30 +1080,43 @@ function renderBrandCategories() {
                           )}
                         </div>
 
+
                         <div
                           class="category-card-count"
                         >
+
                           ${count}
+
                           ${
                             count === 1
                               ? 'товар'
                               : 'товаров'
                           }
+
                         </div>
 
                       </button>
+
                     `;
+
                   }
                 )
                 .join('')
+
             : `
-              <div class="panel">
+
+              <div
+                class="panel"
+              >
 
                 <b>
                   Категории пока не определены.
                 </b>
 
-                <div class="muted">
+
+                <div
+                  class="muted"
+                >
 
                   Для этого бренда
                   в текущем источнике
@@ -778,19 +1125,25 @@ function renderBrandCategories() {
                 </div>
 
               </div>
+
             `
         }
 
       </section>
 
     </div>
+
   `;
+
 
   document.querySelector(
     '#backHome'
-  ).onclick = (event) => {
+  ).onclick = (
+    event
+  ) => {
 
     event.preventDefault();
+
 
     history.pushState(
       {},
@@ -798,8 +1151,11 @@ function renderBrandCategories() {
       './'
     );
 
+
     renderRoute();
+
   };
+
 
   document.querySelector(
     '#backBrand'
@@ -811,32 +1167,42 @@ function renderBrandCategories() {
       './'
     );
 
+
     renderRoute();
+
   };
+
 
   document
     .querySelectorAll(
       '[data-category]'
     )
-    .forEach((button) => {
+    .forEach(
+      (button) => {
 
-      button.onclick = () => {
+        button.onclick = () => {
 
-        history.pushState(
-          {},
-          '',
-          `?brand=${encodeURIComponent(
-            brand
-          )}&category=${encodeURIComponent(
-            button.dataset.category
-          )}`
-        );
+          history.pushState(
+            {},
+            '',
+            `?brand=${encodeURIComponent(
+              brand
+            )}&category=${encodeURIComponent(
+              button.dataset.category
+            )}`
+          );
 
-        renderRoute();
-      };
-    });
+
+          renderRoute();
+
+        };
+
+      }
+    );
+
 
   updateCartBadge();
+
 }
 
 
@@ -852,17 +1218,28 @@ function renderCategoryProducts() {
   const category =
     state.selectedCategory;
 
+
   const products =
     state.products.filter(
       (p) =>
-        normalize(p.brand) ===
-          normalize(brand) &&
-        normalize(p.category) ===
-          normalize(category)
+        normalize(
+          p.brand
+        ) ===
+          normalize(
+            brand
+          ) &&
+        normalize(
+          p.category
+        ) ===
+          normalize(
+            category
+          )
     );
+
 
   document.title =
     `YECHIM — ${category}`;
+
 
   document.querySelector(
     '#app'
@@ -870,7 +1247,9 @@ function renderCategoryProducts() {
 
     <div class="shell">
 
-      <div class="breadcrumbs">
+      <div
+        class="breadcrumbs"
+      >
 
         <a
           href="./"
@@ -879,7 +1258,9 @@ function renderCategoryProducts() {
           Каталог
         </a>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <a
           href="#"
@@ -888,7 +1269,9 @@ function renderCategoryProducts() {
           ${esc(brand)}
         </a>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <b>
           ${esc(category)}
@@ -896,19 +1279,26 @@ function renderCategoryProducts() {
 
       </div>
 
-      <div class="section-head">
+
+      <div
+        class="section-head"
+      >
 
         <div>
 
-          <div class="eyebrow">
+          <div
+            class="eyebrow"
+          >
             ${esc(brand)}
           </div>
+
 
           <h1>
             ${esc(category)}
           </h1>
 
         </div>
+
 
         <button
           class="btn btn-ghost"
@@ -920,6 +1310,7 @@ function renderCategoryProducts() {
 
       </div>
 
+
       <section
         class="products"
       >
@@ -927,10 +1318,16 @@ function renderCategoryProducts() {
         ${
           products.length
             ? products
-                .map(productCard)
+                .map(
+                  productCard
+                )
                 .join('')
+
             : `
-              <div class="panel">
+
+              <div
+                class="panel"
+              >
 
                 <b>
                   В этой категории пока
@@ -938,19 +1335,25 @@ function renderCategoryProducts() {
                 </b>
 
               </div>
+
             `
         }
 
       </section>
 
     </div>
+
   `;
+
 
   document.querySelector(
     '#categoryHome'
-  ).onclick = (event) => {
+  ).onclick = (
+    event
+  ) => {
 
     event.preventDefault();
+
 
     history.pushState(
       {},
@@ -958,14 +1361,20 @@ function renderCategoryProducts() {
       './'
     );
 
+
     renderRoute();
+
   };
+
 
   document.querySelector(
     '#categoryBrand'
-  ).onclick = (event) => {
+  ).onclick = (
+    event
+  ) => {
 
     event.preventDefault();
+
 
     history.pushState(
       {},
@@ -975,8 +1384,11 @@ function renderCategoryProducts() {
       )}`
     );
 
+
     renderRoute();
+
   };
+
 
   document.querySelector(
     '#backToCategories'
@@ -990,10 +1402,14 @@ function renderCategoryProducts() {
       )}`
     );
 
+
     renderRoute();
+
   };
 
+
   updateCartBadge();
+
 }
 
 
@@ -1004,7 +1420,10 @@ function renderCategoryProducts() {
 function renderSearchResults() {
 
   const q =
-    normalize(state.query);
+    normalize(
+      state.query
+    );
+
 
   const products =
     state.products.filter(
@@ -1019,18 +1438,26 @@ function renderSearchResults() {
             p.subcategory
           ]
             .filter(Boolean)
-            .map(normalize)
+            .map(
+              normalize
+            )
             .join(' ');
+
 
         return (
           !q ||
-          haystack.includes(q)
+          haystack.includes(
+            q
+          )
         );
+
       }
     );
 
+
   document.title =
     'YECHIM — Поиск';
+
 
   document.querySelector(
     '#app'
@@ -1038,7 +1465,9 @@ function renderSearchResults() {
 
     <div class="shell">
 
-      <div class="breadcrumbs">
+      <div
+        class="breadcrumbs"
+      >
 
         <a
           href="./"
@@ -1047,13 +1476,16 @@ function renderSearchResults() {
           Каталог
         </a>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <b>
           Поиск
         </b>
 
       </div>
+
 
       <section
         class="catalog-head"
@@ -1065,14 +1497,20 @@ function renderSearchResults() {
             Поиск
           </h1>
 
-          <p class="muted">
+
+          <p
+            class="muted"
+          >
             Найдено:
             ${products.length}
           </p>
 
         </div>
 
-        <div class="search wide">
+
+        <div
+          class="search wide"
+        >
 
           <input
             id="searchInput"
@@ -1081,6 +1519,7 @@ function renderSearchResults() {
             )}"
             placeholder="Название или артикул"
           >
+
 
           <button
             class="btn btn-primary"
@@ -1094,6 +1533,7 @@ function renderSearchResults() {
 
       </section>
 
+
       <section
         class="products"
       >
@@ -1101,33 +1541,48 @@ function renderSearchResults() {
         ${
           products.length
             ? products
-                .map(productCard)
+                .map(
+                  productCard
+                )
                 .join('')
+
             : `
-              <div class="panel">
+
+              <div
+                class="panel"
+              >
 
                 <b>
                   Ничего не найдено.
                 </b>
 
-                <div class="muted">
+
+                <div
+                  class="muted"
+                >
                   Попробуйте другой запрос.
                 </div>
 
               </div>
+
             `
         }
 
       </section>
 
     </div>
+
   `;
+
 
   document.querySelector(
     '#searchHome'
-  ).onclick = (event) => {
+  ).onclick = (
+    event
+  ) => {
 
     event.preventDefault();
+
 
     history.pushState(
       {},
@@ -1135,39 +1590,56 @@ function renderSearchResults() {
       './'
     );
 
+
     renderRoute();
+
   };
+
 
   const input =
     document.querySelector(
       '#searchInput'
     );
 
+
   const button =
     document.querySelector(
       '#searchAgain'
     );
+
 
   const runSearch = () => {
 
     state.query =
       input.value.trim();
 
+
     renderSearchResults();
+
   };
+
 
   button.onclick =
     runSearch;
 
+
   input.onkeydown =
     (event) => {
 
-      if (event.key === 'Enter') {
+      if (
+        event.key ===
+        'Enter'
+      ) {
+
         runSearch();
+
       }
+
     };
 
+
   updateCartBadge();
+
 }
 /* =========================
    PRODUCT CARD
@@ -1254,6 +1726,9 @@ function productCard(p) {
           }
 
 
+          ${stockMarkup(p)}
+
+
           <div class="price">
 
             ${
@@ -1308,19 +1783,26 @@ function getProduct() {
         state.productId
       )
   );
+
 }
+
 
 function renderDetail() {
 
   const p =
     getProduct();
 
+
   if (!p) {
+
     return renderHome();
+
   }
+
 
   document.title =
     `YECHIM — ${p.name}`;
+
 
   const thumbs =
     [
@@ -1328,6 +1810,7 @@ function renderDetail() {
       ...(p.additional_images || [])
     ]
       .filter(Boolean);
+
 
   document.querySelector(
     '#app'
@@ -1344,13 +1827,17 @@ function renderDetail() {
           Каталог
         </a>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <span>
           ${esc(p.brand)}
         </span>
 
-        <span>›</span>
+        <span>
+          ›
+        </span>
 
         <b>
           ${esc(p.name)}
@@ -1472,6 +1959,12 @@ function renderDetail() {
               `
               : ''
           }
+
+
+          ${stockMarkup(
+            p,
+            true
+          )}
 
 
           <div
@@ -1630,72 +2123,94 @@ function renderDetail() {
 
   document.querySelector(
     '#detailHome'
-  ).onclick = (event) => {
+  ).onclick =
+    (event) => {
 
-    event.preventDefault();
+      event.preventDefault();
 
-    history.pushState(
-      {},
-      '',
-      './'
-    );
 
-    renderRoute();
-  };
+      history.pushState(
+        {},
+        '',
+        './'
+      );
+
+
+      renderRoute();
+
+    };
 
 
   document
-    .querySelectorAll('.thumb')
-    .forEach((button) => {
+    .querySelectorAll(
+      '.thumb'
+    )
+    .forEach(
+      (button) => {
 
-      button.onclick = () => {
+        button.onclick = () => {
 
-        const img =
-          document.querySelector(
-            '#mainImage'
-          );
-
-        if (img) {
-
-          img.src =
-            button.dataset.img;
-        }
+          const img =
+            document.querySelector(
+              '#mainImage'
+            );
 
 
-        document
-          .querySelectorAll(
-            '.thumb'
-          )
-          .forEach((x) =>
-            x.classList.remove(
-              'active'
+          if (img) {
+
+            img.src =
+              button.dataset.img;
+
+          }
+
+
+          document
+            .querySelectorAll(
+              '.thumb'
             )
+            .forEach(
+              (x) =>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+
+          button.classList.add(
+            'active'
           );
 
+        };
 
-        button.classList.add(
-          'active'
-        );
-      };
-    });
+      }
+    );
 
 
   document.querySelector(
     '#minus'
   ).onclick = () =>
-    add(p.id, -1);
+    add(
+      p.id,
+      -1
+    );
 
 
   document.querySelector(
     '#plus'
   ).onclick = () =>
-    add(p.id, 1);
+    add(
+      p.id,
+      1
+    );
 
 
   document.querySelector(
     '#addToCart'
   ).onclick = () =>
-    add(p.id, 1);
+    add(
+      p.id,
+      1
+    );
 
 
   document.querySelector(
@@ -1705,6 +2220,7 @@ function renderDetail() {
 
 
   updateCartBadge();
+
 }
 
 
@@ -1717,13 +2233,16 @@ async function shareProduct() {
   const p =
     getProduct();
 
+
   const url =
     location.href;
 
 
   try {
 
-    if (navigator.share) {
+    if (
+      navigator.share
+    ) {
 
       await navigator.share({
 
@@ -1743,11 +2262,15 @@ async function shareProduct() {
     } else {
 
       await navigator.clipboard
-        .writeText(url);
+        .writeText(
+          url
+        );
+
 
       alert(
         'Ссылка на товар скопирована.'
       );
+
     }
 
   } catch {
@@ -1755,6 +2278,7 @@ async function shareProduct() {
     /* cancelled */
 
   }
+
 }
 
 
@@ -1765,19 +2289,27 @@ async function shareProduct() {
 function renderCart() {
 
   const items =
-    Object.entries(cart)
+    Object.entries(
+      cart
+    )
       .map(
         ([id, quantity]) => ({
 
           p:
             state.products.find(
               (product) =>
-                String(product.id) ===
-                String(id)
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
             ),
 
           q:
-            Number(quantity)
+            Number(
+              quantity
+            )
 
         })
       )
@@ -1795,7 +2327,9 @@ function renderCart() {
 
 
   if (old) {
+
     old.remove();
+
   }
 
 
@@ -1819,7 +2353,9 @@ function renderCart() {
           Корзина
         </h3>
 
-        <span class="muted">
+        <span
+          class="muted"
+        >
 
           ${items.length}
 
@@ -1831,7 +2367,8 @@ function renderCart() {
 
           ·
 
-          ${cartQty()} шт.
+          ${cartQty()}
+          шт.
 
         </span>
 
@@ -1949,10 +2486,13 @@ function renderCart() {
               `
             )
             .join('')
+
         : `
+
           <div class="empty">
             Корзина пока пустая.
           </div>
+
         `
     }
 
@@ -1960,6 +2500,7 @@ function renderCart() {
     ${
       items.length
         ? `
+
           <div class="cart-actions">
 
             <button
@@ -1971,6 +2512,7 @@ function renderCart() {
             </button>
 
           </div>
+
         `
         : ''
     }
@@ -2002,7 +2544,9 @@ function renderCart() {
       clearCart();
 
       updateCartBadge();
+
     };
+
   }
 
 
@@ -2010,40 +2554,50 @@ function renderCart() {
     .querySelectorAll(
       '[data-cart-minus]'
     )
-    .forEach((button) => {
+    .forEach(
+      (button) => {
 
-      button.onclick = () => {
+        button.onclick = () => {
 
-        add(
-          decodeURIComponent(
-            button.dataset.cartMinus
-          ),
-          -1
-        );
+          add(
+            decodeURIComponent(
+              button.dataset.cartMinus
+            ),
+            -1
+          );
 
-        renderCart();
-      };
-    });
+
+          renderCart();
+
+        };
+
+      }
+    );
 
 
   drawer
     .querySelectorAll(
       '[data-cart-plus]'
     )
-    .forEach((button) => {
+    .forEach(
+      (button) => {
 
-      button.onclick = () => {
+        button.onclick = () => {
 
-        add(
-          decodeURIComponent(
-            button.dataset.cartPlus
-          ),
-          1
-        );
+          add(
+            decodeURIComponent(
+              button.dataset.cartPlus
+            ),
+            1
+          );
 
-        renderCart();
-      };
-    });
+
+          renderCart();
+
+        };
+
+      }
+    );
 
 
   const sendButton =
@@ -2056,7 +2610,9 @@ function renderCart() {
 
     sendButton.onclick =
       sendRequest;
+
   }
+
 }
 /* =========================
    EXCEL EXPORT
@@ -2065,75 +2621,101 @@ function renderCart() {
 async function loadXlsxLibrary() {
 
   if (window.XLSX) {
+
     return window.XLSX;
+
   }
 
-  await new Promise((resolve, reject) => {
 
-    const existing =
-      document.querySelector(
-        'script[data-yechim-xlsx="true"]'
-      );
+  await new Promise(
+    (resolve, reject) => {
 
-    if (existing) {
+      const existing =
+        document.querySelector(
+          'script[data-yechim-xlsx="true"]'
+        );
 
-      existing.addEventListener(
-        'load',
-        resolve,
-        { once: true }
-      );
 
-      existing.addEventListener(
-        'error',
+      if (existing) {
+
+        existing.addEventListener(
+          'load',
+          resolve,
+          {
+            once: true
+          }
+        );
+
+
+        existing.addEventListener(
+          'error',
+          () =>
+            reject(
+              new Error(
+                'Не удалось загрузить Excel-модуль.'
+              )
+            ),
+          {
+            once: true
+          }
+        );
+
+
+        return;
+
+      }
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      script.src =
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+
+      script.async =
+        true;
+
+
+      script.dataset.yechimXlsx =
+        'true';
+
+
+      script.onload =
+        resolve;
+
+
+      script.onerror =
         () =>
           reject(
             new Error(
-              'Не удалось загрузить Excel-модуль.'
+              'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
             )
-          ),
-        { once: true }
+          );
+
+
+      document.head.appendChild(
+        script
       );
 
-      return;
     }
+  );
 
-    const script =
-      document.createElement(
-        'script'
-      );
-
-    script.src =
-      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-
-    script.async = true;
-
-    script.dataset.yechimXlsx =
-      'true';
-
-    script.onload =
-      resolve;
-
-    script.onerror =
-      () =>
-        reject(
-          new Error(
-            'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
-          )
-        );
-
-    document.head.appendChild(
-      script
-    );
-  });
 
   if (!window.XLSX) {
 
     throw new Error(
       'Excel-модуль загрузился некорректно.'
     );
+
   }
 
+
   return window.XLSX;
+
 }
 
 
@@ -2144,17 +2726,29 @@ async function loadXlsxLibrary() {
 async function sendRequest() {
 
   const items =
-    Object.entries(cart)
+    Object.entries(
+      cart
+    )
       .map(
-        ([id, quantity]) => ({
+        (
+          [id, quantity]
+        ) => ({
 
-          p: state.products.find(
-            (product) =>
-              String(product.id) ===
-              String(id)
-          ),
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
 
-          q: Number(quantity)
+          q:
+            Number(
+              quantity
+            )
 
         })
       )
@@ -2164,8 +2758,11 @@ async function sendRequest() {
           item.q > 0
       );
 
+
   if (!items.length) {
+
     return;
+
   }
 
 
@@ -2175,6 +2772,7 @@ async function sendRequest() {
 
   const rowsBySku =
     new Map();
+
 
   items.forEach(
     ({ p, q }) => {
@@ -2186,10 +2784,13 @@ async function sendRequest() {
           p.id
         ).trim();
 
+
       rowsBySku.set(
         sku,
         (
-          rowsBySku.get(sku) ||
+          rowsBySku.get(
+            sku
+          ) ||
           0
         ) + q
       );
@@ -2205,7 +2806,9 @@ async function sendRequest() {
   const rows =
     Array.from(
       rowsBySku,
-      ([sku, quantity]) => ({
+      (
+        [sku, quantity]
+      ) => ({
 
         'Артикул':
           sku,
@@ -2223,7 +2826,10 @@ async function sendRequest() {
 
   const total =
     rows.reduce(
-      (sum, row) =>
+      (
+        sum,
+        row
+      ) =>
         sum +
         Number(
           row['Количество'] ||
@@ -2234,7 +2840,7 @@ async function sendRequest() {
 
 
   /*
-   * Добавляем Итого.
+   * Добавляем итог.
    */
 
   rows.push({
@@ -2303,6 +2909,7 @@ async function sendRequest() {
     const now =
       new Date();
 
+
     const pad =
       (value) =>
         String(
@@ -2342,6 +2949,7 @@ async function sendRequest() {
 
     clearCart();
 
+
   } catch (error) {
 
     console.error(
@@ -2349,11 +2957,14 @@ async function sendRequest() {
       error
     );
 
+
     alert(
       error.message ||
       'Не удалось создать Excel-файл.'
     );
+
   }
+
 }
 
 
@@ -2370,13 +2981,19 @@ document.addEventListener(
         '[data-add]'
       );
 
+
     if (!button) {
+
       return;
+
     }
+
 
     event.preventDefault();
 
+
     event.stopPropagation();
+
 
     add(
       decodeURIComponent(
@@ -2398,12 +3015,18 @@ const cartButton =
     '#cartButton'
   );
 
+
 if (cartButton) {
 
   cartButton.onclick =
     renderCart;
+
 }
 
+
+/* =========================
+   START APP
+========================= */
 
 (async () => {
 
@@ -2418,7 +3041,9 @@ if (cartButton) {
    LANGUAGE SWITCHER
 ========================= */
 
-const LANG_KEY = 'yechim_language';
+const LANG_KEY =
+  'yechim_language';
+
 
 let currentLanguage =
   localStorage.getItem(
@@ -2541,6 +3166,21 @@ const TRANSLATIONS = {
     'Мебельные ручки и крючки для стильных мебельных решений.':
       'Мебельные ручки и крючки для стильных мебельных решений.',
 
+    'Крепёж и соединительные решения для производства мебели.':
+      'Крепёж и соединительные решения для производства мебели.',
+
+    'Петли, направляющие и механизмы для современной мебели.':
+      'Петли, направляющие и механизмы для современной мебели.',
+
+    'Мебельная подсветка и световые решения для современной мебели.':
+      'Мебельная подсветка и световые решения для современной мебели.',
+
+    'В наличии:':
+      'В наличии:',
+
+    'Нет в наличии':
+      'Нет в наличии',
+
     '795 товаров в каталоге':
       '795 товаров в каталоге',
 
@@ -2554,16 +3194,7 @@ const TRANSLATIONS = {
       'товаров',
 
     'Мебельные ручки':
-      'Мебельные ручки',
-
-    'Крепёж и соединительные решения для производства мебели.':
-      'Крепёж и соединительные решения для производства мебели.',
-
-    'Петли, направляющие и механизмы для современной мебели.':
-      'Петли, направляющие и механизмы для современной мебели.',
-
-    'Мебельная подсветка и световые решения для современной мебели.':
-      'Мебельная подсветка и световые решения для современной мебели.'
+      'Мебельные ручки'
   },
 
 
@@ -2680,6 +3311,21 @@ const TRANSLATIONS = {
     'Мебельные ручки и крючки для стильных мебельных решений.':
       'Zamonaviy mebel uchun mebel tutqichlari va ilgaklar.',
 
+    'Крепёж и соединительные решения для производства мебели.':
+      'Mebel ishlab chiqarish uchun mahkamlash va biriktirish yechimlari.',
+
+    'Петли, направляющие и механизмы для современной мебели.':
+      'Zamonaviy mebel uchun menteşalar, yo‘naltirgichlar va mexanizmlar.',
+
+    'Мебельная подсветка и световые решения для современной мебели.':
+      'Zamonaviy mebel yoritgichi va yorug‘lik yechimlari.',
+
+    'В наличии:':
+      'Mavjud:',
+
+    'Нет в наличии':
+      'Mavjud emas',
+
     '795 товаров в каталоге':
       'Katalogda 795 ta mahsulot',
 
@@ -2693,16 +3339,7 @@ const TRANSLATIONS = {
       'mahsulot',
 
     'Мебельные ручки':
-      'Mebel tutqichlari',
-
-    'Крепёж и соединительные решения для производства мебели.':
-      'Mebel ishlab chiqarish uchun mahkamlash va biriktirish yechimlari.',
-
-    'Петли, направляющие и механизмы для современной мебели.':
-      'Zamonaviy mebel uchun menteşalar, yo‘naltirgichlar va mexanizmlar.',
-
-    'Мебельная подсветка и световые решения для современной мебели.':
-      'Zamonaviy mebel yoritgichi va yorug‘lik yechimlari.'
+      'Mebel tutqichlari'
   }
 
 };
@@ -2719,21 +3356,26 @@ function translateTextNode(
   const original =
     node.nodeValue;
 
+
   if (!original) {
     return;
   }
 
+
   const trimmed =
     original.trim();
+
 
   if (!trimmed) {
     return;
   }
 
+
   const translated =
     TRANSLATIONS[
       currentLanguage
     ][trimmed];
+
 
   if (
     translated &&
@@ -2745,7 +3387,9 @@ function translateTextNode(
         trimmed,
         translated
       );
+
   }
+
 }
 
 
@@ -2761,16 +3405,23 @@ function translatePage() {
       NodeFilter.SHOW_TEXT
     );
 
+
   const nodes = [];
 
+
   let node;
+
 
   while (
     (node = walker.nextNode())
   ) {
 
-    nodes.push(node);
+    nodes.push(
+      node
+    );
+
   }
+
 
   nodes.forEach(
     translateTextNode
@@ -2778,7 +3429,7 @@ function translatePage() {
 
 
   /*
-   * Placeholders.
+   * Input placeholders
    */
 
   const placeholders = {
@@ -2816,6 +3467,7 @@ function translatePage() {
             'data-ru-placeholder',
             ru
           );
+
         }
 
 
@@ -2833,9 +3485,12 @@ function translatePage() {
             input.getAttribute(
               'data-ru-placeholder'
             );
+
         }
+
       }
     );
+
 }
 
 
@@ -2852,7 +3507,9 @@ function initLanguageSwitcher() {
 
 
   if (!nav) {
+
     return;
+
   }
 
 
@@ -2861,7 +3518,9 @@ function initLanguageSwitcher() {
       '#languageSwitcher'
     )
   ) {
+
     return;
+
   }
 
 
@@ -2885,9 +3544,13 @@ function initLanguageSwitcher() {
       RU
     </button>
 
-    <span class="language-divider">
+
+    <span
+      class="language-divider"
+    >
       |
     </span>
+
 
     <button
       type="button"
@@ -2899,11 +3562,6 @@ function initLanguageSwitcher() {
 
   `;
 
-
-  /*
-   * Ставим переключатель
-   * перед кнопкой корзины.
-   */
 
   const cartButton =
     document.querySelector(
@@ -2923,6 +3581,7 @@ function initLanguageSwitcher() {
     nav.appendChild(
       switcher
     );
+
   }
 
 
@@ -2949,17 +3608,14 @@ function initLanguageSwitcher() {
 
 
           /*
-           * Перерисовываем текущий
-           * экран, чтобы тексты
-           * обновились.
+           * Перерисовываем экран.
            */
 
           renderRoute();
 
 
           /*
-           * На всякий случай
-           * переводим после renderRoute.
+           * Переводим динамический контент.
            */
 
           setTimeout(
@@ -2974,6 +3630,7 @@ function initLanguageSwitcher() {
 
 
   updateLanguageSwitcher();
+
 }
 
 
@@ -2998,6 +3655,7 @@ function updateLanguageSwitcher() {
 
       }
     );
+
 }
 
 
@@ -3022,10 +3680,6 @@ languageObserver.observe(
     subtree: true
   }
 );
-    }
-  );
-
-
 /* =========================
    LANGUAGE STYLES
 ========================= */
@@ -3035,7 +3689,12 @@ const languageStyles =
     'style'
   );
 
+
 languageStyles.textContent = `
+
+  /* =========================
+     LANGUAGE SWITCHER
+  ========================= */
 
   #languageSwitcher {
 
@@ -3050,6 +3709,7 @@ languageStyles.textContent = `
     white-space: nowrap;
 
   }
+
 
   #languageSwitcher
   .language-btn {
@@ -3077,12 +3737,14 @@ languageStyles.textContent = `
 
   }
 
+
   #languageSwitcher
   .language-btn.active {
 
     color: #fff;
 
   }
+
 
   #languageSwitcher
   .language-divider {
@@ -3165,6 +3827,121 @@ languageStyles.textContent = `
   .product-sku-value {
 
     font-size: 12px;
+
+  }
+
+
+  /* =========================
+     STOCK STATUS
+  ========================= */
+
+  .stock-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+    font-weight: 500;
+
+  }
+
+
+  .stock-status .stock-dot {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 15px;
+
+    height: 15px;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+  }
+
+
+  .stock-in {
+
+    color: #087c4f;
+
+    background: #f1faf6;
+
+    border: 1px solid #b7dfcf;
+
+  }
+
+
+  .stock-in .stock-dot {
+
+    color: #fff;
+
+    background: #078451;
+
+  }
+
+
+  .stock-out {
+
+    color: #a33d3d;
+
+    background: #fff7f7;
+
+    border: 1px solid #e8c4c4;
+
+  }
+
+
+  .stock-out .stock-dot {
+
+    color: #fff;
+
+    background: #b84a4a;
+
+  }
+
+
+  .stock-status-detail {
+
+    margin-top: 10px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .stock-status-detail
+  .stock-dot {
+
+    width: 17px;
+
+    height: 17px;
+
+    font-size: 11px;
 
   }
 
