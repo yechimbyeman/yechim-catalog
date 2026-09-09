@@ -709,6 +709,160 @@ def extract_price(
 
 
     return fallback_price
+
+# =========================================================
+# MAIN PRODUCT IMAGE
+# =========================================================
+
+def extract_main_image(
+    page: BeautifulSoup,
+    product_url: str
+) -> str:
+
+    html = html_module.unescape(
+        str(page)
+    )
+
+    candidates = []
+
+
+    # -----------------------------------------------------
+    # Absolute Eman image URLs
+    # -----------------------------------------------------
+
+    absolute_matches = re.findall(
+        r'https://www\.eman\.uz/'
+        r'media/product_images/'
+        r'[^"\')\s<>]+',
+        html,
+        flags=re.I
+    )
+
+
+    candidates.extend(
+        absolute_matches
+    )
+
+
+    # -----------------------------------------------------
+    # Relative Eman image URLs
+    # -----------------------------------------------------
+
+    relative_matches = re.findall(
+        r'/media/product_images/'
+        r'[^"\')\s<>]+',
+        html,
+        flags=re.I
+    )
+
+
+    for value in relative_matches:
+
+        candidates.append(
+            absolute(
+                value,
+                product_url
+            )
+        )
+
+
+    # -----------------------------------------------------
+    # IMG tags fallback
+    # -----------------------------------------------------
+
+    for img in page.find_all(
+        'img'
+    ):
+
+        for attr in (
+            'src',
+            'data-src',
+            'data-original',
+            'data-lazy-src'
+        ):
+
+            value = img.get(
+                attr
+            )
+
+
+            if not value:
+
+                continue
+
+
+            if (
+                'product_images'
+                in value.lower()
+            ):
+
+                candidates.append(
+                    absolute(
+                        value,
+                        product_url
+                    )
+                )
+
+
+    # -----------------------------------------------------
+    # Remove duplicates
+    # -----------------------------------------------------
+
+    unique = []
+
+
+    for value in candidates:
+
+        value = (
+            value
+            .split('"')[0]
+            .split("'")[0]
+            .split(')')[0]
+        )
+
+
+        if (
+            value
+            and value not in unique
+        ):
+
+            unique.append(
+                value
+            )
+
+
+    # -----------------------------------------------------
+    # Ignore service images
+    # -----------------------------------------------------
+
+    blocked = (
+        'logo',
+        'icon',
+        'sprite',
+        'placeholder',
+        'flag',
+        'language'
+    )
+
+
+    for value in unique:
+
+        low = value.lower()
+
+
+        if any(
+            word in low
+            for word in blocked
+        ):
+
+            continue
+
+
+        return value
+
+
+    return ''
+
 # =========================================================
 # DISCOVER EMAN GROUP LINKS
 # =========================================================
