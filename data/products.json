@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-15T06:11:56.248164+00:00",
+  "generated_at": "2026-09-16T06:00:30.176069+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -5576,23 +5576,6 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/6205",
-      "published": false
-    },
-    {
-      "eman_id": "/ru/product/6207",
-      "source_url": "https://www.eman.uz/ru/product/6207/",
-      "sku": "S-2288-GP",
-      "name": "S-2288-GP Spoon Holder 70cm Grey#/Лоток для столовых приборов 70см, Серый#",
-      "brand": "STARAX",
-      "eman_group": "Starax",
-      "category": "Starax",
-      "price": 108600,
-      "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/S-2288-G_govde_ust.jpeg",
-      "stock_quantity": null,
-      "stock_unit": "",
-      "extra": {},
-      "id": "/ru/product/6207",
       "published": false
     },
     {
