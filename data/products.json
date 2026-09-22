@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:15:12.107081+00:00",
+  "generated_at": "2026-09-22T06:11:29.250496+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -5729,6 +5729,23 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/7435",
+      "published": false
+    },
+    {
+      "eman_id": "/ru/product/7436",
+      "source_url": "https://www.eman.uz/ru/product/7436/",
+      "sku": "S-2291-B",
+      "name": "Противоскользящий коврик для ящиков 10м, Черный#/Skidroof Drawer Cover Roll 10 mt Black#",
+      "brand": "STARAX",
+      "eman_group": "Starax",
+      "category": "Starax",
+      "price": 1020000,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/S-2291-B.jpeg",
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/7436",
       "published": false
     },
     {
