@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T06:11:29.250496+00:00",
+  "generated_at": "2026-09-23T05:53:54.376606+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -2572,12 +2572,12 @@
     {
       "eman_id": "/ru/product/4976",
       "source_url": "https://www.eman.uz/ru/product/4976/",
-      "sku": "A1111320111",
+      "sku": "",
       "name": "Мебельная ручка A1111 320мм MP11/A1111320 MP11",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 107520,
+      "price": 0.010752,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/A1111320111.JPG",
       "stock_quantity": null,
