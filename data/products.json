@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T07:02:25.554892+00:00",
+  "generated_at": "2026-10-03T06:27:35.411624+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -1059,12 +1059,12 @@
     {
       "eman_id": "/ru/product/2432",
       "source_url": "https://www.eman.uz/ru/product/2432/",
-      "sku": "A1120192124",
+      "sku": "",
       "name": "Мебельная ручка A1120192 MP24",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 71760,
+      "price": 0.07176,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/A1120192124.JPG",
       "stock_quantity": null,
@@ -2878,12 +2878,12 @@
     {
       "eman_id": "/ru/product/6223",
       "source_url": "https://www.eman.uz/ru/product/6223/",
-      "sku": "",
+      "sku": "A1107320108",
       "name": "Мебельная ручка A1107 320мм MP08/A1107320 MP08",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 0.012048,
+      "price": 120480,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/A1107320108.JPG",
       "stock_quantity": null,
@@ -7383,12 +7383,12 @@
     {
       "eman_id": "/ru/product/1211",
       "source_url": "https://www.eman.uz/ru/product/1211/",
-      "sku": "",
+      "sku": "110-05-12-403",
       "name": "110-05-12-403 Болт к стяжке Бочонок M6 40мм",
       "brand": "MESAN",
       "eman_group": "Mesan",
       "category": "Mesan",
-      "price": 0.0144,
+      "price": 1440,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/110-05-12-403_%D0%91%D0%BE%D0%BB%D1%82_%D0%BA_%D1%81%D1%82%D1%8F%D0%B6%D0%BA%D0%B5_%D0%91%D0%BE%D1%87%D0%BE%D0%BD%D0%BE%D0%BA_M6_40%D0%BC%D0%BC.png",
       "stock_quantity": null,
