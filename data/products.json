@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T06:27:35.411624+00:00",
+  "generated_at": "2026-10-04T06:53:23.590651+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -1059,12 +1059,12 @@
     {
       "eman_id": "/ru/product/2432",
       "source_url": "https://www.eman.uz/ru/product/2432/",
-      "sku": "",
+      "sku": "A1120192124",
       "name": "Мебельная ручка A1120192 MP24",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 0.07176,
+      "price": 71760,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/A1120192124.JPG",
       "stock_quantity": null,
@@ -1989,6 +1989,23 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/3703",
+      "published": false
+    },
+    {
+      "eman_id": "/ru/product/3704",
+      "source_url": "https://www.eman.uz/ru/product/3704/",
+      "sku": "A1113160135",
+      "name": "Мебельная ручка A1113 160мм MP35/A1113160 MP35",
+      "brand": "CEBI",
+      "eman_group": "Cebi",
+      "category": "Cebi",
+      "price": 80640,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/A1113160135.JPG",
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/3704",
       "published": false
     },
     {
