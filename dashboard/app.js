@@ -57,8 +57,11 @@ async function init() {
   $('#saveBtn').onclick =
     saveEdit;
 
-  $('#refreshBtn').onclick =
-    loadData;
+
+  $('#refreshBtn').onclick = loadData;
+
+  $('#syncPricesBtn').onclick = triggerPriceSync;
+
 
 
   $('#dq').oninput =
@@ -328,6 +331,36 @@ async function loadData() {
   }
 }
 
+
+async function triggerPriceSync() {
+  const button = $('#syncPricesBtn');
+  const info = $('#syncInfo');
+
+  if (button.disabled) return;
+
+  button.disabled = true;
+  button.textContent = 'Запуск…';
+  info.textContent = 'Запускаем синхронизацию…';
+
+  try {
+    const { data, error } = await sb.functions.invoke(
+      'trigger-price-sync',
+      { body: {} }
+    );
+
+    if (error) throw error;
+
+    info.textContent = 'Синхронизация запущена';
+
+    alert('Команда отправлена. Проверь GitHub Actions.');
+  } catch (error) {
+    info.textContent = 'Не удалось запустить обновление';
+    alert('Ошибка: ' + (error.message || String(error)));
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Обновить цены сейчас';
+  }
+}
 
 /* =========================
    BRANDS
