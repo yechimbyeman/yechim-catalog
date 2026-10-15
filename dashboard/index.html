@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ru">
 <head>
@@ -6,11 +7,13 @@
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
-<link
-  rel="icon"
-  type="image/png"
-  href="../assets/YECHIM%20FAVICON.png"
->
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="../assets/YECHIM%20FAVICON.png"
+  >
+
   <meta
     name="theme-color"
     content="#138353"
@@ -27,11 +30,6 @@
 
   <div class="nav">
 
-    <!--
-      Dashboard logo:
-      ./ = остаёмся внутри /dashboard/
-      ../assets/... = берём логотип из общей папки assets
-    -->
     <a
       class="logo dashboard-logo"
       href="./"
@@ -100,7 +98,6 @@
 
       </div>
 
-
       <div class="field">
 
         <label for="password">
@@ -116,7 +113,6 @@
 
       </div>
 
-
       <button
         id="loginBtn"
         class="btn btn-primary full"
@@ -124,7 +120,6 @@
       >
         Войти
       </button>
-
 
       <div
         id="authError"
@@ -145,6 +140,8 @@
     hidden
   >
 
+    <!-- DASHBOARD HEADER -->
+
     <div class="section-head">
 
       <div>
@@ -159,7 +156,6 @@
         </div>
 
       </div>
-
 
       <div class="dash-actions">
 
@@ -187,6 +183,8 @@
         </button>
 
       </div>
+
+    </div>
 
 
     <!-- =========================
@@ -219,7 +217,6 @@
 
         </select>
 
-
         <select id="brandFilter">
 
           <option value="all">
@@ -231,7 +228,6 @@
       </div>
 
     </div>
-
 
     <!-- =========================
          PRODUCTS TABLE
@@ -270,7 +266,6 @@
           </tr>
 
         </thead>
-
 
         <tbody id="tbody">
 
@@ -316,8 +311,7 @@
           class="muted"
         ></div>
 
-        <h2 id="mtitle">
-        </h2>
+        <h2 id="mtitle"></h2>
 
         <div
           id="msku"
@@ -325,7 +319,6 @@
         ></div>
 
       </div>
-
 
       <button
         id="closeModal"
@@ -337,16 +330,14 @@
 
     </div>
 
-
     <!-- Dynamic edit fields -->
-    <div id="fields"></div>
 
+    <div id="fields"></div>
 
     <div
       id="saveError"
       class="error-text"
     ></div>
-
 
     <div class="modal-actions">
 
