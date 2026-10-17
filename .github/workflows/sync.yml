@@ -3,7 +3,7 @@ name: YECHIM daily Eman sync
 
 on:
   schedule:
-    - cron: '0 1 * * *' # 06:00 Asia/Tashkent
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 permissions:
