@@ -2044,10 +2044,10 @@ function renderDetail() {
 
           ${
           ${
-  (Array.isArray(p.specs)
-    ? p.specs.length
-    : Object.keys(p.specs || {}).length)
-              ? `
+              (Array.isArray(p.specs)
+               ? p.specs.length
+               : Object.keys(p.specs || {}).length)
+               ? `
                 <div class="specs">
 
            ${(
