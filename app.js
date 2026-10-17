@@ -2105,12 +2105,12 @@ ${
         style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;padding:12px 16px;background:#176b43;color:#ffffff;border:2px solid #2d9b67;border-radius:10px;font-weight:700;font-size:14px;line-height:1.35;text-decoration:none;box-shadow:0 3px 10px rgba(23,107,67,.18);transition:background .2s ease,transform .2s ease;"
         onmouseover="this.style.background='#0f5232';this.style.transform='translateY(-1px)'"
         onmouseout="this.style.background='#176b43';this.style.transform='translateY(0)'"
-        aria-label="Открыть PDF со схемой присадки в новой вкладке"
+        aria-label="Открыть инструкцию по сборке в новой вкладке"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 22px;">
           <path d="M14.2 6.1a5.1 5.1 0 0 0 6.1 6.1L11 21.5a2.1 2.1 0 0 1-3-3l9.3-9.3a5.1 5.1 0 0 0-6.1-6.1l3.1 3.1-3 3-3.1-3.1a5.1 5.1 0 0 0 6-0.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span>Открыть PDF со схемой присадки</span>
+        <span>Инструкция по сборке</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 16px;margin-left:2px;">
           <path d="M14 4h6v6M20 4l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -3302,6 +3302,90 @@ const TRANSLATIONS = {
 
     'Схема присадки':
       'Montaj sxemasi',
+
+    'Инструкция по сборке':
+      'Yig‘ish bo‘yicha yo‘riqnoma',
+
+    'Характеристики':
+      'Xususiyatlar',
+
+    'Размер':
+      'O‘lcham',
+
+    'Размеры':
+      'O‘lchamlari',
+
+    'Ширина':
+      'Eni',
+
+    'Высота':
+      'Balandligi',
+
+    'Глубина':
+      'Chuqurligi',
+
+    'Длина':
+      'Uzunligi',
+
+    'Материал':
+      'Material',
+
+    'Цвет':
+      'Rang',
+
+    'Цвет изделия':
+      'Mahsulot rangi',
+
+    'Тип':
+      'Turi',
+
+    'Модель':
+      'Model',
+
+    'Артикул товара':
+      'Mahsulot artikuli',
+
+    'Производитель':
+      'Ishlab chiqaruvchi',
+
+    'Страна производства':
+      'Ishlab chiqarilgan mamlakat',
+
+    'Нагрузка':
+      'Yuk ko‘tarish qobiliyati',
+
+    'Максимальная нагрузка':
+      'Maksimal yuklama',
+
+    'Монтаж':
+      'O‘rnatish',
+
+    'Способ монтажа':
+      'O‘rnatish usuli',
+
+    'Покрытие':
+      'Qoplama',
+
+    'Количество':
+      'Soni',
+
+    'Количество в упаковке':
+      'Qadoqdagi soni',
+
+    'Толщина':
+      'Qalinligi',
+
+    'Диаметр':
+      'Diametri',
+
+    'Вес':
+      'Vazni',
+
+    'Назначение':
+      'Vazifasi',
+
+    'Комплектация':
+      'To‘plam tarkibi',
 
     'Корзина':
       'Savat',
