@@ -1,28 +1,42 @@
+
 name: YECHIM daily Eman sync
+
 on:
   schedule:
-    - cron: '0 1 * * *' # Runs at 01:00 UTC = 06:00 Asia/Tashkent (UTC+5)
+    - cron: '0 1 * * *' # 06:00 Asia/Tashkent
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - run: pip install --disable-pip-version-check requests beautifulsoup4
+
       - name: Sync Eman -> Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python sync/sync_eman.py
-      - name: Commit fallback snapshot
+
+      - name: Record successful sync time
+        run: |
+          mkdir -p data
+          python -c "import json, datetime, zoneinfo; now=datetime.datetime.now(zoneinfo.ZoneInfo('Asia/Tashkent')); json.dump({'last_successful_sync': now.isoformat(), 'last_successful_sync_display': now.strftime('%d.%m.%Y %H:%M:%S')}, open('data/last_sync.json', 'w'), ensure_ascii=False, indent=2)"
+
+      - name: Commit catalog snapshot and sync time
         run: |
           git config user.name 'YECHIM Sync Bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add data/products.json
-          git diff --cached --quiet || git commit -m 'Daily Eman catalog snapshot'
+          git add data/products.json data/last_sync.json
+          git diff --cached --quiet || git commit -m 'Update catalog snapshot and sync time'
           git push
