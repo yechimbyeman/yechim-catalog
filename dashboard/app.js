@@ -263,6 +263,39 @@ async function fetchAll(
 /* =========================
    LOAD DATA
 ========================= */
+async function loadLastSyncTime() {
+  const el = $('#lastSyncInfo');
+  if (!el) return;
+
+  try {
+    const response = await fetch('../data/last_sync.json', {
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error('Дата обновления пока недоступна');
+    }
+
+    const data = await response.json();
+
+    el.textContent = data.last_successful_sync
+      ? `Последнее обновление: ${new Date(
+          data.last_successful_sync
+        ).toLocaleString('ru-RU', {
+          timeZone: 'Asia/Tashkent',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })}`
+      : 'Последнее обновление: нет данных';
+  } catch {
+    el.textContent = 'Последнее обновление: нет данных';
+  }
+}
 
 async function loadData() {
 
@@ -312,7 +345,7 @@ async function loadData() {
 
     $('#syncInfo').textContent =
       `Товаров: ${products.length}`;
-
+await loadLastSyncTime();
 
   } catch (error) {
 
