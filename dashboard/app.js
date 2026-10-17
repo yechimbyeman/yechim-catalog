@@ -1074,36 +1074,29 @@ function edit(
     </div>
 
 
-    <div class="field">
+       <div class="field">
 
       <label>
         Характеристики
       </label>
 
-
       <textarea
         id="specs"
+        placeholder="Артикул: S-6835-A&#10;Ширина (мм): 700&#10;Глубина (мм): 360&#10;Высота (мм): 1910–2110"
       >${esc(
-        JSON.stringify(
-          e.specs || {},
-          null,
-          2
-        )
+        Array.isArray(e.specs)
+          ? e.specs.map(s => `${s.name}: ${s.value}`).join('\n')
+          : Object.entries(e.specs || {})
+              .map(([name, value]) => `${name}: ${value}`)
+              .join('\n')
       )}</textarea>
 
-
       <div class="muted small">
-
-        Формат JSON.
-        Например:
-
-        {"Цвет":"Чёрный","Размер":"160 мм"}
-
+        Каждая характеристика — с новой строки в формате «Название: значение».
+        Порядок строк будет сохранён.
       </div>
 
     </div>
-
-
     <div class="field">
 
       <label>
@@ -1128,7 +1121,7 @@ function edit(
         <input
           id="schemeFile"
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf,application/pdf"
         >
 
       </div>
@@ -1321,24 +1314,32 @@ async function saveEdit() {
       {};
 
 
-    let specs = {};
+    let specs = [];
 
+    const specsText = $('#specs').value.trim();
 
-    try {
+    if (specsText) {
+      specs = specsText.split('\n').map(line => {
+        const separator = line.indexOf(':');
 
-      specs =
-        JSON.parse(
-          $('#specs').value ||
-          '{}'
-        );
+        if (separator === -1) {
+          throw new Error(
+            'Каждую характеристику указывай в формате: Название: значение'
+          );
+        }
 
-    } catch {
+        const name = line.slice(0, separator).trim();
+        const value = line.slice(separator + 1).trim();
 
-      throw new Error(
-        'Характеристики должны быть в формате JSON.'
-      );
+        if (!name || !value) {
+          throw new Error(
+            'У каждой характеристики должны быть название и значение.'
+          );
+        }
+
+        return { name, value };
+      });
     }
-
 
     /*
      * Схема присадки.
