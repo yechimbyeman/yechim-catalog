@@ -498,8 +498,7 @@ async function loadProducts() {
           <b>
             Каталог временно недоступен.
           </b>
-
-          <div class="muted">
+                    <div class="muted">
 
             ${esc(
               e.message || e
@@ -998,7 +997,7 @@ function renderBrandCategories() {
       >
 
         <a
-          href="./"
+                  href="./"
           id="backHome"
         >
           Каталог
@@ -1496,9 +1495,7 @@ function renderSearchResults() {
           <h1>
             Поиск
           </h1>
-
-
-          <p
+                    <p
             class="muted"
           >
             Найдено:
@@ -1996,9 +1993,7 @@ function renderDetail() {
               <b>
                 ${cart[p.id] || 0}
               </b>
-
-
-              <button
+                            <button
                 class="btn btn-ghost"
                 id="plus"
                 type="button"
@@ -2043,42 +2038,44 @@ function renderDetail() {
 
 
           ${
-              (Array.isArray(p.specs)
-               ? p.specs.length
-               : Object.keys(p.specs || {}).length)
-               ? `
+            (
+              Array.isArray(p.specs)
+                ? p.specs.length
+                : Object.keys(p.specs || {}).length
+            )
+              ? `
                 <div class="specs">
 
-           ${(
-              Array.isArray(p.specs)
-               ? p.specs.map(item => [item.name, item.value])
-               : Object.entries(p.specs || {})
-)
-                  )
-                    .map(
-                      ([k, v]) => `
-
-                        <div class="spec">
-
-                          <b>
-                            ${esc(k)}
-                          </b>
-
-                          <span>
-                            ${esc(v)}
-                          </span>
-
-                        </div>
-
-                      `
+                  ${
+                    (
+                      Array.isArray(p.specs)
+                        ? p.specs.map(item => [item.name, item.value])
+                        : Object.entries(p.specs || {})
                     )
-                    .join('')}
+                      .map(
+                        ([k, v]) => `
+
+                          <div class="spec">
+
+                            <b>
+                              ${esc(k)}
+                            </b>
+
+                            <span>
+                              ${esc(v)}
+                            </span>
+
+                          </div>
+
+                        `
+                      )
+                      .join('')
+                  }
 
                 </div>
               `
               : ''
           }
-
 
           ${
             p.mounting_scheme
@@ -2496,7 +2493,7 @@ function renderCart() {
                 </div>
 
               `
-            )
+                          )
             .join('')
 
         : `
@@ -2995,8 +2992,7 @@ document.addEventListener(
 
 
     if (!button) {
-
-      return;
+            return;
 
     }
 
@@ -3496,7 +3492,7 @@ function translatePage() {
           input.placeholder =
             input.getAttribute(
               'data-ru-placeholder'
-            );
+                          );
 
         }
 
