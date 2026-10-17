@@ -2061,9 +2061,9 @@ ${
         }
       </div>
 
-}
+          }
  
-          ${
+        ${
             p.mounting_scheme
               ? `
                 <div
@@ -2075,10 +2075,10 @@ ${
                   </h3>
 
 
-${
-  /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
-    ? `
-      <a
+        ${
+          /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
+            ? `
+              <a
         href="${esc(p.mounting_scheme)}"
         target="_blank"
         rel="noopener"
