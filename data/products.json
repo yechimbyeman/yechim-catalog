@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T16:51:45.704338+00:00",
+  "generated_at": "2026-10-17T04:22:22.797359+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -13515,6 +13515,23 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/19871",
+      "published": false
+    },
+    {
+      "eman_id": "/ru/product/20413",
+      "source_url": "https://www.eman.uz/ru/product/20413/",
+      "sku": "15.0049",
+      "name": "Блок питания AQ MAX 220V/12V IP20 200W",
+      "brand": "YECHIM LIGHTING",
+      "eman_group": "Мебельная подсветка",
+      "category": "Мебельная подсветка",
+      "price": 288000,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/15.0049.webp",
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/20413",
       "published": false
     },
     {
