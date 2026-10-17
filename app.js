@@ -2043,14 +2043,18 @@ function renderDetail() {
 
 
           ${
-            Object.keys(
-              p.specs || {}
-            ).length
+          ${
+  (Array.isArray(p.specs)
+    ? p.specs.length
+    : Object.keys(p.specs || {}).length)
               ? `
                 <div class="specs">
 
-                  ${Object.entries(
-                    p.specs || {}
+           ${(
+              Array.isArray(p.specs)
+               ? p.specs.map(item => [item.name, item.value])
+               : Object.entries(p.specs || {})
+)
                   )
                     .map(
                       ([k, v]) => `
@@ -2089,23 +2093,32 @@ function renderDetail() {
                   </h3>
 
 
-                  <a
-                    href="${esc(
-                      p.mounting_scheme
-                    )}"
-                    target="_blank"
-                    rel="noopener"
-                  >
-
-                    <img
-                      class="scheme"
-                      src="${esc(
-                        p.mounting_scheme
-                      )}"
-                      alt="Схема присадки"
-                    >
-
-                  </a>
+${
+  /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
+    ? `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener"
+        class="scheme-pdf"
+      >
+        Открыть PDF со схемой присадки
+      </a>
+    `
+    : `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          class="scheme"
+          src="${esc(p.mounting_scheme)}"
+          alt="Схема присадки"
+        >
+      </a>
+    `
+}
 
                 </div>
               `
