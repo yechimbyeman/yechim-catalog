@@ -428,6 +428,20 @@ async function loadProducts() {
               p.specs ||
               {},
 
+            specs_ru:
+              p.specs_ru ||
+              p.specsRu ||
+              p.characteristics_ru ||
+              p.characteristicsRu ||
+              null,
+
+            specs_uz:
+              p.specs_uz ||
+              p.specsUz ||
+              p.characteristics_uz ||
+              p.characteristicsUz ||
+              null,
+
             mounting_scheme:
               p.mounting_scheme_url,
 
@@ -1787,6 +1801,69 @@ function getProduct() {
 }
 
 
+function getLocalizedSpecs(product) {
+
+  if (!product) {
+    return {};
+  }
+
+
+  const rawSpecs =
+    currentLanguage === 'uz'
+      ? (
+          product.specs_uz ||
+          product.specsUz ||
+          (product.specs && product.specs.uz) ||
+          product.characteristics_uz ||
+          product.characteristicsUz
+        )
+      : (
+          product.specs_ru ||
+          product.specsRu ||
+          (product.specs && product.specs.ru) ||
+          product.characteristics_ru ||
+          product.characteristicsRu ||
+          product.specs
+        );
+
+
+  if (!rawSpecs) {
+    return {};
+  }
+
+
+  if (Array.isArray(rawSpecs)) {
+    return rawSpecs
+      .filter(item => item && item.name !== undefined && item.value !== undefined)
+      .map(item => [item.name, item.value]);
+  }
+
+
+  if (typeof rawSpecs === 'object') {
+    return Object.entries(rawSpecs);
+  }
+
+
+  if (typeof rawSpecs === 'string') {
+    return rawSpecs
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const separator = line.indexOf(':');
+
+        return separator === -1
+          ? [line, '']
+          : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+      });
+  }
+
+
+  return {};
+
+}
+
+
 function renderDetail() {
 
   const p =
@@ -1798,6 +1875,10 @@ function renderDetail() {
     return renderHome();
 
   }
+
+
+  const localizedSpecs =
+    getLocalizedSpecs(p);
 
 
   document.title =
@@ -2043,20 +2124,12 @@ function renderDetail() {
 
 
           ${
-            (
-              Array.isArray(p.specs)
-                ? p.specs.length
-                : Object.keys(p.specs || {}).length
-            )
+            localizedSpecs.length
               ? `
                 <div class="specs">
 
                   ${
-                    (
-                      Array.isArray(p.specs)
-                        ? p.specs.map(item => [item.name, item.value])
-                        : Object.entries(p.specs || {})
-                    )
+                    localizedSpecs
                       .map(
                         ([k, v]) => `
 
