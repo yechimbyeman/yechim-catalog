@@ -34,15 +34,25 @@ jobs:
          cp -r data/* _site/data/ 2>/dev/null || true
          cp -r assets/* _site/assets/ 2>/dev/null || true
 
+
       - name: Verify Pages artifact
         run: |
           echo "=== _site root ==="
           ls -la _site
-          echo "=== index.html ==="
           test -f _site/index.html
           echo "index.html OK"
+
           echo "=== dashboard ==="
           ls -la _site/dashboard
+          test -f _site/dashboard/index.html
+          test -f _site/dashboard/app.js
+
+          echo "=== sync timestamp ==="
+          ls -la _site/data
+          test -f _site/data/last_sync.json
+          cat _site/data/last_sync.json
+          echo "last_sync.json OK"
+
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
