@@ -76,6 +76,9 @@ class Product:
 
     image_url: str
 
+    # Additional product gallery images from Eman.
+    additional_images: list[str]
+
     # Total stock across all warehouses
     stock_quantity: float | int | None
 
@@ -714,154 +717,58 @@ def extract_price(
 # MAIN PRODUCT IMAGE
 # =========================================================
 
+def extract_product_images(
+    page: BeautifulSoup,
+    product_url: str
+) -> list[str]:
+    """Extract all unique product gallery images in display order."""
+
+    candidates = []
+    gallery = page.select_one('.products-gallery-list')
+
+    # Preferred method: images inside the product gallery only.
+    if gallery:
+        for img in gallery.find_all('img'):
+            for attr in ('src', 'data-src', 'data-original', 'data-lazy-src'):
+                value = img.get(attr)
+                if value and 'product_images' in value.lower():
+                    candidates.append(absolute(value, product_url))
+                    break
+
+    # Fallback: parse image URLs from the page HTML if the gallery selector
+    # is unavailable or produced no images.
+    if not candidates:
+        html = html_module.unescape(str(page))
+        candidates.extend(re.findall(
+            r"/media/product_images/[^\"'\)\s<>]+",
+            html,
+            flags=re.I
+        ))
+
+    unique = []
+    blocked = ('logo', 'icon', 'sprite', 'placeholder', 'flag', 'language')
+
+    for value in candidates:
+        value = html_module.unescape(str(value)).strip()
+        value = value.split('"')[0].split("'")[0].split(')')[0]
+        if not value:
+            continue
+        value = absolute(value, product_url)
+        if any(word in value.lower() for word in blocked):
+            continue
+        if value not in unique:
+            unique.append(value)
+
+    return unique
+
+
 def extract_main_image(
     page: BeautifulSoup,
     product_url: str
 ) -> str:
-
-    html = html_module.unescape(
-        str(page)
-    )
-
-    candidates = []
-
-
-    # -----------------------------------------------------
-    # Absolute Eman image URLs
-    # -----------------------------------------------------
-
-    absolute_matches = re.findall(
-        r'https://www\.eman\.uz/'
-        r'media/product_images/'
-        r'[^"\')\s<>]+',
-        html,
-        flags=re.I
-    )
-
-
-    candidates.extend(
-        absolute_matches
-    )
-
-
-    # -----------------------------------------------------
-    # Relative Eman image URLs
-    # -----------------------------------------------------
-
-    relative_matches = re.findall(
-        r'/media/product_images/'
-        r'[^"\')\s<>]+',
-        html,
-        flags=re.I
-    )
-
-
-    for value in relative_matches:
-
-        candidates.append(
-            absolute(
-                value,
-                product_url
-            )
-        )
-
-
-    # -----------------------------------------------------
-    # IMG tags fallback
-    # -----------------------------------------------------
-
-    for img in page.find_all(
-        'img'
-    ):
-
-        for attr in (
-            'src',
-            'data-src',
-            'data-original',
-            'data-lazy-src'
-        ):
-
-            value = img.get(
-                attr
-            )
-
-
-            if not value:
-
-                continue
-
-
-            if (
-                'product_images'
-                in value.lower()
-            ):
-
-                candidates.append(
-                    absolute(
-                        value,
-                        product_url
-                    )
-                )
-
-
-    # -----------------------------------------------------
-    # Remove duplicates
-    # -----------------------------------------------------
-
-    unique = []
-
-
-    for value in candidates:
-
-        value = (
-            value
-            .split('"')[0]
-            .split("'")[0]
-            .split(')')[0]
-        )
-
-
-        if (
-            value
-            and value not in unique
-        ):
-
-            unique.append(
-                value
-            )
-
-
-    # -----------------------------------------------------
-    # Ignore service images
-    # -----------------------------------------------------
-
-    blocked = (
-        'logo',
-        'icon',
-        'sprite',
-        'placeholder',
-        'flag',
-        'language'
-    )
-
-
-    for value in unique:
-
-        low = value.lower()
-
-
-        if any(
-            word in low
-            for word in blocked
-        ):
-
-            continue
-
-
-        return value
-
-
-    return ''
+    """Return the first product gallery image, for compatibility."""
+    images = extract_product_images(page, product_url)
+    return images[0] if images else ''
 
 # =========================================================
 # DISCOVER EMAN GROUP LINKS
@@ -1121,6 +1028,9 @@ def parse_detail(
             'image_url':
                 fallback_image,
 
+            'additional_images':
+                [],
+
             'price':
                 fallback_price,
 
@@ -1214,15 +1124,13 @@ def parse_detail(
     # Main image
     # -----------------------------------------------------
 
-    main_image = extract_main_image(
+    product_images = extract_product_images(
         page,
         url
     )
 
-
-    if not main_image:
-
-        main_image = fallback_image
+    main_image = product_images[0] if product_images else fallback_image
+    additional_images = product_images[1:] if len(product_images) > 1 else []
 
 
     # -----------------------------------------------------
@@ -1249,6 +1157,9 @@ def parse_detail(
 
         'image_url':
             main_image,
+
+        'additional_images':
+            additional_images,
 
         'price':
             price,
@@ -1483,6 +1394,10 @@ def fetch_group(
 
                     detail[
                         'image_url'
+                    ],
+
+                    detail[
+                        'additional_images'
                     ],
 
                     detail[
@@ -1798,6 +1713,55 @@ def supabase_upsert(
             f'{uploaded} / '
             f'{len(rows)}'
         )
+
+
+# =========================================================
+# SUPABASE GALLERY IMAGES
+# =========================================================
+
+def supabase_upsert_additional_images(products):
+    """Update only gallery images, preserving other YECHIM enrichment fields."""
+
+    sb_url = os.environ['SUPABASE_URL'].rstrip('/')
+    key = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+    endpoint = f'{sb_url}/rest/v1/yechim_enrichment?on_conflict=eman_id'
+
+    headers = {
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+    }
+
+    rows = [
+        {
+            'eman_id': product.eman_id,
+            'additional_images': product.additional_images
+        }
+        for product in products
+    ]
+
+    print(f'Uploading gallery images for {len(rows)} products to Supabase...')
+    batch_size = 500
+
+    for start in range(0, len(rows), batch_size):
+        batch = rows[start:start + batch_size]
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            json=batch,
+            timeout=60
+        )
+
+        if not response.ok:
+            print(
+                'Supabase gallery-images error:',
+                response.status_code,
+                response.text[:2000]
+            )
+        response.raise_for_status()
+        uploaded = min(start + batch_size, len(rows))
+        print(f'Gallery images uploaded: {uploaded} / {len(rows)}')
 
 
 # =========================================================
@@ -2270,6 +2234,10 @@ def main():
 
 
     supabase_upsert(
+        products
+    )
+
+    supabase_upsert_additional_images(
         products
     )
 
