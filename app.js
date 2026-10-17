@@ -2037,40 +2037,32 @@ function renderDetail() {
           }
 
 
-          ${
-            (
-              Array.isArray(p.specs)
-                ? p.specs.length
-                : Object.keys(p.specs || {}).length
-            )
-              ? `
-                <div class="specs">
-
-                  ${
-                    (
-                      Array.isArray(p.specs)
-                        ? p.specs.map(item => [item.name, item.value])
-                        : Object.entries(p.specs || {})
-                    )
-                      .map(
-                        ([k, v]) => `
-
-                          <div class="spec">
-
-                            <b>
-                              ${esc(k)}
-                            </b>
-
-                            <span>
-                              ${esc(v)}
-                            </span>
-
-                          </div>
-
-                        `
-                      )
-                      .join('')
-                  }
+${
+  (
+    Array.isArray(p.specs)
+      ? p.specs.length
+      : Object.keys(p.specs || {}).length
+  )
+    ? `
+      <div class="specs">
+        ${
+          (
+            Array.isArray(p.specs)
+              ? p.specs.map(item => [item.name, item.value])
+              : Object.entries(p.specs || {})
+          )
+            .map(([k, v]) => `
+              <div class="spec">
+                <b>${esc(k)}</b>
+                <span>${esc(v)}</span>
+              </div>
+            `)
+            .join('')
+        }
+      </div>
+    `
+    : ''
+}
 
                 </div>
               `
