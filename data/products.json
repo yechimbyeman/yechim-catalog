@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T05:48:10.881060+00:00",
+  "generated_at": "2026-10-20T05:57:01.752617+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -14125,15 +14125,17 @@
     {
       "eman_id": "/ru/product/19602",
       "source_url": "https://www.eman.uz/ru/product/19602/",
-      "sku": "",
+      "sku": "15.0243",
       "name": "Профиль накладной угловой AQ FORM для LED лент 16х16 3 м алюминий",
       "brand": "YECHIM LIGHTING",
       "eman_group": "Мебельная подсветка",
       "category": "Мебельная подсветка",
-      "price": 0.010848,
+      "price": 108480,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/15.0243.webp",
-      "additional_images": [],
+      "additional_images": [
+        "https://www.eman.uz/media/product_images/15.0243_2.webp"
+      ],
       "stock_quantity": null,
       "stock_unit": "",
       "extra": {},
