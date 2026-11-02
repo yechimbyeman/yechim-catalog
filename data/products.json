@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T07:30:56.762620+00:00",
+  "generated_at": "2026-11-02T07:45:16.854496+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -3281,14 +3281,14 @@
     {
       "eman_id": "/ru/product/7444",
       "source_url": "https://www.eman.uz/ru/product/7444/",
-      "sku": "A7113020111",
+      "sku": "",
       "name": "Мебельный крючок A7113020 MP11/A7113020 MP11",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 96678,
+      "price": 0.096678,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/%D0%9C%D0%B5%D0%B1%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9_%D0%BA%D1%80%D1%8E%D1%87%D0%BE%D0%BA_A7113020_MP11.webp",
+      "image_url": "https://www.eman.uz/media/product_thumbnails/203f329cc5157eec8d4ab287.jpg",
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
@@ -18040,14 +18040,14 @@
     {
       "eman_id": "/ru/product/3607",
       "source_url": "https://www.eman.uz/ru/product/3607/",
-      "sku": "1280184821300",
+      "sku": "",
       "name": "70/75 кг Eco двойной алюминиевый профиль/70/75 KG ALU ECO DOUBLE FEMALE LOWER RAIL MAT E",
       "brand": "SAMET",
       "eman_group": "Samet",
       "category": "Samet",
-      "price": 73800,
+      "price": 0.0738,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/1280184821300_7075kg_Eko.Al.%C3%87ft.D%C5%9F_Altry_Mt3000.jpg",
+      "image_url": "https://www.eman.uz/media/product_thumbnails/9d3804b87f9c9d6901439592.jpg",
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
