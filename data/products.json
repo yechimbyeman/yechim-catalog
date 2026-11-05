@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-04T07:36:17.150519+00:00",
+  "generated_at": "2026-11-05T08:04:49.474278+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -12818,6 +12818,24 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/19333",
+      "published": false
+    },
+    {
+      "eman_id": "/ru/product/19334",
+      "source_url": "https://www.eman.uz/ru/product/19334/",
+      "sku": "S-2282-G",
+      "name": "Лоток для столовых приборов (индустр упак) 35см, Серый#",
+      "brand": "STARAX",
+      "eman_group": "Starax",
+      "category": "Starax",
+      "price": 47970,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/S-2282-G_govde_KpVhFKr.png",
+      "additional_images": [],
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/19334",
       "published": false
     },
     {
