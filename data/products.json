@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-05T08:04:49.474278+00:00",
+  "generated_at": "2026-11-06T08:03:43.540763+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -12986,6 +12986,24 @@
       "published": false
     },
     {
+      "eman_id": "/ru/product/21228",
+      "source_url": "https://www.eman.uz/ru/product/21228/",
+      "sku": "S-5210-T",
+      "name": "Поднос пластиковый под сушилку 50см, Прозрачный#/Plastic Tray 50cmTransparent#",
+      "brand": "STARAX",
+      "eman_group": "Starax",
+      "category": "Starax",
+      "price": 59040,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/S-5210-T.jpg",
+      "additional_images": [],
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/21228",
+      "published": false
+    },
+    {
       "eman_id": "/ru/product/1191",
       "source_url": "https://www.eman.uz/ru/product/1191/",
       "sku": "102-08-42-403",
@@ -16600,14 +16618,14 @@
     {
       "eman_id": "/ru/product/1086",
       "source_url": "https://www.eman.uz/ru/product/1086/",
-      "sku": "127230303",
+      "sku": "",
       "name": "Направляющая полного выдвижения Push-Open с системой Soft Close Smart Slide 350мм/SMSLD FULL PUSH OP",
       "brand": "SAMET",
       "eman_group": "Samet",
       "category": "Samet",
-      "price": 218940,
+      "price": 0.021894,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/127230303_Smsld_Full_Po_Frn_Sen_350_Tk.jpg",
+      "image_url": "https://www.eman.uz/media/product_thumbnails/8c3e2aa827cf30bb864cfa14.jpg",
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
