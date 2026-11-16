@@ -312,14 +312,13 @@ function renderTable() {
 
   const list = products.filter((p) => {
     const e = enrichment[p.eman_id] || {};
-    const haystack = [
-      p.name,
-      p.brand,
-      e.yechim_sku
-    ]
+    // Search both the original Eman SKU and the optional YECHIM SKU.
+    // The table displays p.sku when no custom YECHIM SKU is set, so it
+    // must also be included in the admin search index.
+    const haystack = [p.name, p.brand, p.sku, e.yechim_sku]
+      .map((value) => String(value ?? '').trim().toLowerCase())
       .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+      .join(' ');
 
     const matchesSearch = !q || haystack.includes(q);
     const matchesBrand = brand === 'all' || p.brand === brand;
