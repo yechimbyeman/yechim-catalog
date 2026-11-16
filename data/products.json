@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T07:55:56.374138+00:00",
+  "generated_at": "2026-11-16T09:58:03.852257+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -3227,14 +3227,14 @@
     {
       "eman_id": "/ru/product/7440",
       "source_url": "https://www.eman.uz/ru/product/7440/",
-      "sku": "",
+      "sku": "A126480030102",
       "name": "Мебельная ручка A126430800 MP02 STRIPED",
       "brand": "CEBI",
       "eman_group": "Cebi",
       "category": "Cebi",
-      "price": 0.0403932,
+      "price": 403932,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_thumbnails/2e46200507126347b6007241.jpg",
+      "image_url": "https://www.eman.uz/media/product_images/A126480030102.jpg",
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
