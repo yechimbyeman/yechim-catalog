@@ -1501,3 +1501,13 @@ body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#252925;font-s
 /* Header links */
 .btn-top-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
 .btn-top-ghost:hover{background:rgba(255,255,255,.2)}
+
+/* Match the cart button styling to the Contacts button in the green header */
+#cartButton.btn-top-primary {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.25);
+}
+#cartButton.btn-top-primary:hover {
+  background: rgba(255,255,255,.2);
+}
