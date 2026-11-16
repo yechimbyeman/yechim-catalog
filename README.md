@@ -3,9 +3,9 @@
 ## Architecture
 - **Client site:** GitHub Pages, root URL.
 - **Dashboard:** GitHub Pages at `/dashboard/` with Supabase Auth.
-- **Data source:** Eman.uz → daily GitHub Actions sync at 08:00 Asia/Tashkent.
+- **Data source:** Eman.uz → daily GitHub Actions sync at 05:00 Asia/Tashkent.
 - **Eman fields:** SKU, name, price, base brand/category, main image, source URL and parsed source attributes.
-- **YECHIM fields:** publication status, YECHIM brand/category/subcategory, description, custom specs, mounting scheme image, additional images, badge, sort order.
+- **YECHIM fields:** publication status, YECHIM brand, description, custom specs, mounting scheme image, additional images, badge, discount percentage, sort order.
 - **No stock is exposed in the YECHIM catalog.**
 - **No PDF field is used.**
 - **YECHIM LIGHTING** is the presentation label for Eman's `Мебельная подсветка` group.
@@ -61,7 +61,7 @@ The workflow does **not** change `yechim_enrichment`, so your dashboard edits su
 1. Open `/dashboard/`.
 2. Sign in with the Supabase user you created.
 3. Find a product.
-4. Add YECHIM category, description, specs, mounting scheme and extra images.
+4. Add YECHIM brand, description, specs, mounting scheme, extra images and optional discount percentage.
 5. Turn on **Показывать в каталоге**.
 6. Save.
 
@@ -73,3 +73,25 @@ Only published products are returned to the public client site via the `get_publ
 - Customer-side cart is stored in the customer's browser.
 - `Отправить заявку` prepares the SKU/quantity list for the configured Telegram manager.
 - Stock/availability is intentionally not shown.
+
+
+## YECHIM E-Catalog update (November 2026)
+
+1. In Supabase SQL Editor, run `supabase-update.sql` once. This adds the discount field and updates the public catalogue RPC.
+2. Deploy `supabase/functions/trigger-price-sync/index.ts` as the Edge Function `trigger-price-sync` (JWT verification must remain enabled).
+3. Set these Edge Function secrets:
+   - `GITHUB_TOKEN`: fine-grained GitHub token with Actions: Read and write permission for this repository.
+   - `GITHUB_REPOSITORY`: `OWNER/REPOSITORY`.
+   - `GITHUB_WORKFLOW_FILE`: `sync.yml` (optional; this is the default).
+4. The scheduled sync runs daily at 00:00 UTC, which is 05:00 in Tashkent (Asia/Tashkent). GitHub Actions schedules can start a little later during busy periods.
+5. Brand pages show all products with 24 products per page. Social links are configured in `index.html`.
+
+Do not place `GITHUB_TOKEN` in any browser-side file or commit it to the repository.
+
+## Eman product descriptions and characteristics
+
+The daily synchronizer now also attempts to extract the product description and key/value characteristics from each Eman product page. These source fields are stored inside `eman_products.extra` (`eman_description` and `eman_specs`) and refreshed on every sync. If Eman does not publish a description or characteristics for a product, the corresponding source block stays empty.
+
+In the Dashboard, Eman description and characteristics are shown as read-only source information. You can add a YECHIM description supplement and additional Russian characteristics, one `Name: value` pair per line. The public catalog combines Eman's characteristics first and YECHIM's additions after them. Uzbek characteristics remain separately editable in the Uzbek field.
+
+After deploying these changes, run the `YECHIM daily Eman sync` GitHub Actions workflow once manually so the existing products are enriched with the newly extracted source fields. The regular scheduled sync runs at 05:00 Asia/Tashkent.

@@ -20,7 +20,6 @@ const state = {
   loading: true,
   query: '',
   selectedBrand: null,
-  selectedCategory: null,
   productId: null
 };
 
@@ -285,8 +284,8 @@ function readRoute() {
     brand:
       params.get('brand'),
 
-    category:
-      params.get('category')
+    page:
+      Math.max(1, parseInt(params.get('page') || '1', 10) || 1)
 
   };
 
@@ -307,8 +306,8 @@ function renderRoute() {
     route.brand;
 
 
-  state.selectedCategory =
-    route.category;
+  state.currentPage =
+    route.page;
 
 
   if (route.product) {
@@ -316,17 +315,10 @@ function renderRoute() {
     renderDetail();
 
   } else if (
-    route.brand &&
-    route.category
-  ) {
-
-    renderCategoryProducts();
-
-  } else if (
     route.brand
   ) {
 
-    renderBrandCategories();
+    renderBrandProducts();
 
   } else {
 
@@ -451,6 +443,9 @@ async function loadProducts() {
 
             badge:
               p.badge,
+
+            discount_percent:
+              Number(p.discount_percent || 0),
 
             sort_order:
               p.sort_order ||
@@ -763,7 +758,7 @@ function renderHome() {
                     <span
                       class="brand-arrow"
                     >
-                      Смотреть категории →
+                      Смотреть товары →
                     </span>
 
                   </div>
@@ -851,38 +846,7 @@ function renderHome() {
       }
 
 
-      <section
-        class="home-promo"
-      >
 
-        <div>
-
-          <h2>
-            Найдите нужное решение
-          </h2>
-
-
-          <p>
-            Ищите товар по названию
-            или артикулу и отправляйте
-            заявку менеджеру прямо
-            из каталога.
-          </p>
-
-        </div>
-
-
-        <div
-          class="home-promo-stat"
-        >
-
-          ${state.products.length}
-
-          товаров в каталоге
-
-        </div>
-
-      </section>
 
     </div>
 
@@ -957,473 +921,70 @@ function renderHome() {
 
 
 /* =========================
-   BRAND CATEGORIES
+   BRAND PRODUCTS
 ========================= */
 
-function renderBrandCategories() {
+function renderBrandProducts() {
+  const brand = state.selectedBrand;
+  const pageSize = 24;
+  const products = state.products.filter((p) =>
+    normalize(p.brand) === normalize(brand)
+  );
+  const pageCount = Math.max(1, Math.ceil(products.length / pageSize));
+  const page = Math.min(Math.max(1, Number(state.currentPage || 1)), pageCount);
+  const visible = products.slice((page - 1) * pageSize, page * pageSize);
 
-  const brand =
-    state.selectedBrand;
+  document.title = `YECHIM — ${brand}`;
 
-
-  const products =
-    state.products.filter(
-      (p) =>
-        normalize(
-          p.brand
-        ) ===
-        normalize(
-          brand
-        )
-    );
-
-
-  const categories =
-    [
-      ...new Set(
-        products
-          .map(
-            (p) =>
-              p.category
-          )
-          .filter(Boolean)
-      )
-    ].sort(
-      (a, b) =>
-        String(a).localeCompare(
-          String(b),
-          'ru'
-        )
-    );
-
-
-  document.title =
-    `YECHIM — ${brand}`;
-
-
-  document.querySelector(
-    '#app'
-  ).innerHTML = `
-
+  document.querySelector('#app').innerHTML = `
     <div class="shell">
-
-      <div
-        class="breadcrumbs"
-      >
-
-        <a
-          href="./"
-          id="backHome"
-        >
-          Каталог
-        </a>
-
-        <span>
-          ›
-        </span>
-
-        <b>
-          ${esc(brand)}
-        </b>
-
+      <div class="breadcrumbs">
+        <a href="./" id="backHome">Каталог</a><span>›</span><b>${esc(brand)}</b>
       </div>
 
-
-      <div
-        class="section-head"
-      >
-
-        <h1>
-          ${esc(brand)}
-        </h1>
-
-
-        <button
-          class="btn btn-ghost"
-          id="backBrand"
-          type="button"
-        >
-          Назад
-        </button>
-
-      </div>
-
-
-      <p class="muted">
-        Категории товаров
-      </p>
-
-
-      <section
-        class="category-grid"
-      >
-
-        ${
-          categories.length
-            ? categories
-                .map(
-                  (category) => {
-
-                    const count =
-                      products.filter(
-                        (p) =>
-                          normalize(
-                            p.category
-                          ) ===
-                          normalize(
-                            category
-                          )
-                      ).length;
-
-
-                    return `
-
-                      <button
-                        class="category-card"
-                        data-category="${esc(
-                          category
-                        )}"
-                        type="button"
-                      >
-
-                        <div
-                          class="category-card-title"
-                        >
-                          ${esc(
-                            category
-                          )}
-                        </div>
-
-
-                        <div
-                          class="category-card-count"
-                        >
-
-                          ${count}
-
-                          ${
-                            count === 1
-                              ? 'товар'
-                              : 'товаров'
-                          }
-
-                        </div>
-
-                      </button>
-
-                    `;
-
-                  }
-                )
-                .join('')
-
-            : `
-
-              <div
-                class="panel"
-              >
-
-                <b>
-                  Категории пока не определены.
-                </b>
-
-
-                <div
-                  class="muted"
-                >
-
-                  Для этого бренда
-                  в текущем источнике
-                  ещё нет детальной категории.
-
-                </div>
-
-              </div>
-
-            `
-        }
-
-      </section>
-
-    </div>
-
-  `;
-
-
-  document.querySelector(
-    '#backHome'
-  ).onclick = (
-    event
-  ) => {
-
-    event.preventDefault();
-
-
-    history.pushState(
-      {},
-      '',
-      './'
-    );
-
-
-    renderRoute();
-
-  };
-
-
-  document.querySelector(
-    '#backBrand'
-  ).onclick = () => {
-
-    history.pushState(
-      {},
-      '',
-      './'
-    );
-
-
-    renderRoute();
-
-  };
-
-
-  document
-    .querySelectorAll(
-      '[data-category]'
-    )
-    .forEach(
-      (button) => {
-
-        button.onclick = () => {
-
-          history.pushState(
-            {},
-            '',
-            `?brand=${encodeURIComponent(
-              brand
-            )}&category=${encodeURIComponent(
-              button.dataset.category
-            )}`
-          );
-
-
-          renderRoute();
-
-        };
-
-      }
-    );
-
-
-  updateCartBadge();
-
-}
-
-
-/* =========================
-   CATEGORY PRODUCTS
-========================= */
-
-function renderCategoryProducts() {
-
-  const brand =
-    state.selectedBrand;
-
-  const category =
-    state.selectedCategory;
-
-
-  const products =
-    state.products.filter(
-      (p) =>
-        normalize(
-          p.brand
-        ) ===
-          normalize(
-            brand
-          ) &&
-        normalize(
-          p.category
-        ) ===
-          normalize(
-            category
-          )
-    );
-
-
-  document.title =
-    `YECHIM — ${category}`;
-
-
-  document.querySelector(
-    '#app'
-  ).innerHTML = `
-
-    <div class="shell">
-
-      <div
-        class="breadcrumbs"
-      >
-
-        <a
-          href="./"
-          id="categoryHome"
-        >
-          Каталог
-        </a>
-
-        <span>
-          ›
-        </span>
-
-        <a
-          href="#"
-          id="categoryBrand"
-        >
-          ${esc(brand)}
-        </a>
-
-        <span>
-          ›
-        </span>
-
-        <b>
-          ${esc(category)}
-        </b>
-
-      </div>
-
-
-      <div
-        class="section-head"
-      >
-
+      <div class="section-head brand-products-head">
         <div>
-
-          <div
-            class="eyebrow"
-          >
-            ${esc(brand)}
-          </div>
-
-
-          <h1>
-            ${esc(category)}
-          </h1>
-
+          <h1>${esc(brand)}</h1>
+          <p class="muted">${products.length.toLocaleString('ru-RU')} товаров</p>
         </div>
-
-
-        <button
-          class="btn btn-ghost"
-          id="backToCategories"
-          type="button"
-        >
-          Категории
-        </button>
-
+        <button class="btn btn-ghost" id="backBrand" type="button">Назад</button>
       </div>
 
-
-      <section
-        class="products"
-      >
-
-        ${
-          products.length
-            ? products
-                .map(
-                  productCard
-                )
-                .join('')
-
-            : `
-
-              <div
-                class="panel"
-              >
-
-                <b>
-                  В этой категории пока
-                  нет опубликованных товаров.
-                </b>
-
-              </div>
-
-            `
-        }
-
+      <section class="products">
+        ${visible.length ? visible.map(productCard).join('') : `
+          <div class="panel"><b>У этого бренда пока нет опубликованных товаров.</b></div>
+        `}
       </section>
 
+      ${pageCount > 1 ? `
+        <nav class="pagination" aria-label="Страницы каталога">
+          <button class="page-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Назад</button>
+          <span>Страница ${page} из ${pageCount}</span>
+          <button class="page-btn" data-page="${page + 1}" ${page >= pageCount ? 'disabled' : ''}>Далее</button>
+        </nav>
+      ` : ''}
     </div>
-
   `;
 
-
-  document.querySelector(
-    '#categoryHome'
-  ).onclick = (
-    event
-  ) => {
-
+  const goHome = (event) => {
     event.preventDefault();
-
-
-    history.pushState(
-      {},
-      '',
-      './'
-    );
-
-
+    history.pushState({}, '', './');
     renderRoute();
-
   };
+  document.querySelector('#backHome').onclick = goHome;
+  document.querySelector('#backBrand').onclick = goHome;
 
-
-  document.querySelector(
-    '#categoryBrand'
-  ).onclick = (
-    event
-  ) => {
-
-    event.preventDefault();
-
-
-    history.pushState(
-      {},
-      '',
-      `?brand=${encodeURIComponent(
-        brand
-      )}`
-    );
-
-
-    renderRoute();
-
-  };
-
-
-  document.querySelector(
-    '#backToCategories'
-  ).onclick = () => {
-
-    history.pushState(
-      {},
-      '',
-      `?brand=${encodeURIComponent(
-        brand
-      )}`
-    );
-
-
-    renderRoute();
-
-  };
-
+  document.querySelectorAll('[data-page]').forEach((button) => {
+    button.onclick = () => {
+      const nextPage = Number(button.dataset.page);
+      if (nextPage < 1 || nextPage > pageCount) return;
+      history.pushState({}, '', `?brand=${encodeURIComponent(brand)}&page=${nextPage}`);
+      renderRoute();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
 
   updateCartBadge();
-
 }
 
 
@@ -1655,6 +1216,20 @@ function renderSearchResults() {
   updateCartBadge();
 
 }
+function priceMarkup(p, detail = false) {
+  const discount = Math.min(99, Math.max(0, Number(p.discount_percent || 0)));
+  const original = Number(p.price || 0);
+  if (!original) return '<span>Цена уточняется</span>';
+  if (!discount) return money(original);
+  const discounted = Math.round(original * (100 - discount) / 100);
+  return `
+    <span class="sale-price">${money(discounted)}</span>
+    <span class="old-price">${money(original)}</span>
+    <span class="discount-sticker">−${discount}%</span>
+  `;
+}
+
+
 /* =========================
    PRODUCT CARD
 ========================= */
@@ -1672,6 +1247,8 @@ function productCard(p) {
       >
 
         <div class="photo">
+
+          ${Number(p.discount_percent || 0) > 0 ? `<span class="discount-sticker photo-discount">−${Math.min(99, Number(p.discount_percent))}%</span>` : ''}
 
           ${
             p.image
@@ -1743,14 +1320,8 @@ function productCard(p) {
           ${stockMarkup(p)}
 
 
-          <div class="price">
-
-            ${
-              p.price
-                ? money(p.price)
-                : 'Цена уточняется'
-            }
-
+          <div class="price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+            ${priceMarkup(p)}
           </div>
 
         </div>
@@ -2048,16 +1619,8 @@ function renderDetail() {
           )}
 
 
-          <div
-            class="price detail-price"
-          >
-
-            ${
-              p.price
-                ? money(p.price)
-                : 'Цена уточняется'
-            }
-
+          <div class="price detail-price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+            ${priceMarkup(p, true)}
           </div>
 
 
@@ -3168,23 +2731,14 @@ const TRANSLATIONS = {
     'Бренды':
       'Бренды',
 
-    'Смотреть категории →':
-      'Смотреть категории →',
+    'Смотреть товары →':
+      'Смотреть товары →',
 
     'Популярные решения':
       'Популярные решения',
 
     'Новинки':
       'Новинки',
-
-    'Найдите нужное решение':
-      'Найдите нужное решение',
-
-    'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
-      'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.',
-
-    'товаров в каталоге':
-      'товаров в каталоге',
 
     'Категории товаров':
       'Категории товаров',
@@ -3279,9 +2833,6 @@ const TRANSLATIONS = {
     'Нет в наличии':
       'Нет в наличии',
 
-    '795 товаров в каталоге':
-      '795 товаров в каталоге',
-
     'позиций':
       'позиций',
 
@@ -3313,23 +2864,14 @@ const TRANSLATIONS = {
     'Бренды':
       'Brendlar',
 
-    'Смотреть категории →':
-      'Kategoriyalarni ko‘rish →',
+    'Смотреть товары →':
+      'Mahsulotlarni ko‘rish →',
 
     'Популярные решения':
       'Mashhur yechimlar',
 
     'Новинки':
       'Yangi mahsulotlar',
-
-    'Найдите нужное решение':
-      'Kerakli yechimni toping',
-
-    'Ищите товар по названию или артикулу и отправляйте заявку менеджеру прямо из каталога.':
-      'Mahsulotni nomi yoki artikuli bo‘yicha qidiring va so‘rovni katalogning o‘zidan turib menejerga yuboring.',
-
-    'товаров в каталоге':
-      'katalogdagi mahsulot',
 
     'Категории товаров':
       'Mahsulot kategoriyalari',
@@ -3507,9 +3049,6 @@ const TRANSLATIONS = {
 
     'Нет в наличии':
       'Mavjud emas',
-
-    '795 товаров в каталоге':
-      'Katalogda 795 ta mahsulot',
 
     'позиций':
       'mahsulot turi',

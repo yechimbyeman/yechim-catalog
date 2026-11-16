@@ -100,10 +100,8 @@ async function init() {
   $('#logoutBtn').onclick = logout;
   $('#closeModal').onclick = closeModal;
   $('#saveBtn').onclick = saveEdit;
-  $('#refreshBtn').onclick = loadData;
   $('#syncPricesBtn').onclick = triggerPriceSync;
   $('#dq').oninput = renderTable;
-  $('#statusFilter').onchange = renderTable;
   $('#brandFilter').onchange = renderTable;
 
   if (!READY) {
@@ -265,12 +263,21 @@ async function triggerPriceSync() {
       { body: {} }
     );
 
-    if (error) throw error;
-    info.textContent = 'Синхронизация запущена';
-    alert('Команда отправлена. Проверь GitHub Actions.');
+    if (error) {
+      let detail = error.message || String(error);
+      if (error.context && typeof error.context.json === 'function') {
+        try {
+          const body = await error.context.json();
+          detail = body.details || body.error || detail;
+        } catch (_) {}
+      }
+      throw new Error(detail);
+    }
+    info.textContent = 'Обновление отправлено в GitHub Actions';
+    alert('Запрос на обновление успешно отправлен. Обновление выполняется в GitHub Actions.');
   } catch (error) {
     info.textContent = 'Не удалось запустить обновление';
-    alert('Ошибка: ' + (error.message || String(error)));
+    alert('Не удалось запустить обновление: ' + (error.message || String(error))); 
   } finally {
     button.disabled = false;
     button.textContent = 'Обновить цены сейчас';
@@ -294,68 +301,11 @@ function fillBrands() {
 }
 
 /* =========================
-   PUBLICATION STATE
-========================= */
-
-function hasEnrichment(p) {
-  return Boolean(enrichment[p.eman_id]);
-}
-
-function isAutoPublished(p) {
-  return !hasEnrichment(p);
-}
-
-function isPublished(p) {
-  const e = enrichment[p.eman_id];
-  return !e || e.published === true;
-}
-
-function isHidden(p) {
-  const e = enrichment[p.eman_id];
-  return Boolean(e && e.published === false);
-}
-
-function publicationLabel(p) {
-  if (isAutoPublished(p)) return 'Автоматически опубликован';
-  if (isPublished(p)) return 'Опубликован';
-  return 'Скрыт';
-}
-
-/* =========================
-   COMPLETENESS
-========================= */
-
-function completeness(p) {
-  const e = enrichment[p.eman_id] || {};
-  const specs = e.specs || {};
-  const hasSpecs = Array.isArray(specs)
-    ? specs.length > 0
-    : specs && typeof specs === 'object' && ('ru' in specs || 'uz' in specs)
-      ? Boolean(
-          (Array.isArray(specs.ru) && specs.ru.length) ||
-          (Array.isArray(specs.uz) && specs.uz.length)
-        )
-      : Boolean(specs && typeof specs === 'object' && Object.keys(specs).length > 0);
-
-  const checks = [
-    e.yechim_sku,
-    e.yechim_category,
-    e.description,
-    hasSpecs,
-    e.mounting_scheme_url,
-    (e.additional_images || []).length > 0
-  ];
-
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-}
-
-/* =========================
    TABLE
 ========================= */
 
 function renderTable() {
   const q = $('#dq').value.toLowerCase().trim();
-  const status = $('#statusFilter').value;
   const brand = $('#brandFilter').value;
 
   const list = products.filter((p) => {
@@ -363,75 +313,34 @@ function renderTable() {
     const haystack = [
       p.name,
       p.brand,
-      p.category,
-      p.eman_group,
-      e.yechim_sku,
-      e.yechim_brand,
-      e.yechim_category,
-      e.yechim_subcategory
+      e.yechim_sku
     ]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
 
     const matchesSearch = !q || haystack.includes(q);
-    let matchesStatus = true;
-
-    if (status === 'published') {
-      matchesStatus = isPublished(p);
-    } else if (status === 'draft') {
-      matchesStatus = hasEnrichment(p) && completeness(p) < 80 && isPublished(p);
-    } else if (status === 'hidden') {
-      matchesStatus = isHidden(p);
-    }
-
     const matchesBrand = brand === 'all' || p.brand === brand;
-    return matchesSearch && matchesStatus && matchesBrand;
+    return matchesSearch && matchesBrand;
   });
 
   $('#tbody').innerHTML = list.map((p) => {
     const e = enrichment[p.eman_id] || {};
-    const c = completeness(p);
-    const autoPublished = isAutoPublished(p);
-    const published = isPublished(p);
-    const hidden = isHidden(p);
-
-    let statusClass = 's3';
-    if (hidden) {
-      statusClass = 's3';
-    } else if (autoPublished || published) {
-      statusClass = 's1';
-    }
-
     return `
       <tr>
         <td>
           <div class="product-cell">
-            ${p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : ''}
-            <div>
-              <b>${esc(p.name)}</b>
-              <div class="muted">${esc(p.brand)}</div>
-            </div>
+            ${p.image_url ? `<img src="${esc(p.image_url)}" alt="" loading="lazy">` : ''}
+            <div><b>${esc(p.name)}</b><div class="muted">${esc(p.brand)}</div></div>
           </div>
         </td>
         <td>${esc(e.yechim_sku || p.sku || '—')}</td>
         <td>${p.price ? money(p.price) : '—'}</td>
-        <td>
-          <span class="status ${c >= 80 ? 's1' : c >= 40 ? 's2' : 's3'}">${c}%</span>
-        </td>
-        <td>
-          <span class="status ${statusClass}">
-            ${autoPublished ? 'Автоматически опубликован' : hidden ? 'Скрыт' : 'Опубликован'}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-ghost" onclick="edit('${encodeURIComponent(p.eman_id)}')">Редактировать</button>
-        </td>
+        <td><button class="btn btn-ghost" onclick="edit('${encodeURIComponent(p.eman_id)}')">Редактировать</button></td>
       </tr>
     `;
-  }).join('') || `
-    <tr><td colspan="6" class="muted">Ничего не найдено.</td></tr>
-  `;
+  }).join('') || '<tr><td colspan="4" class="muted">Ничего не найдено.</td></tr>';
+
 }
 
 /* =========================
@@ -450,13 +359,12 @@ function edit(encodedId) {
     published: true,
     yechim_sku: '',
     yechim_brand: p?.brand || '',
-    yechim_category: '',
-    yechim_subcategory: '',
     description: '',
     specs: {},
     mounting_scheme_url: '',
     additional_images: [],
     badge: '',
+    discount_percent: 0,
     sort_order: 0
   };
 
@@ -468,10 +376,12 @@ function edit(encodedId) {
   const specsUz = savedSpecs && typeof savedSpecs === 'object' && !Array.isArray(savedSpecs)
     ? savedSpecs.uz
     : [];
+  const emanExtra = p.extra && typeof p.extra === 'object' ? p.extra : {};
+  const emanDescription = emanExtra.eman_description || '';
+  const emanSpecs = Array.isArray(emanExtra.eman_specs) ? emanExtra.eman_specs : [];
 
   $('#mbrand').textContent = p?.brand || '';
   $('#mtitle').textContent = p?.name || id;
-  $('#msku').textContent = `Eman ID: ${id} · Цена Eman: ${p?.price ? money(p.price) : '—'}`;
 
   $('#fields').innerHTML = `
     <div class="grid2">
@@ -488,31 +398,31 @@ function edit(encodedId) {
       </div>
     </div>
 
-    <div class="grid2">
-      <div class="field">
-        <label>Бренд YECHIM</label>
-        <input id="yechim_brand" value="${esc(e.yechim_brand || '')}">
-      </div>
-      <div class="field">
-        <label>Категория YECHIM</label>
-        <input id="yechim_category" value="${esc(e.yechim_category || '')}" placeholder="Например: Мебельные ручки">
-      </div>
+    <div class="field">
+      <label>Бренд YECHIM</label>
+      <input id="yechim_brand" value="${esc(e.yechim_brand || p.brand || '')}" placeholder="${esc(p.brand || '')}">
     </div>
 
     <div class="field">
-      <label>Подкатегория</label>
-      <input id="yechim_subcategory" value="${esc(e.yechim_subcategory || '')}">
+      <label>Описание с Eman.uz</label>
+      <div class="source-content">${emanDescription ? esc(emanDescription) : '<span class="muted">На странице Eman описание не найдено.</span>'}</div>
     </div>
 
     <div class="field">
-      <label>Описание YECHIM</label>
-      <textarea id="description">${esc(e.description || '')}</textarea>
+      <label>Дополнение к описанию YECHIM</label>
+      <textarea id="description" placeholder="Добавь дополнительную информацию, если необходимо">${esc(e.description || '')}</textarea>
+      <div class="muted small">Это дополнение будет показано после описания, полученного с Eman.uz.</div>
     </div>
 
     <div class="field">
-      <label>Характеристики на русском языке</label>
-      <textarea id="specs_ru" placeholder="Артикул: S-6835-A&#10;Ширина (мм): 700&#10;Глубина (мм): 360&#10;Высота (мм): 1910–2110">${esc(specsToText(specsRu))}</textarea>
-      <div class="muted small">Вводи характеристики по-русски, по одной на строку: «Название: значение».</div>
+      <label>Характеристики с Eman.uz</label>
+      <div class="source-content source-specs">${emanSpecs.length ? esc(specsToText(emanSpecs)) : '<span class="muted">На странице Eman характеристики не найдены. Их можно добавить ниже.</span>'}</div>
+    </div>
+
+    <div class="field">
+      <label>Дополнительные характеристики на русском языке</label>
+      <textarea id="specs_ru" placeholder="Цвет: Черный&#10;Материал: Сталь&#10;Длина (мм): 500">${esc(specsToText(specsRu))}</textarea>
+      <div class="muted small">Добавляй только недостающие характеристики — по одной на строку в формате «Название: значение». Они будут добавлены к характеристикам с Eman.uz.</div>
     </div>
 
     <div class="field">
@@ -543,6 +453,11 @@ function edit(encodedId) {
     </div>
 
     <div class="grid2">
+      <div class="field">
+        <label>Скидка, %</label>
+        <input id="discount_percent" type="number" min="0" max="99" step="1" value="${Math.min(99, Math.max(0, Number(e.discount_percent || 0)))}" placeholder="0">
+        <div class="muted small">Укажи процент скидки от цены Eman. 0 — без скидки.</div>
+      </div>
       <div class="field">
         <label>Бейдж</label>
         <input id="badge" value="${esc(e.badge || '')}" placeholder="Новинка">
@@ -590,6 +505,11 @@ async function saveEdit() {
 
     const currentE = enrichment[current] || {};
 
+    const discount = Number($('#discount_percent').value || 0);
+    if (!Number.isInteger(discount) || discount < 0 || discount > 99) {
+      throw new Error('Скидка должна быть целым числом от 0 до 99.');
+    }
+
     const specsRu = parseSpecs($('#specs_ru').value, 'RU');
     const specsUz = parseSpecs($('#specs_uz').value, 'UZ');
 
@@ -613,8 +533,6 @@ async function saveEdit() {
       published: $('#published').checked,
       yechim_sku: $('#yechim_sku').value.trim(),
       yechim_brand: $('#yechim_brand').value.trim() || p.brand,
-      yechim_category: $('#yechim_category').value.trim(),
-      yechim_subcategory: $('#yechim_subcategory').value.trim(),
       description: $('#description').value.trim(),
 
       // Храним оба языка в существующем JSON-поле specs.
@@ -627,6 +545,7 @@ async function saveEdit() {
       mounting_scheme_url: scheme,
       additional_images: images,
       badge: $('#badge').value.trim(),
+      discount_percent: Math.min(99, Math.max(0, Number($('#discount_percent').value || 0))),
       sort_order: Number($('#sort_order').value || 0)
     };
 

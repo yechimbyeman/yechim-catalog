@@ -14,7 +14,7 @@ YECHIM-specific enrichment is stored separately in Supabase
 and is not overwritten by this synchronizer.
 
 GitHub Actions schedule:
-01:00 UTC = 06:00 Asia/Tashkent.
+00:00 UTC = 05:00 Asia/Tashkent.
 """
 
 from __future__ import annotations
@@ -308,6 +308,126 @@ def extract_article(
 
     return ''
 
+
+
+# =========================================================
+# DESCRIPTION / CHARACTERISTICS
+# =========================================================
+
+def _node_marker(node) -> str:
+    """Return normalized id/class marker for a BeautifulSoup node."""
+    if not getattr(node, 'attrs', None):
+        return ''
+    classes = node.get('class') or []
+    if isinstance(classes, str):
+        classes = [classes]
+    return ' '.join([str(node.get('id') or ''), *map(str, classes)]).lower()
+
+
+def _find_content_section(page: BeautifulSoup, labels, marker_words):
+    """Find the smallest useful section around a matching product heading."""
+    wanted = {clean(label).casefold() for label in labels}
+    for heading in page.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'button', 'a', 'div', 'span']):
+        heading_text = clean(heading.get_text(' ', strip=True)).casefold()
+        if heading_text not in wanted:
+            continue
+        current = heading
+        fallback = None
+        for depth in range(5):
+            current = current.parent
+            if not current or not getattr(current, 'name', None):
+                break
+            if fallback is None and clean(current.get_text(' ', strip=True)).casefold() != heading_text:
+                fallback = current
+            marker = _node_marker(current)
+            if any(word in marker for word in marker_words):
+                return current
+        if fallback is not None:
+            return fallback
+    return None
+
+
+def _extract_spec_rows(root) -> list[dict]:
+    """Extract label/value pairs from common table, definition-list and div layouts."""
+    if root is None:
+        return []
+
+    rows = []
+    seen = set()
+
+    def add(name, value):
+        name = clean(name)
+        value = clean(value)
+        if not name or not value or name.casefold() == value.casefold():
+            return
+        if len(name) > 120 or len(value) > 500:
+            return
+        key = (name.casefold(), value.casefold())
+        if key not in seen:
+            seen.add(key)
+            rows.append({'name': name.rstrip(':：'), 'value': value})
+
+    for table_row in root.select('tr'):
+        cells = table_row.find_all(['th', 'td'], recursive=False)
+        if len(cells) >= 2:
+            add(cells[0].get_text(' ', strip=True), cells[1].get_text(' ', strip=True))
+        elif len(cells) == 1:
+            text = clean(cells[0].get_text(' ', strip=True))
+            match = re.match(r'^(.{1,120}?)[：:]\s*(.{1,500})$', text)
+            if match:
+                add(match.group(1), match.group(2))
+
+    for term, definition in zip(root.select('dt'), root.select('dd')):
+        add(term.get_text(' ', strip=True), definition.get_text(' ', strip=True))
+
+    # Common product-property markup used by ecommerce templates.
+    for row in root.select('[class*="characteristic"], [class*="property"], [class*="specification"], [class*="attribute"]'):
+        name_node = row.select_one('[class*="name"], [class*="title"], [class*="label"], th')
+        value_node = row.select_one('[class*="value"], [class*="content"], td')
+        if name_node and value_node and name_node is not value_node:
+            add(name_node.get_text(' ', strip=True), value_node.get_text(' ', strip=True))
+
+    # A final fallback for compact rows where each child contains name and value.
+    if not rows:
+        for row in root.find_all(['li', 'div'], recursive=True):
+            children = row.find_all(['span', 'div', 'p', 'b', 'strong'], recursive=False)
+            if len(children) == 2:
+                add(children[0].get_text(' ', strip=True), children[1].get_text(' ', strip=True))
+
+    return rows
+
+
+def extract_product_content(page: BeautifulSoup) -> tuple[str, list[dict]]:
+    """Extract Eman's product description and characteristics when present."""
+    description = ''
+    description_root = _find_content_section(
+        page,
+        ('Описание', 'Description', 'Tavsif'),
+        ('description', 'product-about', 'about-product')
+    )
+    if description_root is not None:
+        dedicated = description_root.select_one('[class*="description-text"], [class*="description-content"], [itemprop="description"]')
+        target = dedicated or description_root
+        parts = [clean(x) for x in target.stripped_strings]
+        parts = [x for x in parts if x and x.casefold() not in {'описание', 'description', 'подробнее', 'читать далее'}]
+        description = clean(' '.join(parts))
+
+    specs_root = _find_content_section(
+        page,
+        ('Характеристики', 'Все характеристики', 'Specifications', 'Characteristics'),
+        ('characteristic', 'specification', 'product-properties', 'product-attributes')
+    )
+    specs = _extract_spec_rows(specs_root)
+
+    if not specs:
+        specs_root = _find_content_section(
+            page,
+            ('Все характеристики', 'Specifications', 'Characteristics'),
+            ('tab', 'product', 'detail')
+        )
+        specs = _extract_spec_rows(specs_root)
+
+    return description, specs
 
 # =========================================================
 # STOCK / WAREHOUSES
@@ -1043,6 +1163,12 @@ def parse_detail(
             'stock_locations':
                 [],
 
+            'description':
+                '',
+
+            'specs':
+                [],
+
             'extra':
                 {}
 
@@ -1108,6 +1234,13 @@ def parse_detail(
 
 
     # -----------------------------------------------------
+    # Description and characteristics from Eman
+    # -----------------------------------------------------
+
+    description, specs = extract_product_content(page)
+
+
+    # -----------------------------------------------------
     # Stock
     # -----------------------------------------------------
 
@@ -1138,6 +1271,13 @@ def parse_detail(
     # -----------------------------------------------------
 
     extra = {}
+
+
+    if description:
+        extra['eman_description'] = description
+
+    if specs:
+        extra['eman_specs'] = specs
 
 
     if stock_locations:
@@ -1172,6 +1312,12 @@ def parse_detail(
 
         'stock_locations':
             stock_locations,
+
+        'description':
+            description,
+
+        'specs':
+            specs,
 
         'extra':
             extra
