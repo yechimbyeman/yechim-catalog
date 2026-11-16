@@ -18,7 +18,7 @@ create table if not exists public.eman_products (
 
 create table if not exists public.yechim_enrichment (
   eman_id text primary key references public.eman_products(eman_id) on delete cascade,
-  published boolean not null default false,
+  published boolean not null default true,
   yechim_sku text,
   yechim_brand text,
   yechim_category text,

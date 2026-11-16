@@ -1,4 +1,4 @@
--- YECHIM E-Catalog update: discount percentage support
+-- YECHIM E-Catalog update: full product publication + discounts
 -- Run this once in Supabase SQL Editor before deploying the updated frontend.
 
 alter table public.yechim_enrichment
@@ -7,11 +7,18 @@ alter table public.yechim_enrichment
 alter table public.yechim_enrichment
   add column if not exists discount_percent integer not null default 0;
 
+-- New enrichment rows created by the sync are visible by default.
+alter table public.yechim_enrichment alter column published set default true;
+
 alter table public.yechim_enrichment
   drop constraint if exists yechim_enrichment_discount_percent_check;
 alter table public.yechim_enrichment
   add constraint yechim_enrichment_discount_percent_check
   check (discount_percent between 0 and 99);
+
+-- Existing products are published by default. Products added by later syncs are
+-- also visible unless explicitly disabled in the YECHIM dashboard.
+update public.yechim_enrichment set published = true where published = false;
 
 drop function if exists public.get_public_catalog();
 
@@ -69,9 +76,9 @@ as $$
     e.sort_order,
     e.updated_at
   from public.eman_products p
-  join public.yechim_enrichment e on e.eman_id = p.eman_id
-  where e.published = true
-  order by e.sort_order asc, p.name asc
+  left join public.yechim_enrichment e on e.eman_id = p.eman_id
+  where coalesce(e.published, true) = true
+  order by coalesce(e.sort_order, 0) asc, p.name asc
 $$;
 
 revoke all on function public.get_public_catalog() from public;

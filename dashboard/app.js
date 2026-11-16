@@ -103,6 +103,7 @@ async function init() {
   $('#syncPricesBtn').onclick = triggerPriceSync;
   $('#dq').oninput = renderTable;
   $('#brandFilter').onchange = renderTable;
+  $('#publishedFilter').onchange = renderTable;
 
   if (!READY) {
     $('#authError').textContent =
@@ -307,6 +308,7 @@ function fillBrands() {
 function renderTable() {
   const q = $('#dq').value.toLowerCase().trim();
   const brand = $('#brandFilter').value;
+  const publication = $('#publishedFilter')?.value || 'all';
 
   const list = products.filter((p) => {
     const e = enrichment[p.eman_id] || {};
@@ -321,7 +323,9 @@ function renderTable() {
 
     const matchesSearch = !q || haystack.includes(q);
     const matchesBrand = brand === 'all' || p.brand === brand;
-    return matchesSearch && matchesBrand;
+    const isPublished = (enrichment[p.eman_id]?.published ?? true) !== false;
+    const matchesPublication = publication === 'all' || (publication === 'published' ? isPublished : !isPublished);
+    return matchesSearch && matchesBrand && matchesPublication;
   });
 
   $('#tbody').innerHTML = list.map((p) => {
@@ -336,12 +340,30 @@ function renderTable() {
         </td>
         <td>${esc(e.yechim_sku || p.sku || '—')}</td>
         <td>${p.price ? money(p.price) : '—'}</td>
+        <td><button class="btn ${((e.published ?? true) ? 'btn-primary' : 'btn-ghost')}" onclick="togglePublished('${encodeURIComponent(p.eman_id)}')">${((e.published ?? true) ? 'Опубликован' : 'Скрыт')}</button></td>
         <td><button class="btn btn-ghost" onclick="edit('${encodeURIComponent(p.eman_id)}')">Редактировать</button></td>
       </tr>
     `;
-  }).join('') || '<tr><td colspan="4" class="muted">Ничего не найдено.</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="muted">Ничего не найдено.</td></tr>';
 
 }
+
+
+async function togglePublished(encodedId) {
+  const id = decodeURIComponent(encodedId);
+  const p = products.find((item) => item.eman_id === id);
+  if (!p) return;
+  const currentRow = enrichment[id] || { eman_id: id };
+  const nextPublished = (currentRow.published ?? true) === false;
+  const { error } = await sb.from('yechim_enrichment').upsert(
+    { ...currentRow, eman_id: id, published: nextPublished },
+    { onConflict: 'eman_id' }
+  );
+  if (error) { alert('Не удалось изменить публикацию: ' + error.message); return; }
+  enrichment[id] = { ...currentRow, eman_id: id, published: nextPublished };
+  renderTable();
+}
+window.togglePublished = togglePublished;
 
 /* =========================
    EDIT PRODUCT
