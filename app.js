@@ -1109,6 +1109,18 @@ function renderDetail() {
   const localizedSpecs =
     getLocalizedSpecs(p);
 
+  // Brand is already shown above the product name; omit duplicate manufacturer fields.
+  const detailSpecs = localizedSpecs.filter(([key]) => {
+    const normalizedKey = normalize(key).replace(/[ё]/g, 'е').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+    return ![
+      'производитель',
+      'страна производитель',
+      'страна производства',
+      'страна изготовитель',
+      'страна изготовителя'
+    ].includes(normalizedKey);
+  });
+
 
   document.title =
     `YECHIM — ${p.name}`;
@@ -1342,12 +1354,12 @@ function renderDetail() {
           }
 
           ${
-            localizedSpecs.length
+            detailSpecs.length
               ? `
                 <div class="specs">
 
                   ${
-                    localizedSpecs
+                    detailSpecs
                       .map(
                         ([k, v]) => `
 
