@@ -447,6 +447,8 @@ async function loadProducts() {
 
             badge:
               p.badge,
+            product_tags: p.product_tags || [],
+            is_featured: Boolean(p.is_featured),
 
             discount_percent:
               Number(p.discount_percent || 0),
@@ -614,20 +616,7 @@ function renderHome() {
     'YECHIM — Решения для вашей мебели';
 
 
-  const popular =
-    state.products
-      .filter(
-        (p) =>
-          normalize(
-            p.badge
-          ).includes(
-            'популяр'
-          )
-      )
-      .slice(
-        0,
-        8
-      );
+  const popular = state.products.filter(p => p.is_featured).slice(0, 8);
 
 
   const newProducts =
@@ -789,7 +778,7 @@ function renderHome() {
               >
 
                 <h2>
-                  Популярные решения
+                  Специально для вас
                 </h2>
 
               </div>
@@ -1250,6 +1239,9 @@ function priceMarkup(p, detail = false) {
 ========================= */
 
 function productCard(p) {
+  const tags = Array.isArray(p.product_tags) ? p.product_tags : [];
+  const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
+  const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
 
   return `
     <article
@@ -1262,6 +1254,7 @@ function productCard(p) {
       >
 
         <div class="photo">
+          ${tagMarkup ? `<div class="product-tags">${tagMarkup}</div>` : ''}
 
           ${Number(p.discount_percent || 0) > 0 ? `<span class="discount-sticker photo-discount">−${Math.min(99, Number(p.discount_percent))}%</span>` : ''}
 
