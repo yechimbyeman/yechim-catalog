@@ -20,7 +20,10 @@ const state = {
   loading: true,
   query: '',
   selectedBrand: null,
-  productId: null
+  productId: null,
+  catalogBrand: 'all',
+  catalogStock: 'all',
+  banners: []
 };
 
 const CART_KEY = 'yechim_cart_v2';
@@ -693,7 +696,7 @@ function renderHome() {
         >
 
           <h2>
-            Бренды
+            Наши бренды
           </h2>
 
         </div>
