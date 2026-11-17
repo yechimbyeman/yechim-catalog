@@ -1660,125 +1660,66 @@ def supabase_upsert(
     }
 
 
-    rows = []
-
+    rows_with_sku = []
+    rows_without_sku = []
 
     for product in products:
-
         row = {
+            'eman_id': product.eman_id,
+            'source_url': product.source_url,
+            'name': product.name,
+            'brand': product.brand,
+            'eman_group': product.eman_group,
+            'category': product.category,
+            'price': product.price,
+            'currency': product.currency,
+            'image_url': product.image_url,
+            'stock_quantity': product.stock_quantity,
+            'stock_unit': product.stock_unit,
+            'extra': product.extra,
+            'synced_at': datetime.now(timezone.utc).isoformat()
+        }
 
-                'eman_id':
-                    product.eman_id,
-
-                'source_url':
-                    product.source_url,
-
-                'name':
-                    product.name,
-
-                'brand':
-                    product.brand,
-
-                'eman_group':
-                    product.eman_group,
-
-                'category':
-                    product.category,
-
-                'price':
-                    product.price,
-
-                'currency':
-                    product.currency,
-
-                'image_url':
-                    product.image_url,
-
-                'stock_quantity':
-                    product.stock_quantity,
-
-                'stock_unit':
-                    product.stock_unit,
-
-                'extra':
-                    product.extra,
-
-                'synced_at':
-                    datetime.now(
-                        timezone.utc
-                    ).isoformat()
-
-            }
-
-        # Do not overwrite a previously saved Eman article with an empty
-        # parser result. Non-empty articles remain source-of-truth updates.
+        # Keep rows with and without SKU in separate batches.
+        # Omitting SKU preserves the previously saved value in Supabase.
         if product.sku:
             row['sku'] = product.sku
-
-        rows.append(row)
-
+            rows_with_sku.append(row)
+        else:
+            rows_without_sku.append(row)
 
     print(
-        f'Uploading '
-        f'{len(rows)} products '
-        f'to Supabase...'
+        f'Uploading {len(products)} products to Supabase '
+        f'({len(rows_with_sku)} with SKU, {len(rows_without_sku)} without SKU)...'
     )
 
-
-    # -----------------------------------------------------
-    # Upload in batches.
-    # -----------------------------------------------------
-
     batch_size = 500
+    uploaded = 0
 
-
-    for start in range(
-        0,
-        len(rows),
-        batch_size
+    # Each request contains objects with an identical set of keys.
+    for group_name, rows in (
+        ('with SKU', rows_with_sku),
+        ('without SKU', rows_without_sku)
     ):
-
-        batch = rows[
-            start:
-            start + batch_size
-        ]
-
-
-        response = requests.post(
-
-            endpoint,
-
-            headers=headers,
-
-            json=batch,
-
-            timeout=60
-
-        )
-
-
-        if not response.ok:
-
-            print(
-                'Supabase error:',
-                response.status_code,
-                response.text[:2000]
+        for start in range(0, len(rows), batch_size):
+            batch = rows[start:start + batch_size]
+            response = requests.post(
+                endpoint,
+                headers=headers,
+                json=batch,
+                timeout=60
             )
 
+            if not response.ok:
+                print(
+                    f'Supabase error ({group_name}):',
+                    response.status_code,
+                    response.text[:2000]
+                )
 
-        response.raise_for_status()
-
-
-        uploaded = min(
-            start + batch_size,
-            len(rows)
-        )
-
-        print(
-            f'Uploaded '
-            f'{uploaded} / '
-            f'{len(rows)}'
-        )
+            response.raise_for_status()
+            uploaded += len(batch)
+            print(f'Uploaded {uploaded} / {len(products)} products')
 
 
 # =========================================================
