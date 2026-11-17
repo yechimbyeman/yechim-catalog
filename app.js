@@ -448,8 +448,7 @@ async function loadProducts() {
               p.additional_images ||
               [],
 
-            badge:
-              p.badge,
+            badge: '',
             product_tags: p.product_tags || [],
             is_featured: Boolean(p.is_featured),
 
@@ -624,23 +623,7 @@ function renderHome() {
     'YECHIM — Решения для вашей мебели';
 
 
-  const popular = state.products.filter(p => p.is_featured).slice(0, 8);
-
-
-  const newProducts =
-    state.products
-      .filter(
-        (p) =>
-          normalize(
-            p.badge
-          ).includes(
-            'нов'
-          )
-      )
-      .slice(
-        0,
-        8
-      );
+  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0).slice(0, 8);
 
 
   document.querySelector(
@@ -787,42 +770,6 @@ function renderHome() {
   `;
 
 
-  const searchInput =
-    document.querySelector(
-      '#q'
-    );
-
-
-  document.querySelector(
-    '#searchBtn'
-  ).onclick = () => {
-
-    state.query =
-      searchInput.value.trim();
-
-    renderSearchResults();
-
-  };
-
-
-  searchInput.onkeydown =
-    (event) => {
-
-      if (
-        event.key ===
-        'Enter'
-      ) {
-
-        state.query =
-          event.target.value.trim();
-
-        renderSearchResults();
-
-      }
-
-    };
-
-
   document
     .querySelectorAll(
       '[data-brand]'
@@ -856,11 +803,10 @@ function renderHome() {
 function renderCatalog() {
   const brands = [...new Set(state.products.map(p => p.brand).filter(Boolean))].sort();
   const q = normalize(state.query);
-  const list = state.products.filter(p => (!q || [p.name,p.sku,p.brand].some(v => normalize(v).includes(q))) && (state.catalogBrand === 'all' || p.brand === state.catalogBrand) && (state.catalogStock === 'all' || (state.catalogStock === 'in' ? Number(p.stock_quantity)>0 : Number(p.stock_quantity)<=0)));
-  document.querySelector('#app').innerHTML = '<div class="shell"><div class="section-head"><h1>Каталог</h1><span class="muted">Найдено: '+list.length+'</span></div><div class="catalog-layout"><aside class="catalog-filters panel"><b>Фильтры</b><label>Бренд<select id="catalogBrand"><option value="all">Все бренды</option>'+brands.map(b=>'<option value="'+esc(b)+'" '+(state.catalogBrand===b?'selected':'')+'>'+esc(b)+'</option>').join('')+'</select></label><label>Наличие<select id="catalogStock"><option value="all">Любое</option><option value="in">В наличии</option><option value="out">Нет в наличии</option></select></label><button id="resetCatalog" class="btn btn-ghost">Сбросить</button></aside><div class="catalog-results"><div class="products">'+list.map(productCard).join('')+'</div></div></div></div>';
+  const list = state.products.filter(p => (!q || [p.name,p.sku,p.brand].some(v => normalize(v).includes(q))) && (state.catalogBrand === 'all' || p.brand === state.catalogBrand));
+  document.querySelector('#app').innerHTML = '<div class="shell"><div class="section-head"><h1>Каталог</h1><span class="muted">Найдено: '+list.length+'</span></div><div class="catalog-layout"><aside class="catalog-filters panel"><b>Фильтры</b><label>Бренд<select id="catalogBrand"><option value="all">Все бренды</option>'+brands.map(b=>'<option value="'+esc(b)+'" '+(state.catalogBrand===b?'selected':'')+'>'+esc(b)+'</option>').join('')+'</select></label><button id="resetCatalog" class="btn btn-ghost">Сбросить</button></aside><div class="catalog-results"><div class="products">'+list.map(productCard).join('')+'</div></div></div></div>';
   document.querySelector('#catalogBrand').onchange=e=>{state.catalogBrand=e.target.value;renderCatalog()};
-  document.querySelector('#catalogStock').onchange=e=>{state.catalogStock=e.target.value;renderCatalog()};
-  document.querySelector('#resetCatalog').onclick=()=>{state.catalogBrand='all';state.catalogStock='all';state.query='';renderCatalog()};
+  document.querySelector('#resetCatalog').onclick=()=>{state.catalogBrand='all';state.query='';renderCatalog()};
   updateCartBadge();
 }
 
@@ -1249,17 +1195,6 @@ function productCard(p) {
                     ${esc(p.sku)}
                   </span>
 
-                </div>
-              `
-              : ''
-          }
-
-
-          ${
-            p.badge
-              ? `
-                <div class="badge">
-                  ${esc(p.badge)}
                 </div>
               `
               : ''
