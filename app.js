@@ -810,40 +810,6 @@ function renderHome() {
       }
 
 
-      ${
-        newProducts.length
-          ? `
-
-            <section>
-
-              <div
-                class="section-head"
-              >
-
-                <h2>
-                  Новинки
-                </h2>
-
-              </div>
-
-
-              <div
-                class="products"
-              >
-
-                ${newProducts
-                  .map(
-                    productCard
-                  )
-                  .join('')}
-
-              </div>
-
-            </section>
-
-          `
-          : ''
-      }
 
 
 
