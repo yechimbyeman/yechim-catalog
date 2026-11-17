@@ -22,7 +22,6 @@ const state = {
   selectedBrand: null,
   productId: null,
   catalogBrand: 'all',
-  catalogStock: 'all',
   banners: []
 };
 
