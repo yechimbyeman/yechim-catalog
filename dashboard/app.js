@@ -104,6 +104,10 @@ async function init() {
   $('#dq').oninput = renderTable;
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
+  $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
+  $('#saveBannerBtn').onclick = saveBanner;
+  $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
+  document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => { $('#bannerManager').hidden = b.dataset.dashTab !== 'banners'; });
 
   if (!READY) {
     $('#authError').textContent =
@@ -473,6 +477,8 @@ function edit(encodedId) {
       </div>
     </div>
 
+    <div class="field"><label><input id="is_featured" type="checkbox" ${e.is_featured ? "checked" : ""}> Показывать в блоке «Специально для вас»</label></div>
+    <div class="field"><label>Метки товара</label><input id="product_tags" value="${esc((e.product_tags || []).join(", "))}" placeholder="hit, new, sale"><div class="muted small">Допустимые метки: hit, new, sale</div></div>
     <div class="grid2">
       <div class="field">
         <label>Скидка, %</label>
@@ -566,6 +572,8 @@ async function saveEdit() {
       mounting_scheme_url: scheme,
       additional_images: images,
       badge: $('#badge').value.trim(),
+      product_tags: $('#product_tags').value.split(',').map(x => x.trim()).filter(x => ['hit','new','sale'].includes(x)),
+      is_featured: $('#is_featured').checked,
       discount_percent: Math.min(99, Math.max(0, Number($('#discount_percent').value || 0))),
       sort_order: Number($('#sort_order').value || 0)
     };
@@ -612,6 +620,29 @@ function closeModal() {
 window.edit = edit;
 window.removeExistingImage = removeExistingImage;
 window.closeModal = closeModal;
+
+
+async function saveBanner() {
+  $('#bannerError').textContent = '';
+  try {
+    let image = $('#bannerImageUrl').value.trim();
+    const file = $('#bannerImage').files[0];
+    if (file) image = await uploadFile(file, 'banners');
+    if (!image) throw new Error('Добавь изображение баннера.');
+    const row = { title: $('#bannerTitle').value.trim(), subtitle: $('#bannerSubtitle').value.trim(), button_text: $('#bannerButton').value.trim(), link_url: $('#bannerLink').value.trim() || '?catalog=1', image_url: image, active: $('#bannerActive').checked, sort_order: Number($('#bannerOrder').value || 0) };
+    const id = $('#bannerId').value;
+    const result = id ? await sb.from('yechim_banners').update(row).eq('id', id) : await sb.from('yechim_banners').insert(row);
+    if (result.error) throw result.error;
+    $('#bannerEditor').hidden = true;
+    await loadBanners();
+  } catch (e) { $('#bannerError').textContent = e.message || String(e); }
+}
+async function loadBanners() {
+  const { data, error } = await sb.from('yechim_banners').select('*').order('sort_order');
+  if (error) { $('#bannerList').textContent = 'Ошибка загрузки баннеров: ' + error.message; return; }
+  window.yechimBanners = data || [];
+  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><span>'+(b.active?'Активен':'Скрыт')+'</span></div>').join('') || 'Баннеров пока нет.';
+}
 
 /* =========================
    START DASHBOARD
