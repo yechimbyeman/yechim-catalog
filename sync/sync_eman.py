@@ -1047,8 +1047,7 @@ def parse_detail(
     url: str,
     fallback_name: str,
     fallback_image: str,
-    fallback_price,
-    fallback_article: str = ''
+    fallback_price
 ):
 
     try:
@@ -1146,7 +1145,7 @@ def parse_detail(
     # Article
     # -----------------------------------------------------
 
-    sku = extract_article(page) or fallback_article
+    sku = extract_article(page)
 
 
     # -----------------------------------------------------
@@ -1406,14 +1405,11 @@ def fetch_group(
                 # Product detail
                 # -----------------------------------------
 
-                listing_article = extract_article_from_text(text)
-
                 detail = parse_detail(
                     href,
                     name,
                     image,
-                    price,
-                    listing_article
+                    price
                 )
 
 
