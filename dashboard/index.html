@@ -34,6 +34,7 @@
         <a class="dashboard-brand" href="./"><img src="../assets/brands/YECHIM.png" alt="YECHIM"></a>
         <button class="dashboard-menu-item active" data-dash-tab="products" type="button"><span class="dash-icon">▦</span>Товары</button>
         <button class="dashboard-menu-item" data-dash-tab="banners" type="button"><span class="dash-icon">▧</span>Баннеры</button>
+        <button class="dashboard-menu-item" data-dash-tab="brands" type="button"><span class="dash-icon">▣</span>Бренды</button>
         <button class="dashboard-menu-item" data-dash-tab="tags" type="button"><span class="dash-icon">✳</span>Метки товаров</button>
         <button class="dashboard-menu-item" data-dash-tab="sync" type="button"><span class="dash-icon">↻</span>Синхронизация</button>
         <button class="dashboard-menu-item" data-dash-tab="settings" type="button"><span class="dash-icon">⚙</span>Настройки</button>
@@ -53,6 +54,18 @@
               <div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div>
               <div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div>
               <div class="banner-form-actions"><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button></div><div id="bannerError" class="error-text"></div>
+            </div>
+          </div>
+        </section>
+        <section id="brandsManager" class="dashboard-page" hidden>
+          <div class="dashboard-page-heading"><div><h1>Бренды</h1><p>Управляйте названиями и изображениями брендов на главной странице.</p></div><button id="addBrandBtn" class="btn btn-primary" type="button">＋ Добавить бренд</button></div>
+          <div class="panel dashboard-panel"><div id="brandList"></div>
+            <div id="brandEditor" class="banner-editor" hidden><h3 id="brandEditorTitle">Новый бренд</h3><input id="brandId" type="hidden">
+              <div class="field"><label>Название бренда</label><input id="brandName" placeholder="Например, STARAX"></div>
+              <div class="field"><label>Изображение логотипа</label><input id="brandImage" type="file" accept="image/*"><input id="brandImageUrl" placeholder="URL изображения (если уже загружено)"></div>
+              <div class="field"><label><input id="brandActive" type="checkbox" checked> Показывать на главной</label></div>
+              <div class="field"><label>Порядок отображения</label><input id="brandOrder" type="number" value="0"></div>
+              <div class="banner-form-actions"><button id="saveBrandBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBrandBtn" class="btn btn-ghost" type="button">Отмена</button></div><div id="brandError" class="error-text"></div>
             </div>
           </div>
         </section>
