@@ -1167,7 +1167,7 @@ function getLocalizedSpecs(product) {
 
   if (typeof rawSpecs === 'string') {
     return rawSpecs
-      .split(/\\r?\\n/)
+      .split(/\r?\n/)
       .map(line => line.trim())
       .filter(Boolean)
       .map(line => {
