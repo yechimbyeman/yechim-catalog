@@ -662,7 +662,7 @@ function renderHome() {
 
                 <h2>
                   Популярные решения
-                <a class="home-all-products" href="?catalog=1">Все товары →</a>
+                </h2>
 
               </div>
 
