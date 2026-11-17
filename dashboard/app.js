@@ -33,6 +33,8 @@ const esc = (s) =>
     }[c])
   );
 
+const normalize = (value) => String(value ?? '').toLocaleLowerCase('ru-RU').trim();
+
 const money = (v) =>
   Number(v || 0).toLocaleString('ru-RU') + ' сум';
 
@@ -272,10 +274,36 @@ async function loadData() {
 
 function renderTagsManager() {
   const q = normalize($('#tagProductSearch')?.value || '');
-  const tagged = products.filter(p => { const e = enrichment[p.eman_id] || {}; const tags = Array.isArray(e.product_tags) ? e.product_tags : []; const haystack = [p.name,p.sku,e.yechim_sku].map(normalize).join(' '); return tags.length && (!q || haystack.includes(q)); });
-  const list = $('#taggedProductsList'); if (!list) return;
-  list.innerHTML = tagged.map(p => { const e = enrichment[p.eman_id] || {}; const tags = e.product_tags || []; const labels = {hit:'Хит продаж',new:'Новинка',sale:'Скидка'}; return '<div class="tag-product-row"><div><b>'+esc(p.name)+'</b><small>Артикул: '+esc(e.yechim_sku || p.sku || '—')+'</small></div><div class="tag-product-pills">'+tags.map(t=>'<span class="product-tag tag-'+t+'">'+labels[t]+'</span>').join('')+'</div><button class="btn btn-ghost" type="button" data-tag-edit="'+encodeURIComponent(p.eman_id)+'">Изменить</button></div>'; }).join('') || '<p class="muted">Товаров с метками пока нет.</p>';
+  const list = $('#taggedProductsList');
+  if (!list) return;
+  const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
+  const shown = products.filter(p => {
+    const e = enrichment[p.eman_id] || {};
+    const haystack = [p.name, p.sku, e.yechim_sku, p.brand].map(normalize).join(' ');
+    return !q || haystack.includes(q);
+  });
+  const taggedCount = products.filter(p => (enrichment[p.eman_id]?.product_tags || []).length).length;
+  const summary = $('#tagProductsSummary');
+  if (summary) summary.textContent = 'Всего товаров: ' + products.length + ' · С метками: ' + taggedCount;
+  list.innerHTML = shown.map(p => {
+    const e = enrichment[p.eman_id] || {};
+    const tags = Array.isArray(e.product_tags) ? e.product_tags : [];
+    return '<div class="tag-product-row"><div class="tag-product-info"><b>' + esc(p.name) + '</b><small>Артикул: ' + esc(e.yechim_sku || p.sku || '—') + (p.brand ? ' · ' + esc(p.brand) : '') + '</small></div><div class="tag-quick-actions">' +
+      ['hit','new','sale'].map(t => '<button type="button" class="tag-quick-chip tag-'+t+(tags.includes(t)?' is-active':'')+'" data-tag-toggle="'+t+'" data-product-id="'+encodeURIComponent(p.eman_id)+'" '+(e._tagSaving?'disabled':'')+'>'+labels[t]+'</button>').join('') +
+      '</div><button class="btn btn-ghost" type="button" data-tag-edit="'+encodeURIComponent(p.eman_id)+'">Карточка</button></div>';
+  }).join('') || '<p class="muted">Ничего не найдено.</p>';
   list.querySelectorAll('[data-tag-edit]').forEach(btn => btn.onclick = () => edit(btn.dataset.tagEdit));
+  list.querySelectorAll('[data-tag-toggle]').forEach(btn => btn.onclick = () => toggleProductTag(decodeURIComponent(btn.dataset.productId), btn.dataset.tagToggle));
+}
+async function toggleProductTag(id, tag) {
+  const existing = enrichment[id] || { eman_id: id, published: true };
+  const currentTags = Array.isArray(existing.product_tags) ? existing.product_tags : [];
+  const nextTags = currentTags.includes(tag) ? currentTags.filter(t => t !== tag) : [...currentTags, tag];
+  const row = { eman_id: id, product_tags: nextTags };
+  const { error } = await sb.from('yechim_enrichment').upsert(row, { onConflict: 'eman_id' });
+  if (error) { alert('Не удалось изменить метку: ' + error.message); return; }
+  enrichment[id] = { ...existing, ...row };
+  renderTagsManager();
 }
 function populateTagProductSelect() {
   const select = $('#tagProductSelect'); if (!select) return;
