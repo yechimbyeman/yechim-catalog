@@ -103,7 +103,29 @@ const DASH_TRANSLATIONS={
   "Добавь изображение баннера.": "Banner rasmini qo‘shing.",
   "Дата обновления пока недоступна": "Yangilanish sanasi hozircha mavjud emas",
   "Последнее обновление:": "Oxirgi yangilanish:",
-  "Артикул:": "Artikul:"
+  "Артикул:": "Artikul:",
+  "Характеристики": "Xususiyatlar",
+  "Заполни supabase-config.js перед подключением Dashboard.": "Dashboard’ni ulashdan oldin supabase-config.js faylini to‘ldiring.",
+  "Введите e-mail и пароль.": "E-mail va parolni kiriting.",
+  "Входим…": "Kirilmoqda…",
+  "Не удалось выполнить вход.": "Kirish amalga oshmadi.",
+  "Опубликован": "Chop etilgan",
+  "Скрыт": "Yashirilgan",
+  "Редактировать": "Tahrirlash",
+  "Изменить": "O‘zgartirish",
+  "Удалить": "O‘chirish",
+  "Нет изображения": "Rasm yo‘q",
+  "Брендов пока нет. Добавьте первый бренд.": "Hozircha brendlar yo‘q. Birinchi brendni qo‘shing.",
+  "Баннеров пока нет.": "Hozircha bannerlar yo‘q.",
+  "Проверьте выполнение supabase-migration-brands.sql.": "supabase-migration-brands.sql migratsiyasi bajarilganini tekshiring.",
+  "Не удалось запустить обновление:": "Yangilashni ishga tushirib bo‘lmadi:",
+  "Не удалось выполнить вход.": "Kirish amalga oshmadi.",
+  "Каждая строка должна быть в формате «Название: значение».": "Har bir qator «Nomi: qiymati» formatida bo‘lishi kerak.",
+  "У каждой строки должны быть название и значение.": "Har bir qatorda nom va qiymat bo‘lishi kerak.",
+  "Название: значение": "Nomi: qiymati",
+  "Цвет: Черный": "Rang: Qora",
+  "Материал: Сталь": "Material: Po‘lat",
+  "Длина (мм): 500": "Uzunligi (mm): 500"
 };
 function translateDashboardNode(node){
  if(!node||node.nodeType!==Node.TEXT_NODE)return;
