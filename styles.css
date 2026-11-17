@@ -2016,3 +2016,167 @@ body{background:#f7f7f5;color:#202420}
 .home-shell .products>.product{display:flex!important;visibility:visible!important;opacity:1!important;min-width:0}
 @media(max-width:1050px){.home-shell .products{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(max-width:700px){.home-shell .products{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+
+/* Unified product card layout — YECHIM */
+.product{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-width:0;
+  border:1px solid #e5eae6;
+  border-radius:20px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 4px 16px rgba(20,50,30,.045);
+}
+.product-link{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-width:0;
+  color:inherit;
+  text-decoration:none;
+}
+.product .photo{
+  position:relative;
+  flex:0 0 auto;
+  width:calc(100% - 20px);
+  aspect-ratio:1/1;
+  height:auto!important;
+  margin:10px 10px 0;
+  border:0;
+  border-radius:15px;
+  background:#f5f7f5;
+  overflow:hidden;
+}
+.product .photo img{
+  display:block;
+  width:100%;
+  height:100%;
+  padding:10px;
+  object-fit:contain;
+}
+.product .product-body{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-width:0;
+  padding:12px 14px 10px;
+}
+.product .brand-mini{
+  min-height:16px;
+  margin-bottom:3px;
+  font-size:11px;
+  line-height:16px;
+  font-weight:700;
+  letter-spacing:.04em;
+  color:#68736b;
+}
+.product .product-sku{
+  display:flex;
+  align-items:baseline;
+  gap:5px;
+  min-height:18px;
+  margin:0 0 5px;
+  font-size:11px;
+  line-height:18px;
+  overflow-wrap:anywhere;
+}
+.product .product-sku-label{color:#007831;font-weight:700;white-space:nowrap}
+.product .product-sku-value{color:#525d55;font-size:11px;font-weight:500;overflow-wrap:anywhere}
+.product h3{
+  display:-webkit-box;
+  min-height:3.9em;
+  max-height:3.9em;
+  margin:2px 0 8px;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  font-size:14px;
+  line-height:1.3;
+  font-weight:600;
+}
+.product-card-description{
+  display:-webkit-box;
+  min-height:2.6em;
+  max-height:2.6em;
+  margin:0 0 8px;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  color:#69736c;
+  font-size:12px;
+  line-height:1.3;
+}
+.product-card-description.is-empty{visibility:hidden}
+.product-card-specs{
+  display:grid;
+  gap:4px;
+  min-height:42px;
+  margin:0 0 8px;
+  align-content:start;
+}
+.product-card-spec{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  font-size:11px;
+  line-height:17px;
+}
+.product-card-spec span{
+  min-width:0;
+  overflow:hidden;
+  color:#7b847d;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.product-card-spec b{
+  max-width:55%;
+  overflow:hidden;
+  color:#303a32;
+  font-weight:600;
+  text-align:right;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.product-card-specs.is-empty{visibility:hidden}
+.product .price{
+  margin:auto 0 0;
+  padding-top:8px;
+  min-height:34px;
+  color:#161d18;
+  font-size:19px;
+  line-height:1.3;
+  font-weight:800;
+}
+.product .card-actions{
+  display:flex;
+  flex:0 0 auto;
+  padding:0 14px 14px;
+}
+.product .card-actions .btn{
+  width:100%;
+  min-height:44px;
+  border:0;
+  border-radius:14px;
+  background:#007831;
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+}
+.product .card-actions .btn:hover{background:#005f27}
+.product .product-tags{top:10px;left:10px}
+.product .product-tag{border-radius:999px}
+@media(max-width:700px){
+  .product{border-radius:16px}
+  .product .photo{width:calc(100% - 14px);margin:7px 7px 0;border-radius:12px}
+  .product .product-body{padding:9px 9px 8px}
+  .product h3{font-size:12px;min-height:3.9em;max-height:3.9em}
+  .product-card-description{font-size:11px}
+  .product-card-spec{font-size:10px}
+  .product .price{font-size:16px}
+  .product .card-actions{padding:0 9px 9px}
+  .product .card-actions .btn{min-height:39px;border-radius:12px;font-size:11px}
+}
