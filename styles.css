@@ -1647,3 +1647,55 @@ select {
     font-size: 13px;
   }
 }
+
+
+/* Self-hosted Futura New fonts */
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewLight-Reg.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewBook-Reg.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewMedium-Reg.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewDemi-Reg.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewBold-Reg.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewExtraBold-Reg.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura New";
+  src: url("./assets/fonts/FuturaNewHeavy-Reg.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
