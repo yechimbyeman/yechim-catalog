@@ -637,7 +637,7 @@ function renderHome() {
   ).innerHTML = `
 
     <div class="shell home-shell">
-      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<section class="hero-banner" aria-label="Баннер" style="background-image:url(\\''+esc(b.image_url)+'\\')">'+(b.button_text?'<a class="hero-cta" href="'+esc(b.link_url || '?catalog=1')+'">'+esc(b.button_text)+' <span aria-hidden="true">→</span></a>':'')+'</section>').join('') : ''}
+      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<section class="hero-banner" aria-label="Баннер" style="background-image:url(\''+esc(b.image_url)+'\')">'+(b.button_text?'<a class="hero-cta" href="'+esc(b.link_url || '?catalog=1')+'">'+esc(b.button_text)+' <span aria-hidden="true">→</span></a>':'')+'</section>').join('') : ''}
 
 
 
