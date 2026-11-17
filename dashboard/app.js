@@ -104,7 +104,7 @@ async function init() {
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
   $('#tagProductSearch').oninput = renderTagsManager;
-  $('#tagProductSelect').onchange = () => { const id = $('#tagProductSelect').value; if (id) edit(encodeURIComponent(id)); };
+  $('#tagAddBtn').onclick = () => { const id = $('#tagProductSelect').value; if (!id) { alert('Сначала выберите товар.'); return; } edit(encodeURIComponent(id)); };
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
   $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
