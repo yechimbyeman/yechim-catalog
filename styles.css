@@ -30,7 +30,7 @@ html{
 
 body{
   margin:0;
-  font-family:Inter,Arial,sans-serif;
+  font-family:"Futura New",Arial,sans-serif;
   color:var(--ink);
   background:var(--bg);
 }
