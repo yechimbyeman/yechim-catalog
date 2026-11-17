@@ -1,3 +1,102 @@
+/* =========================
+   PUBLIC SITE LOCALIZATION
+========================= */
+const LANGUAGE_KEY = 'yechim_language';
+let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === 'uz' ? 'uz' : 'ru';
+
+const UI_TRANSLATIONS = {
+  'Каталог':'Katalog','Поиск по артикулу...':'Artikul bo‘yicha qidirish...','Контакты':'Aloqa',
+  'Популярные решения':'Ommabop yechimlar','Товары с метками появятся здесь после назначения меток в Dashboard.':'Teglar Dashboard’da belgilanganidan so‘ng mahsulotlar shu yerda ko‘rinadi.',
+  'Артикул':'Artikul','В корзину':'Savatga','Хит продаж':'Eng ko‘p sotilgan','Новинка':'Yangi','Скидка':'Chegirma',
+  'В наличии:':'Mavjud:','Нет в наличии':'Mavjud emas','Цена уточняется':'Narxni aniqlashtiring',
+  'Фото товара':'Mahsulot rasmi','Фильтры':'Filtrlar','Бренд':'Brend','Все бренды':'Barcha brendlar','Сбросить':'Tozalash',
+  'Найдено:':'Topildi:','Поиск':'Qidiruv','Название или артикул':'Nomi yoki artikul','Найти':'Qidirish',
+  'Ничего не найдено.':'Hech narsa topilmadi.','Попробуйте другой запрос.':'Boshqa so‘rovni sinab ko‘ring.',
+  'Назад':'Orqaga','Далее':'Keyingi','Страница':'Sahifa','товаров':'ta mahsulot',
+  'У этого бренда пока нет опубликованных товаров.':'Bu brend uchun hozircha chop etilgan mahsulotlar yo‘q.',
+  'Поделиться':'Ulashish','Схема присадки':'O‘rnatish sxemasi','Инструкция по сборке':'Yig‘ish bo‘yicha yo‘riqnoma',
+  'Открыть инструкцию по сборке в новой вкладке':'Yig‘ish yo‘riqnomasini yangi oynada ochish',
+  'Ссылка на товар скопирована.':'Mahsulot havolasi nusxalandi.','Корзина':'Savat','позиция':'mahsulot','позиций':'mahsulot',
+  'шт.':'dona','Закрыть':'Yopish','Корзина пока пустая.':'Savat hozircha bo‘sh.',
+  'Отправить заявку':'So‘rov yuborish','Количество':'Miqdor','Итого':'Jami',
+  'Каталог временно недоступен.':'Katalog vaqtincha ishlamayapti.','Не удалось загрузить локальный каталог':'Mahalliy katalogni yuklab bo‘lmadi',
+  'Не удалось загрузить Excel-модуль.':'Excel modulini yuklab bo‘lmadi.','Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.':'Excel modulini yuklab bo‘lmadi. Internetga ulanishni tekshiring.',
+  'Excel-модуль загрузился некорректно.':'Excel moduli noto‘g‘ri yuklandi.','Не удалось создать Excel-файл.':'Excel faylini yaratib bo‘lmadi.',
+  'Товар YECHIM':'YECHIM mahsuloti','Популярные решения':'Ommabop yechimlar',
+  'YECHIM — Решения для вашей мебели':'YECHIM — Mebelingiz uchun yechimlar','YECHIM — Поиск':'YECHIM — Qidiruv'
+};
+
+function translateTextNode(node) {
+  if (!node || node.nodeType !== Node.TEXT_NODE) return;
+  const original = node.nodeValue;
+  const trimmed = original.trim();
+  if (!trimmed) return;
+  let translated = UI_TRANSLATIONS[trimmed];
+  if (!translated) {
+    translated = trimmed
+      .replace(/^В наличии:/, UI_TRANSLATIONS['В наличии:'])
+      .replace(/^Найдено:/, UI_TRANSLATIONS['Найдено:']);
+  }
+  if (translated && translated !== trimmed) {
+    const leading = original.match(/^\s*/)?.[0] || '';
+    const trailing = original.match(/\s*$/)?.[0] || '';
+    node.nodeValue = leading + translated + trailing;
+  }
+}
+
+function applyPublicTranslations(root = document.body) {
+  if (currentLanguage !== 'uz' || !root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(translateTextNode);
+  root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(el => {
+    for (const attr of ['placeholder','title','aria-label']) {
+      const value = el.getAttribute(attr);
+      if (value && UI_TRANSLATIONS[value]) el.setAttribute(attr, UI_TRANSLATIONS[value]);
+    }
+  });
+}
+
+function setLanguage(language) {
+  currentLanguage = language === 'uz' ? 'uz' : 'ru';
+  localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+  document.documentElement.lang = currentLanguage;
+  document.querySelectorAll('#languageSwitcher .language-btn').forEach(btn => {
+    const active = btn.dataset.lang === currentLanguage;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  renderRoute();
+  applyPublicTranslations();
+}
+
+function initLanguageSwitcher() {
+  const switcher = document.querySelector('#languageSwitcher');
+  if (!switcher) return;
+  switcher.innerHTML = '<button class="language-btn" type="button" data-lang="ru" aria-label="Русский">RU</button><span aria-hidden="true">|</span><button class="language-btn" type="button" data-lang="uz" aria-label="O‘zbekcha">UZ</button>';
+  switcher.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', () => setLanguage(btn.dataset.lang)));
+  document.documentElement.lang = currentLanguage;
+  switcher.querySelectorAll('.language-btn').forEach(btn => {
+    const active = btn.dataset.lang === currentLanguage;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  applyPublicTranslations();
+}
+
+const publicTranslationObserver = new MutationObserver(records => {
+  if (currentLanguage !== 'uz') return;
+  for (const record of records) {
+    if (record.type === 'characterData') translateTextNode(record.target);
+    record.addedNodes?.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) translateTextNode(node);
+      else if (node.nodeType === Node.ELEMENT_NODE) applyPublicTranslations(node);
+    });
+  }
+});
+publicTranslationObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+
 const CONFIG = window.YECHIM_CONFIG || {};
 
 const SUPABASE_READY = Boolean(
@@ -2343,9 +2442,11 @@ if (cartButton) {
 
 (async () => {
 
+  initLanguageSwitcher();
   await loadProducts();
 
   renderRoute();
+  applyPublicTranslations();
 
   updateCartBadge();
 
