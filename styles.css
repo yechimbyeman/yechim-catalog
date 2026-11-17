@@ -2366,3 +2366,6 @@ body:not(.home-shell) .catalog-layout .products .product > .card-actions{
 .description-expand summary::after{content:"＋";font-size:16px;line-height:1}
 .description-expand details[open] summary::after{content:"−"}
 .description-expand details .description{margin-top:10px}
+
+/* Public RU/UZ language switcher */
+.language-switcher{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:rgba(255,255,255,.65);font-size:13px}.language-switcher .language-btn{padding:6px 3px;border:0;background:transparent;color:rgba(255,255,255,.72);font:inherit;font-weight:600;cursor:pointer}.language-switcher .language-btn.active{color:#fff;font-weight:800}.language-switcher .language-btn:hover{color:#fff}
