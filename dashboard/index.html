@@ -41,12 +41,12 @@
       </aside>
       <div class="dashboard-content">
         <section id="productsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Товары</h1><p>Управляйте товарами каталога YECHIM</p></div><div class="dash-sync-top"><span id="lastSyncInfo" class="muted">Последнее обновление: загрузка…</span><span id="syncInfo" class="muted">Загрузка…</span><button id="syncPricesBtn" class="btn btn-primary" type="button">Обновить цены сейчас</button></div></div>
+          <div class="dashboard-page-heading"><div><h1>Товары</h1></div><div class="dash-sync-top"><span id="lastSyncInfo" class="muted">Последнее обновление: загрузка…</span><span id="syncInfo" class="muted">Загрузка…</span><button id="syncPricesBtn" class="btn btn-primary" type="button">Обновить цены сейчас</button></div></div>
           <div class="panel dashboard-panel"><div class="toolbar"><input id="dq" type="search" placeholder="Поиск по артикулу или названию"><select id="brandFilter"><option value="all">Все бренды</option></select><select id="publishedFilter" aria-label="Фильтр публикации"><option value="all">Все товары</option><option value="published">Опубликованные</option><option value="hidden">Скрытые</option></select></div></div>
           <div class="panel table-wrap dashboard-panel"><table class="table"><thead><tr><th>Товар</th><th>Артикул</th><th>Цена Eman</th><th>Публикация</th><th></th></tr></thead><tbody id="tbody"><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody></table></div>
         </section>
         <section id="bannerManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Баннеры</h1><p>Управляйте баннерами на главной странице</p></div><button id="addBannerBtn" class="btn btn-primary" type="button">＋ Добавить баннер</button></div>
+          <div class="dashboard-page-heading"><div><h1>Баннеры</h1></div><button id="addBannerBtn" class="btn btn-primary" type="button">＋ Добавить баннер</button></div>
           <div class="panel dashboard-panel"><div id="bannerList"></div>
             <div id="bannerEditor" class="banner-editor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden">
               <div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div>
@@ -58,12 +58,12 @@
         </section>
         <section id="tagsManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Метки товаров</h1><p>Выделяйте товары с помощью меток</p></div></div>
-          <div class="tag-settings-grid">
+          <div class="panel dashboard-panel tag-manager-panel"><h2>Добавить метку товару</h2><div class="tag-add-row"><select id="tagProductSelect"><option value="">Выберите товар…</option></select><button class="btn btn-primary" id="tagAddBtn" type="button">Добавить метку</button></div><p class="muted small">Выберите товар — откроется его карточка, где можно указать одну или несколько меток.</p></div><div class="tag-settings-grid">
             <div class="tag-setting tag-hit"><span class="tag-setting-icon">👍</span><div><b>Хит продаж</b><small>Метка для популярных товаров</small></div><span class="tag-setting-code">hit</span></div>
             <div class="tag-setting tag-new"><span class="tag-setting-icon">★</span><div><b>Новинка</b><small>Метка для новых поступлений</small></div><span class="tag-setting-code">new</span></div>
             <div class="tag-setting tag-sale"><span class="tag-setting-icon">％</span><div><b>Скидка</b><small>Метка для товаров со скидкой</small></div><span class="tag-setting-code">sale</span></div>
           </div>
-          <p class="muted tags-help">Чтобы назначить метку, откройте товар в разделе «Товары» и выберите нужные метки в карточке редактирования.</p>
+          <div class="panel dashboard-panel tagged-products-panel"><div class="tagged-products-head"><h2>Товары с метками</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию или артикулу"></div><div id="taggedProductsList"></div></div>
         </section>
         <section id="syncManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Синхронизация</h1><p>Обновление цен и данных товаров из Eman.uz</p></div></div>
