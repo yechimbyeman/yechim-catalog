@@ -31,8 +31,9 @@ function translateTextNode(node) {
   const original = node.nodeValue;
   const trimmed = original.trim();
   if (!trimmed) return;
-  let translated = UI_TRANSLATIONS[trimmed];
-  if (!translated) {
+  const reverseTranslations = Object.fromEntries(Object.entries(UI_TRANSLATIONS).map(([ru, uz]) => [uz, ru]));
+  let translated = currentLanguage === 'uz' ? UI_TRANSLATIONS[trimmed] : reverseTranslations[trimmed];
+  if (!translated && currentLanguage === 'uz') {
     translated = trimmed
       .replace(/^В наличии:/, UI_TRANSLATIONS['В наличии:'])
       .replace(/^Найдено:/, UI_TRANSLATIONS['Найдено:']);
@@ -45,7 +46,7 @@ function translateTextNode(node) {
 }
 
 function applyPublicTranslations(root = document.body) {
-  if (currentLanguage !== 'uz' || !root) return;
+  if (!root) return;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -86,7 +87,6 @@ function initLanguageSwitcher() {
 }
 
 const publicTranslationObserver = new MutationObserver(records => {
-  if (currentLanguage !== 'uz') return;
   for (const record of records) {
     if (record.type === 'characterData') translateTextNode(record.target);
     record.addedNodes?.forEach(node => {
