@@ -976,7 +976,23 @@ function productCard(p, options = {}) {
   const tags = Array.isArray(p.product_tags) ? p.product_tags : [];
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
   const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
-  const specs = getLocalizedSpecs(p).slice(0, 2);
+  const specs = getLocalizedSpecs(p)
+    .filter(([key]) => {
+      const normalizedKey = normalize(key)
+        .replace(/[ё]/g, 'е')
+        .replace(/[-_]/g, ' ')
+        .replace(/\\s+/g, ' ')
+        .replace(/[.,:;]+$/g, '')
+        .trim();
+      return ![
+        'производитель',
+        'страна производитель',
+        'страна производства',
+        'страна изготовитель',
+        'страна изготовителя'
+      ].includes(normalizedKey);
+    })
+    .slice(0, 2);
   const specsMarkup = specs.length
     ? `<div class="product-card-specs">${specs.map(([key, value]) => `<div class="product-card-spec"><span>${esc(key)}</span><b>${esc(value)}</b></div>`).join('')}</div>`
     : '<div class="product-card-specs is-empty" aria-hidden="true"><div></div><div></div></div>';
