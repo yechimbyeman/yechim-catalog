@@ -1779,3 +1779,57 @@ select {
 .banner-row{grid-template-columns:126px minmax(130px,1fr) minmax(150px,1.2fr) auto 38px 38px}
 .banner-link-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8a938d;font-size:12px}
 @media(max-width:650px){.banner-row{grid-template-columns:82px minmax(0,1fr) 34px}.banner-row .banner-link-text{grid-column:2;grid-row:2}.banner-row span{grid-column:2;grid-row:3}.banner-row button{grid-column:3;grid-row:1}.banner-row button+button{grid-column:3;grid-row:2}}
+
+/* Homepage concept: warm neutral YECHIM layout */
+body{background:#eee9e4}
+.topbar{background:#f8f6f3;border:0;box-shadow:none}
+.topbar .nav{max-width:1500px;min-height:66px;gap:14px}
+.topbar .logo{width:auto;height:48px;min-width:100px}
+.topbar .logo img{width:100%;height:100%;object-fit:contain}
+.topbar .btn-top-primary{background:#087448;color:#fff;border-radius:24px}
+.topbar .btn-top-ghost{background:transparent;color:#242824;border:0}
+#cartButton.btn-top-primary{background:transparent;color:#242824;border:0}
+.header-icon-button{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.header-icon-button img{width:19px;height:19px;object-fit:contain;mix-blend-mode:multiply}
+.header-cart-icon{width:25px;height:25px;object-fit:contain;mix-blend-mode:multiply;vertical-align:middle}
+.home-shell{max-width:1500px;margin:14px auto 28px;padding:14px 16px 18px;background:#fbfaf8;border:1px solid #e3ddd7;border-radius:20px;box-shadow:0 8px 30px rgba(61,45,32,.08)}
+.hero-banner{min-height:clamp(220px,31vw,330px);margin:0 0 16px;border-radius:13px;background-color:#d9c9b9;background-position:center;background-size:cover;overflow:hidden}
+.hero-banner span{max-width:48%;padding:12px 18px;text-shadow:none}
+.hero-banner b{font-size:clamp(30px,4.8vw,54px);color:#174d36;line-height:1.02}
+.hero-banner small{font-size:17px;color:#1f2923;line-height:1.35}
+.hero-banner em{background:#087448;border-radius:22px;font-size:13px;padding:10px 18px}
+.home-shell .section-head{margin:18px 0 10px}
+.home-shell .section-head h2{font-size:21px;font-weight:700}
+.home-shell .brand-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.home-shell .brand-card{background:#fff;border:1px solid #e4e0dc;border-radius:11px;overflow:hidden;cursor:pointer;display:flex;flex-direction:row;align-items:center;min-height:60px;box-shadow:none}
+.home-shell .brand-card:hover{border-color:#b7c9bd;transform:translateY(-1px)}
+.home-shell .brand-visual{height:58px;flex:1;background-size:cover;background-position:center;border-radius:0;display:flex;align-items:center;justify-content:center}
+.home-shell .brand-visual:before{background:rgba(255,255,255,.72)}
+.home-shell .brand-logo{max-width:78%;max-height:42px;object-fit:contain}
+.home-shell .brand-description{padding:8px 9px;display:flex;align-items:center;gap:6px}
+.home-shell .brand-description-title{font-size:13px;font-weight:700;white-space:nowrap}
+.home-shell .brand-description-text{display:none}
+.home-shell .brand-arrow{font-size:0;white-space:nowrap;color:#849087}
+.home-shell .brand-arrow:after{content:'›';font-size:20px}
+.home-shell .products{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.home-shell .product{background:#f2efec;border:0;border-radius:12px;overflow:hidden}
+.home-shell .product:hover{box-shadow:0 6px 18px rgba(40,35,30,.1)}
+.home-shell .product .photo{background:transparent;border:0;height:150px}
+.home-shell .product .photo img{object-fit:contain;padding:12px}
+.home-shell .product-body{padding:10px 12px}
+.home-shell .product h3{font-size:13px;min-height:38px;line-height:1.25}
+.home-shell .product .price{font-size:15px}
+.home-shell .product .card-actions{display:none}
+.tag-manager-panel{margin-bottom:16px}
+.tag-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;max-width:760px}
+.tag-add-row select,.tagged-products-head input{min-height:42px;padding:9px 12px;border:1px solid #e4e9e5;border-radius:8px;background:#fff}
+.tagged-products-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}
+.tagged-products-head h2{margin:0;font-size:18px}
+.tagged-products-head input{max-width:320px;width:100%}
+.tag-product-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:16px;padding:13px 0;border-top:1px solid #edf0ed}
+.tag-product-row b{display:block;font-size:14px}
+.tag-product-row small{display:block;margin-top:4px;color:#858e88;font-size:12px}
+.tag-product-pills{display:flex;gap:5px;flex-wrap:wrap}
+.tag-product-pills .product-tag{position:static}
+@media(max-width:900px){.home-shell .brand-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.home-shell .products{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.home-shell{margin:8px 8px 18px;padding:9px;border-radius:14px}.hero-banner{min-height:190px}.hero-banner span{max-width:78%;padding:8px}.hero-banner b{font-size:28px}.hero-banner small{font-size:13px}.home-shell .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-shell .brand-card{min-height:50px}.home-shell .brand-visual{height:48px}.home-shell .brand-description{padding:5px}.home-shell .brand-description-title{font-size:11px}.home-shell .products{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.home-shell .product .photo{height:115px}.tag-add-row{grid-template-columns:1fr}.tagged-products-head{align-items:stretch;flex-direction:column}.tagged-products-head input{max-width:none}.tag-product-row{grid-template-columns:1fr auto}.tag-product-pills{grid-column:1}.tag-product-row button{grid-column:2;grid-row:1/3}}
