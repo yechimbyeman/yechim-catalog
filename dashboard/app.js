@@ -100,10 +100,11 @@ async function init() {
   $('#logoutBtn').onclick = logout;
   $('#closeModal').onclick = closeModal;
   $('#saveBtn').onclick = saveEdit;
-  $('#syncPricesBtn').onclick = triggerPriceSync;
   $('#dq').oninput = renderTable;
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
+  $('#tagProductSearch').oninput = renderTagsManager;
+  $('#tagProductSelect').onchange = () => { const id = $('#tagProductSelect').value; if (id) edit(encodeURIComponent(id)); };
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
   $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
@@ -112,6 +113,7 @@ async function init() {
     Object.entries(pages).forEach(([key, selector]) => { const el = $(selector); if (el) el.hidden = key !== name; });
     document.querySelectorAll('[data-dash-tab]').forEach(b => b.classList.toggle('active', b.dataset.dashTab === name));
     if (name === 'banners') loadBanners();
+    if (name === 'tags') { populateTagProductSelect(); renderTagsManager(); }
     if (name === 'sync') loadLastSyncTime().then(() => { $('#syncPageLast').textContent = $('#lastSyncInfo').textContent; });
   }
   document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => openDashboardPage(b.dataset.dashTab));
@@ -255,6 +257,7 @@ async function loadData() {
     fillBrands();
     renderTable();
     $('#syncInfo').textContent = `Товаров: ${products.length}`;
+    renderTagsManager();
     await loadLastSyncTime();
   } catch (error) {
     $('#syncInfo').textContent = 'Ошибка загрузки';
@@ -263,14 +266,25 @@ async function loadData() {
   }
 }
 
+function renderTagsManager() {
+  const q = normalize($('#tagProductSearch')?.value || '');
+  const tagged = products.filter(p => { const e = enrichment[p.eman_id] || {}; const tags = Array.isArray(e.product_tags) ? e.product_tags : []; const haystack = [p.name,p.sku,e.yechim_sku].map(normalize).join(' '); return tags.length && (!q || haystack.includes(q)); });
+  const list = $('#taggedProductsList'); if (!list) return;
+  list.innerHTML = tagged.map(p => { const e = enrichment[p.eman_id] || {}; const tags = e.product_tags || []; const labels = {hit:'Хит продаж',new:'Новинка',sale:'Скидка'}; return '<div class="tag-product-row"><div><b>'+esc(p.name)+'</b><small>Артикул: '+esc(e.yechim_sku || p.sku || '—')+'</small></div><div class="tag-product-pills">'+tags.map(t=>'<span class="product-tag tag-'+t+'">'+labels[t]+'</span>').join('')+'</div><button class="btn btn-ghost" type="button" data-tag-edit="'+encodeURIComponent(p.eman_id)+'">Изменить</button></div>'; }).join('') || '<p class="muted">Товаров с метками пока нет.</p>';
+  list.querySelectorAll('[data-tag-edit]').forEach(btn => btn.onclick = () => edit(btn.dataset.tagEdit));
+}
+function populateTagProductSelect() {
+  const select = $('#tagProductSelect'); if (!select) return;
+  select.innerHTML = '<option value="">Выберите товар…</option>' + products.map(p => '<option value="'+esc(p.eman_id)+'">'+esc(p.name)+' — '+esc(enrichment[p.eman_id]?.yechim_sku || p.sku || 'без артикула')+'</option>').join('');
+}
 async function triggerPriceSync() {
-  const button = $('#syncPricesBtn');
-  const info = $('#syncInfo');
+  const button = $('#syncPricesBtnPage');
+  const info = $('#syncPageStatus');
   if (button.disabled) return;
 
   button.disabled = true;
   button.textContent = 'Запуск…';
-  info.textContent = 'Запускаем синхронизацию…';
+  if (info) info.textContent = 'Запускаем синхронизацию…';
   if ($('#syncPageStatus')) $('#syncPageStatus').textContent = 'Запускаем синхронизацию…';
 
   try {
@@ -289,11 +303,11 @@ async function triggerPriceSync() {
       }
       throw new Error(detail);
     }
-    info.textContent = 'Обновление отправлено в GitHub Actions';
+    if (info) info.textContent = 'Обновление отправлено в GitHub Actions';
     if ($('#syncPageStatus')) $('#syncPageStatus').textContent = 'Запрос отправлен в GitHub Actions.';
     alert('Запрос на обновление успешно отправлен. Обновление выполняется в GitHub Actions.');
   } catch (error) {
-    info.textContent = 'Не удалось запустить обновление';
+    if (info) info.textContent = 'Не удалось запустить обновление';
     if ($('#syncPageStatus')) $('#syncPageStatus').textContent = error.message || String(error);
     alert('Не удалось запустить обновление: ' + (error.message || String(error))); 
   } finally {
@@ -490,21 +504,12 @@ function edit(encodedId) {
       </div>
     </div>
 
-    <div class="field"><label><input id="is_featured" type="checkbox" ${e.is_featured ? "checked" : ""}> Показывать в блоке «Специально для вас»</label></div>
     <div class="field"><label>Метки товара</label><input id="product_tags" value="${esc((e.product_tags || []).join(", "))}" placeholder="hit, new, sale"><div class="muted small">Допустимые метки: hit, new, sale</div></div>
     <div class="grid2">
       <div class="field">
         <label>Скидка, %</label>
         <input id="discount_percent" type="number" min="0" max="99" step="1" value="${Math.min(99, Math.max(0, Number(e.discount_percent || 0)))}" placeholder="0">
         <div class="muted small">Укажи процент скидки от цены Eman. 0 — без скидки.</div>
-      </div>
-      <div class="field">
-        <label>Бейдж</label>
-        <input id="badge" value="${esc(e.badge || '')}" placeholder="Новинка">
-      </div>
-      <div class="field">
-        <label>Порядок отображения</label>
-        <input id="sort_order" type="number" value="${Number(e.sort_order || 0)}">
       </div>
     </div>
   `;
@@ -584,11 +589,9 @@ async function saveEdit() {
 
       mounting_scheme_url: scheme,
       additional_images: images,
-      badge: $('#badge').value.trim(),
       product_tags: $('#product_tags').value.split(',').map(x => x.trim()).filter(x => ['hit','new','sale'].includes(x)),
-      is_featured: $('#is_featured').checked,
-      discount_percent: Math.min(99, Math.max(0, Number($('#discount_percent').value || 0))),
-      sort_order: Number($('#sort_order').value || 0)
+      is_featured: ($('#product_tags').value.split(',').map(x => x.trim()).filter(x => ['hit','new','sale'].includes(x)).length > 0),
+      discount_percent: Math.min(99, Math.max(0, Number($('#discount_percent').value || 0)))
     };
 
     const { error } = await sb
@@ -654,7 +657,7 @@ async function loadBanners() {
   const { data, error } = await sb.from('yechim_banners').select('*').order('sort_order');
   if (error) { $('#bannerList').textContent = 'Ошибка загрузки баннеров: ' + error.message; return; }
   window.yechimBanners = data || [];
-  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><small class="banner-link-text">'+esc(b.link_url || '')+'</small><span>'+(b.active?'Активен':'Скрыт')+'</span><button class="btn btn-ghost" title="Изменить" data-edit-banner="'+b.id+'">✎</button><button class="btn btn-ghost" title="Удалить" data-delete-banner="'+b.id+'">×</button></div>').join('') || 'Баннеров пока нет.';
+  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><small class="banner-link-text">'+esc(b.link_url || '')+'</small><span>'+(b.active?'Активен':'Скрыт')+'</span><button class="btn btn-ghost" title="Изменить" data-edit-banner="'+b.id+'">✎</button><button class="btn btn-ghost" title="Удалить" data-delete-banner="'+b.id+'">🗑</button></div>').join('') || 'Баннеров пока нет.';
   $('#bannerList').querySelectorAll('[data-edit-banner]').forEach(btn => btn.onclick = () => { const b = window.yechimBanners.find(x => x.id === btn.dataset.editBanner); if (!b) return; $('#bannerEditor').hidden = false; $('#bannerId').value = b.id; $('#bannerTitle').value = b.title || ''; $('#bannerSubtitle').value = b.subtitle || ''; $('#bannerButton').value = b.button_text || ''; $('#bannerLink').value = b.link_url || '?catalog=1'; $('#bannerImageUrl').value = b.image_url || ''; $('#bannerActive').checked = b.active !== false; $('#bannerOrder').value = b.sort_order || 0; });
   $('#bannerList').querySelectorAll('[data-delete-banner]').forEach(btn => btn.onclick = async () => { if (!confirm('Удалить баннер?')) return; const res = await sb.from('yechim_banners').delete().eq('id', btn.dataset.deleteBanner); if (res.error) alert(res.error.message); else loadBanners(); });
 }
