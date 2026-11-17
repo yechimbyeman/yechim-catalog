@@ -148,6 +148,14 @@ function initDashboardLanguageSwitcher(){
  sw.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{dashboardLanguage=b.dataset.lang;localStorage.setItem(DASH_LANGUAGE_KEY,dashboardLanguage);document.documentElement.lang=dashboardLanguage;update();applyDashboardTranslations();}));
  update();
 }
+const dashboardLanguageStyles=document.createElement('style');
+dashboardLanguageStyles.textContent=`
+#languageSwitcher{display:flex;align-items:center;gap:5px;margin-left:10px;white-space:nowrap}
+#languageSwitcher .language-btn{border:0;background:transparent;color:rgba(255,255,255,.78);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px}
+#languageSwitcher .language-btn.active{color:#fff}
+#languageSwitcher span{color:rgba(255,255,255,.4)}
+`;
+document.head.appendChild(dashboardLanguageStyles);
 const dashboardLanguageObserver=new MutationObserver(records=>{for(const r of records){if(r.type==='characterData')translateDashboardNode(r.target);r.addedNodes?.forEach(n=>{if(n.nodeType===Node.TEXT_NODE)translateDashboardNode(n);else if(n.nodeType===Node.ELEMENT_NODE)applyDashboardTranslations(n);});}});
 dashboardLanguageObserver.observe(document.body,{childList:true,subtree:true,characterData:true});
 
