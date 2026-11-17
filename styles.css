@@ -2188,3 +2188,10 @@ body{background:#f7f7f5;color:#202420}
 .home-shell .product-compact .price{margin-top:auto;padding-top:12px}
 .home-shell .product-compact .product-sku{margin-bottom:5px}
 .home-shell .product-compact .card-actions{padding-top:0}
+
+
+/* Keep homepage product price close to the title; leave remaining space below */
+.home-shell .product-compact .price{
+  margin:12px 0 0!important;
+  padding-top:8px;
+}
