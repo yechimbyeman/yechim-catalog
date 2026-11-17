@@ -645,6 +645,8 @@ function renderHome() {
   ).innerHTML = `
 
     <div class="shell">
+      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<a class="hero-banner" href="'+esc(b.link_url || '?catalog=1')+'" style="background-image:url(\''+esc(b.image_url)+'\')"><span><b>'+esc(b.title || '')+'</b><small>'+esc(b.subtitle || '')+'</small>'+(b.button_text?'<em>'+esc(b.button_text)+' →</em>':'')+'</span></a>').join('') : ''}
+
 
       <section
         class="catalog-head"
@@ -2747,7 +2749,7 @@ const TRANSLATIONS = {
     'Смотреть товары →':
       'Смотреть товары →',
 
-    'Популярные решения':
+    'Специально для вас':
       'Популярные решения',
 
     'Новинки':
