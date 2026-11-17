@@ -280,6 +280,7 @@ function readRoute() {
 
     product:
       params.get('product'),
+    catalog: params.get('catalog'),
 
     brand:
       params.get('brand'),
@@ -313,6 +314,9 @@ function renderRoute() {
   if (route.product) {
 
     renderDetail();
+
+  } else if (route.catalog) {
+    renderCatalog();
 
   } else if (
     route.brand
@@ -917,6 +921,17 @@ function renderHome() {
 
   updateCartBadge();
 
+}
+
+function renderCatalog() {
+  const brands = [...new Set(state.products.map(p => p.brand).filter(Boolean))].sort();
+  const q = normalize(state.query);
+  const list = state.products.filter(p => (!q || [p.name,p.sku,p.brand].some(v => normalize(v).includes(q))) && (state.catalogBrand === 'all' || p.brand === state.catalogBrand) && (state.catalogStock === 'all' || (state.catalogStock === 'in' ? Number(p.stock_quantity)>0 : Number(p.stock_quantity)<=0)));
+  document.querySelector('#app').innerHTML = '<div class="shell"><div class="section-head"><h1>Каталог</h1><span class="muted">Найдено: '+list.length+'</span></div><div class="catalog-layout"><aside class="catalog-filters panel"><b>Фильтры</b><label>Бренд<select id="catalogBrand"><option value="all">Все бренды</option>'+brands.map(b=>'<option value="'+esc(b)+'" '+(state.catalogBrand===b?'selected':'')+'>'+esc(b)+'</option>').join('')+'</select></label><label>Наличие<select id="catalogStock"><option value="all">Любое</option><option value="in">В наличии</option><option value="out">Нет в наличии</option></select></label><button id="resetCatalog" class="btn btn-ghost">Сбросить</button></aside><div class="catalog-results"><div class="products">'+list.map(productCard).join('')+'</div></div></div></div>';
+  document.querySelector('#catalogBrand').onchange=e=>{state.catalogBrand=e.target.value;renderCatalog()};
+  document.querySelector('#catalogStock').onchange=e=>{state.catalogStock=e.target.value;renderCatalog()};
+  document.querySelector('#resetCatalog').onclick=()=>{state.catalogBrand='all';state.catalogStock='all';state.query='';renderCatalog()};
+  updateCartBadge();
 }
 
 
