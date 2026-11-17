@@ -2180,3 +2180,11 @@ body{background:#f7f7f5;color:#202420}
   .product .card-actions{padding:0 9px 9px}
   .product .card-actions .btn{min-height:39px;border-radius:12px;font-size:11px}
 }
+
+
+/* Compact cards only in the homepage Popular solutions section */
+.home-shell .product-compact .product-body{padding-bottom:12px}
+.home-shell .product-compact h3{min-height:3.9em;max-height:3.9em;margin:4px 0 0}
+.home-shell .product-compact .price{margin-top:auto;padding-top:12px}
+.home-shell .product-compact .product-sku{margin-bottom:5px}
+.home-shell .product-compact .card-actions{padding-top:0}
