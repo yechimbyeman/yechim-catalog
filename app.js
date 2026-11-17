@@ -22,7 +22,8 @@ const state = {
   selectedBrand: null,
   productId: null,
   catalogBrand: 'all',
-  banners: []
+  banners: [],
+  brands: []
 };
 
 const CART_KEY = 'yechim_cart_v2';
@@ -501,6 +502,8 @@ async function loadProducts() {
     if (db) {
       const { data: bannerRows } = await db.from('yechim_banners').select('*').eq('active', true).order('sort_order');
       state.banners = bannerRows || [];
+      const { data: brandRows, error: brandError } = await db.from('yechim_brands').select('*').eq('active', true).order('sort_order').order('name');
+      if (!brandError && brandRows) state.brands = brandRows;
     }
 
   } catch (e) {
@@ -623,6 +626,7 @@ function renderHome() {
 
 
   const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0).slice(0, 5);
+  const brandItems = state.brands.length ? state.brands : Object.entries(BRANDS).map(([name, b], i) => ({name, image_url:b.logo, sort_order:i}));
 
 
   document.querySelector(
@@ -649,77 +653,7 @@ function renderHome() {
         </div>
 
 
-        <div class="brand-grid">
-
-          ${Object.entries(
-            BRANDS
-          )
-            .map(
-              ([brand, data]) => `
-
-                <article
-                  class="brand-card"
-                  data-brand="${esc(
-                    brand
-                  )}"
-                >
-
-                  <div
-                    class="brand-visual"
-                    style="
-                      background-image:
-                        url('${data.background}');
-                    "
-                  >
-
-                    <img
-                      class="brand-logo"
-                      src="${data.logo}"
-                      alt="${esc(
-                        data.title
-                      )}"
-                    >
-
-                  </div>
-
-
-                  <div
-                    class="brand-description"
-                  >
-
-                    <div
-                      class="brand-description-title"
-                    >
-                      ${esc(
-                        data.title
-                      )}
-                    </div>
-
-
-                    <div
-                      class="brand-description-text"
-                    >
-                      ${esc(
-                        data.description
-                      )}
-                    </div>
-
-
-                    <span
-                      class="brand-arrow"
-                    >
-                      Смотреть товары →
-                    </span>
-
-                  </div>
-
-                </article>
-
-              `
-            )
-            .join('')}
-
-        </div>
+        <div class="brand-grid">\n          ${brandItems.map(b => `<article class="brand-card brand-card-simple" data-brand="${esc(b.name)}"><div class="brand-visual brand-visual-simple">${b.image_url ? `<img class="brand-logo" src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">` : `<span class="brand-name-fallback">${esc(b.name)}</span>`}</div><div class="brand-description"><div class="brand-description-title">${esc(b.name)}</div><span class="brand-arrow">›</span></div></article>`).join("")}\n        </div>
 
       </section>
 
@@ -746,11 +680,7 @@ function renderHome() {
                 class="products"
               >
 
-                ${popular
-                  .map(
-                    productCard
-                  )
-                  .join('')}
+                ${popular.length ? popular.map(productCard).join('') : '<div class="muted home-no-tagged">Товары с метками появятся здесь после назначения меток в Dashboard.</div>'}
 
               </div>
 
