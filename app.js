@@ -977,9 +977,6 @@ function productCard(p, options = {}) {
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
   const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
   const specs = getLocalizedSpecs(p).slice(0, 2);
-  const descriptionMarkup = p.description
-    ? `<p class="product-card-description">${esc(p.description)}</p>`
-    : '<p class="product-card-description is-empty" aria-hidden="true"></p>';
   const specsMarkup = specs.length
     ? `<div class="product-card-specs">${specs.map(([key, value]) => `<div class="product-card-spec"><span>${esc(key)}</span><b>${esc(value)}</b></div>`).join('')}</div>`
     : '<div class="product-card-specs is-empty" aria-hidden="true"><div></div><div></div></div>';
@@ -1001,7 +998,6 @@ function productCard(p, options = {}) {
             <span class="product-sku-value">${p.sku ? esc(p.sku) : ''}</span>
           </div>
           <h3>${esc(p.name)}</h3>
-          ${compact ? '' : descriptionMarkup}
           ${compact ? '' : specsMarkup}
           ${stockMarkup(p)}
           <div class="price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
