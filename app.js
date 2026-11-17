@@ -651,42 +651,7 @@ function renderHome() {
       ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<a class="hero-banner" href="'+esc(b.link_url || '?catalog=1')+'" style="background-image:url(\''+esc(b.image_url)+'\')"><span><b>'+esc(b.title || '')+'</b><small>'+esc(b.subtitle || '')+'</small>'+(b.button_text?'<em>'+esc(b.button_text)+' →</em>':'')+'</span></a>').join('') : ''}
 
 
-      <section
-        class="catalog-head"
-      >
 
-        <div>
-
-          <h1>
-            Каталог
-          </h1>
-
-          <p class="muted">
-            Решения для вашей мебели
-          </p>
-
-        </div>
-
-
-        <div class="search wide">
-
-          <input
-            id="q"
-            placeholder="Найти товар или артикул"
-          >
-
-
-          <button
-            class="btn btn-primary"
-            id="searchBtn"
-            type="button"
-          >
-            Найти
-          </button>
-
-        </div>
-
-      </section>
 
 
       <section>
