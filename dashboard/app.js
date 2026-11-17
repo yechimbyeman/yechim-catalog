@@ -107,7 +107,7 @@ async function init() {
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
   $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
-  document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => { $('#bannerManager').hidden = b.dataset.dashTab !== 'banners'; });
+  document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => { $('#bannerManager').hidden = b.dataset.dashTab !== 'banners'; if (b.dataset.dashTab === 'banners') loadBanners(); });
 
   if (!READY) {
     $('#authError').textContent =
@@ -641,7 +641,9 @@ async function loadBanners() {
   const { data, error } = await sb.from('yechim_banners').select('*').order('sort_order');
   if (error) { $('#bannerList').textContent = 'Ошибка загрузки баннеров: ' + error.message; return; }
   window.yechimBanners = data || [];
-  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><span>'+(b.active?'Активен':'Скрыт')+'</span></div>').join('') || 'Баннеров пока нет.';
+  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><span>'+(b.active?'Активен':'Скрыт')+'</span><button class="btn btn-ghost" data-edit-banner="'+b.id+'">Изменить</button><button class="btn btn-ghost" data-delete-banner="'+b.id+'">Удалить</button></div>').join('') || 'Баннеров пока нет.';
+  $('#bannerList').querySelectorAll('[data-edit-banner]').forEach(btn => btn.onclick = () => { const b = window.yechimBanners.find(x => x.id === btn.dataset.editBanner); if (!b) return; $('#bannerEditor').hidden = false; $('#bannerId').value = b.id; $('#bannerTitle').value = b.title || ''; $('#bannerSubtitle').value = b.subtitle || ''; $('#bannerButton').value = b.button_text || ''; $('#bannerLink').value = b.link_url || '?catalog=1'; $('#bannerImageUrl').value = b.image_url || ''; $('#bannerActive').checked = b.active !== false; $('#bannerOrder').value = b.sort_order || 0; });
+  $('#bannerList').querySelectorAll('[data-delete-banner]').forEach(btn => btn.onclick = async () => { if (!confirm('Удалить баннер?')) return; const res = await sb.from('yechim_banners').delete().eq('id', btn.dataset.deleteBanner); if (res.error) alert(res.error.message); else loadBanners(); });
 }
 
 /* =========================
