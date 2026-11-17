@@ -625,7 +625,14 @@ function renderHome() {
     'YECHIM — Решения для вашей мебели';
 
 
-  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0);
+  const popular = state.products
+    .filter(p => {
+      const tags = Array.isArray(p.product_tags)
+        ? p.product_tags
+        : (typeof p.product_tags === 'string' ? p.product_tags.replace(/[{}]/g, '').split(',').filter(Boolean) : []);
+      return tags.length > 0 || p.is_featured === true;
+    })
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   const brandItems = Object.entries(BRANDS).map(([name, brand]) => {
     const saved = state.brands.find(item => normalize(item.name) === normalize(name));
     return { name, image_url: saved?.image_url || brand.logo };
