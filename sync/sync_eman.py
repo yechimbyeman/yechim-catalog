@@ -325,19 +325,68 @@ def _extract_spec_rows(root) -> list[dict]:
 
 
 def extract_product_content(page: BeautifulSoup) -> tuple[str, list[dict]]:
-    """Extract Eman's product description and characteristics when present."""
-    description = ''
+    """Extract the fullest available Eman product description and characteristics."""
+    description_candidates = []
     description_root = _find_content_section(
         page,
         ('Описание', 'Description', 'Tavsif'),
         ('description', 'product-about', 'about-product')
     )
-    if description_root is not None:
-        dedicated = description_root.select_one('[class*="description-text"], [class*="description-content"], [itemprop="description"]')
-        target = dedicated or description_root
+
+    selectors = (
+        '[itemprop="description"]',
+        '[class*="description-text"]',
+        '[class*="description-content"]',
+        '[class*="product-description"]',
+        '[class*="description"]',
+        '#description'
+    )
+    roots = [description_root] if description_root is not None else []
+    roots.extend(page.select(', '.join(selectors)))
+
+    for root in roots:
+        if root is None:
+            continue
+        # Prefer a nested full-text container over the surrounding tab or preview.
+        nested = root.select_one('[itemprop="description"], [class*="description-text"], [class*="description-content"], [class*="product-description"]')
+        target = nested or root
         parts = [clean(x) for x in target.stripped_strings]
-        parts = [x for x in parts if x and x.casefold() not in {'описание', 'description', 'подробнее', 'читать далее'}]
-        description = clean(' '.join(parts))
+        parts = [
+            value for value in parts
+            if value and value.casefold() not in {
+                'описание', 'description', 'подробнее', 'читать далее',
+                'показать полностью', 'свернуть'
+            }
+        ]
+        candidate = clean(' '.join(parts))
+        if len(candidate) >= 40:
+            description_candidates.append(candidate)
+
+    # Some product pages expose the complete description in Product JSON-LD
+    # even when the visible tab contains only a shortened preview.
+    def collect_product_descriptions(value):
+        if isinstance(value, dict):
+            kind = value.get('@type')
+            if kind == 'Product' or (isinstance(kind, list) and 'Product' in kind):
+                text = value.get('description')
+                if isinstance(text, str) and len(clean(text)) >= 40:
+                    description_candidates.append(clean(text))
+            for child in value.values():
+                collect_product_descriptions(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect_product_descriptions(child)
+
+    for script in page.select('script[type="application/ld+json"]'):
+        raw_json = script.string or script.get_text()
+        if not raw_json:
+            continue
+        try:
+            collect_product_descriptions(json.loads(raw_json))
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+    description = max(description_candidates, key=len, default='')
 
     specs_root = _find_content_section(
         page,
