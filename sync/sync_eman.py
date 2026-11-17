@@ -193,120 +193,47 @@ def soup(
 # ARTICLE / SKU
 # =========================================================
 
-def extract_article(
-    page: BeautifulSoup
-) -> str:
-
-    """
-    Extract product article from Eman.
-
-    Examples:
-
-        Артикул 15.0047
-        Артикул: 15.0047
-        Артикул A4195016111
-    """
-
+def extract_article_from_text(value: str) -> str:
+    """Extract the article label/value from a product page or listing card."""
     pattern = re.compile(
-        r'\bартикул\b\s*'
-        r'[:№#-]?\s*'
-        r'([A-Za-zА-Яа-я0-9]'
-        r'[A-Za-zА-Яа-я0-9._/-]*)',
+        r'\bартикул\b\s*[:№#-]?\s*'
+        r'([A-Za-zА-Яа-я0-9][A-Za-zА-Яа-я0-9._/-]*)',
         re.I
     )
+    match = pattern.search(clean(value or ''))
+    return clean(match.group(1)) if match else ''
 
 
-    # -----------------------------------------------------
-    # 1. Search visible text around "Артикул"
-    # -----------------------------------------------------
-
-    for node in page.find_all(
-        string=re.compile(
-            r'\bартикул\b',
-            re.I
-        )
-    ):
-
+def extract_article(page: BeautifulSoup) -> str:
+    """Extract Eman's article from visible text or structured product markup."""
+    for node in page.find_all(string=re.compile(r'\bартикул\b', re.I)):
         parent = node.parent
-
         if not parent:
             continue
-
-
-        candidates = []
-
-
-        candidates.append(
-            clean(
-                parent.get_text(
-                    ' ',
-                    strip=True
-                )
-            )
-        )
-
-
+        candidates = [parent.get_text(' ', strip=True)]
         if parent.parent:
-
-            candidates.append(
-                clean(
-                    parent.parent.get_text(
-                        ' ',
-                        strip=True
-                    )
-                )
-            )
-
-
+            candidates.append(parent.parent.get_text(' ', strip=True))
         for candidate in candidates:
+            article = extract_article_from_text(candidate)
+            if article:
+                return article
 
-            match = pattern.search(
-                candidate
-            )
-
-            if match:
-
-                return clean(
-                    match.group(1)
-                )
-
-
-    # -----------------------------------------------------
-    # 2. Structured HTML
-    # -----------------------------------------------------
-
-    for selector in (
-        '[itemprop="sku"]',
-        '[data-article]',
-        '[data-sku]'
-    ):
-
-        node = page.select_one(
-            selector
-        )
-
-
+    for selector in ('[itemprop="sku"]', '[data-article]', '[data-sku]'):
+        node = page.select_one(selector)
         if not node:
             continue
-
-
         value = clean(
             node.get('content')
             or node.get('data-article')
             or node.get('data-sku')
-            or node.get_text(
-                ' ',
-                strip=True
-            )
+            or node.get_text(' ', strip=True)
         )
-
-
         if value:
-
             return value
 
-
-    return ''
+    # Last resort: the whole visible page text, useful when the label and
+    # value are split across adjacent elements in Eman's product template.
+    return extract_article_from_text(page.get_text(' ', strip=True))
 
 
 
@@ -1120,7 +1047,8 @@ def parse_detail(
     url: str,
     fallback_name: str,
     fallback_image: str,
-    fallback_price
+    fallback_price,
+    fallback_article: str = ''
 ):
 
     try:
@@ -1218,9 +1146,7 @@ def parse_detail(
     # Article
     # -----------------------------------------------------
 
-    sku = extract_article(
-        page
-    )
+    sku = extract_article(page) or fallback_article
 
 
     # -----------------------------------------------------
@@ -1480,16 +1406,14 @@ def fetch_group(
                 # Product detail
                 # -----------------------------------------
 
+                listing_article = extract_article_from_text(text)
+
                 detail = parse_detail(
-
                     href,
-
                     name,
-
                     image,
-
-                    price
-
+                    price,
+                    listing_article
                 )
 
 
@@ -1745,18 +1669,13 @@ def supabase_upsert(
 
     for product in products:
 
-        rows.append(
-
-            {
+        row = {
 
                 'eman_id':
                     product.eman_id,
 
                 'source_url':
                     product.source_url,
-
-                'sku':
-                    product.sku,
 
                 'name':
                     product.name,
@@ -1795,7 +1714,12 @@ def supabase_upsert(
 
             }
 
-        )
+        # Do not overwrite a previously saved Eman article with an empty
+        # parser result. Non-empty articles remain source-of-truth updates.
+        if product.sku:
+            row['sku'] = product.sku
+
+        rows.append(row)
 
 
     print(
