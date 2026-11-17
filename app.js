@@ -2973,140 +2973,39 @@ function translatePage() {
 ========================= */
 
 function initLanguageSwitcher() {
+  const nav = document.querySelector('.topbar .nav');
+  if (!nav) return;
 
-  const nav =
-    document.querySelector(
-      '.topbar .nav'
-    );
-
-
-  if (!nav) {
-
-    return;
-
+  let switcher = document.querySelector('#languageSwitcher');
+  if (!switcher) {
+    switcher = document.createElement('div');
+    switcher.id = 'languageSwitcher';
+    const cartButton = document.querySelector('#cartButton');
+    if (cartButton?.parentNode) cartButton.parentNode.insertBefore(switcher, cartButton);
+    else nav.appendChild(switcher);
   }
 
-
-  if (
-    document.querySelector(
-      '#languageSwitcher'
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  const switcher =
-    document.createElement(
-      'div'
-    );
-
-
-  switcher.id =
-    'languageSwitcher';
-
-
+  switcher.classList.add('language-switcher');
+  switcher.setAttribute('aria-label', 'Выбор языка');
   switcher.innerHTML = `
-
-    <button
-      type="button"
-      class="language-btn"
-      data-lang="ru"
-    >
-      RU
-    </button>
-
-
-    <span
-      class="language-divider"
-    >
-      |
-    </span>
-
-
-    <button
-      type="button"
-      class="language-btn"
-      data-lang="uz"
-    >
-      UZ
-    </button>
-
+    <button type="button" class="language-btn" data-lang="ru" aria-label="Русский">RU</button>
+    <span class="language-divider" aria-hidden="true">|</span>
+    <button type="button" class="language-btn" data-lang="uz" aria-label="O‘zbekcha">UZ</button>
   `;
 
-
-  const cartButton =
-    document.querySelector(
-      '#cartButton'
-    );
-
-
-  if (cartButton) {
-
-    cartButton.parentNode.insertBefore(
-      switcher,
-      cartButton
-    );
-
-  } else {
-
-    nav.appendChild(
-      switcher
-    );
-
-  }
-
-
-  switcher
-    .querySelectorAll(
-      '[data-lang]'
-    )
-    .forEach(
-      (button) => {
-
-        button.onclick = () => {
-
-          currentLanguage =
-            button.dataset.lang;
-
-
-          localStorage.setItem(
-            LANG_KEY,
-            currentLanguage
-          );
-
-
-          updateLanguageSwitcher();
-
-
-          /*
-           * Перерисовываем экран.
-           */
-
-          renderRoute();
-
-
-          /*
-           * Переводим динамический контент.
-           */
-
-          setTimeout(
-            translatePage,
-            0
-          );
-
-        };
-
-      }
-    );
-
+  switcher.querySelectorAll('[data-lang]').forEach(button => {
+    button.onclick = () => {
+      currentLanguage = button.dataset.lang;
+      localStorage.setItem(LANG_KEY, currentLanguage);
+      document.documentElement.lang = currentLanguage;
+      updateLanguageSwitcher();
+      renderRoute();
+      setTimeout(translatePage, 0);
+    };
+  });
 
   updateLanguageSwitcher();
-
 }
-
 
 /* =========================
    UPDATE SWITCHER
