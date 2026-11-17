@@ -1197,7 +1197,8 @@ function renderDetail() {
   const localizedSpecs =
     getLocalizedSpecs(p);
 
-  // Keep every source characteristic, including manufacturer and country of origin.\n  const detailSpecs = localizedSpecs;
+  // Keep every source characteristic, including manufacturer and country of origin.
+  const detailSpecs = localizedSpecs;
 
 
   document.title =
