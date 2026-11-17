@@ -653,13 +653,15 @@ function renderHome() {
         </div>
 
 
-        <div class="brand-grid">\n          ${brandItems.map(b => `<article class="brand-card brand-card-simple" data-brand="${esc(b.name)}"><div class="brand-visual brand-visual-simple">${b.image_url ? `<img class="brand-logo" src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">` : `<span class="brand-name-fallback">${esc(b.name)}</span>`}</div><div class="brand-description"><div class="brand-description-title">${esc(b.name)}</div><span class="brand-arrow">›</span></div></article>`).join("")}\n        </div>
+        <div class="brand-grid">
+          ${brandItems.map(b => `<article class="brand-card brand-card-simple" data-brand="${esc(b.name)}"><div class="brand-visual brand-visual-simple">${b.image_url ? `<img class="brand-logo" src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">` : `<span class="brand-name-fallback">${esc(b.name)}</span>`}</div><div class="brand-description"><div class="brand-description-title">${esc(b.name)}</div><span class="brand-arrow">›</span></div></article>`).join("")}
+        </div>
 
       </section>
 
 
       ${
-        popular.length
+        true
           ? `
 
             <section>
