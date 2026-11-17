@@ -1343,15 +1343,6 @@ function renderDetail() {
           </div>
 
 
-          ${
-            p.description
-              ? `
-                <div class="description-expand">
-                  <p class="description">${esc(p.description)}</p>
-                </div>
-              `
-              : ''
-          }
 
           ${
             detailSpecs.length
