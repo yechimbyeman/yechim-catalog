@@ -1071,97 +1071,42 @@ function productCard(p) {
   const tags = Array.isArray(p.product_tags) ? p.product_tags : [];
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
   const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
+  const specs = getLocalizedSpecs(p).slice(0, 2);
+  const descriptionMarkup = p.description
+    ? `<p class="product-card-description">${esc(p.description)}</p>`
+    : '<p class="product-card-description is-empty" aria-hidden="true"></p>';
+  const specsMarkup = specs.length
+    ? `<div class="product-card-specs">${specs.map(([key, value]) => `<div class="product-card-spec"><span>${esc(key)}</span><b>${esc(value)}</b></div>`).join('')}</div>`
+    : '<div class="product-card-specs is-empty" aria-hidden="true"><div></div><div></div></div>';
 
   return `
-    <article
-      class="product"
-    >
-
-      <a
-        class="product-link"
-        href="${productUrl(p.id)}"
-      >
-
+    <article class="product">
+      <a class="product-link" href="${productUrl(p.id)}">
         <div class="photo">
           ${tagMarkup ? `<div class="product-tags">${tagMarkup}</div>` : ''}
-
           ${Number(p.discount_percent || 0) > 0 ? `<span class="discount-sticker photo-discount">−${Math.min(99, Number(p.discount_percent))}%</span>` : ''}
-
-          ${
-            p.image
-              ? `
-                <img
-                  src="${esc(
-                    p.image
-                  )}"
-                  alt="${esc(
-                    p.name
-                  )}"
-                  loading="lazy"
-                >
-              `
-              : `
-                <span>
-                  Фото товара
-                </span>
-              `
-          }
-
+          ${p.image
+            ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
+            : '<span>Фото товара</span>'}
         </div>
-
-
-        <div
-          class="product-body"
-        >
-
-          <div class="brand-mini">
-            ${esc(p.brand)}
-          </div>
-
-
+        <div class="product-body">
+          <div class="brand-mini">${esc(p.brand || '')}</div>
           <div class="product-sku">
             <span class="product-sku-label">Артикул</span>
             <span class="product-sku-value">${p.sku ? esc(p.sku) : ''}</span>
           </div>
-
-          <h3>
-            ${esc(p.name)}
-          </h3>
-
-
+          <h3>${esc(p.name)}</h3>
+          ${descriptionMarkup}
+          ${specsMarkup}
           ${stockMarkup(p)}
-
-
           <div class="price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
             ${priceMarkup(p)}
           </div>
-
         </div>
-
       </a>
-
-
-      <div
-        class="product-body"
-        style="padding-top:0"
-      >
-
-        <div class="card-actions">
-
-          <button
-            class="btn btn-primary"
-            type="button"
-            data-add="${encodeURIComponent(
-              p.id
-            )}"
-          >
-            В корзину
-          </button>
-
-        </div>
-
+      <div class="card-actions">
+        <button class="btn btn-primary" type="button" data-add="${encodeURIComponent(p.id)}">В корзину</button>
       </div>
-
     </article>
   `;
 }
