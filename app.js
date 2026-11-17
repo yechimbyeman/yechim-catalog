@@ -1434,14 +1434,15 @@ function renderDetail() {
           ${
             p.description
               ? `
-                <details class="description-expand">
-                  <summary>Подробнее</summary>
-                  <p class="description">
-                    ${esc(
-                      p.description
-                    )}
-                  </p>
-                </details>
+                <div class="description-expand">
+                  <p class="description-preview">${esc(p.description.length > 220 ? p.description.slice(0, 220).replace(/\\s+\\S*$/, '') + '…' : p.description)}</p>
+                  ${p.description.length > 220 ? `
+                    <details>
+                      <summary>Подробнее</summary>
+                      <p class="description">${esc(p.description)}</p>
+                    </details>
+                  ` : ''}
+                </div>
               `
               : ''
           }
