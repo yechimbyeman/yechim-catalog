@@ -2300,3 +2300,39 @@ body{background:#f7f7f5;color:#202420}
 .catalog-layout .catalog-results .products > .product > .card-actions{
   margin-top:0!important;
 }
+
+
+/* Catalog: force natural content height; no flex spacer before price */
+body:not(.home-shell) .catalog-layout .products .product{
+  height:auto!important;
+}
+body:not(.home-shell) .catalog-layout .products .product > .product-link{
+  display:block!important;
+  flex:0 0 auto!important;
+  min-height:0!important;
+}
+body:not(.home-shell) .catalog-layout .products .product > .product-link > .product-body{
+  display:block!important;
+  flex:0 0 auto!important;
+  height:auto!important;
+  min-height:0!important;
+}
+body:not(.home-shell) .catalog-layout .products .product .product-body > .price{
+  display:block!important;
+  margin:10px 0 8px!important;
+  padding:0!important;
+  min-height:0!important;
+}
+body:not(.home-shell) .catalog-layout .products .product .product-card-description{
+  display:block!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  -webkit-line-clamp:unset!important;
+  -webkit-box-orient:initial!important;
+  white-space:normal!important;
+}
+body:not(.home-shell) .catalog-layout .products .product > .card-actions{
+  margin-top:0!important;
+}
