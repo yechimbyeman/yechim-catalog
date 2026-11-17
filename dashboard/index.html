@@ -189,8 +189,245 @@
         <button class="dashboard-menu-item dashboard-logout" id="menuLogoutBtn" type="button">Выйти</button>
       </aside>
       <div class="dashboard-content">
-        <section id="productsManager" class="dashboard-page">
-    </section><section id="bannerManager" class="panel dashboard-page" hidden><div class="section-head"><h2>Баннеры главной страницы</h2><button id="addBannerBtn" class="btn btn-primary" type="button">Добавить баннер</button></div><div id="bannerList"></div><div id="bannerEditor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden"><div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div><div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div><div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button><div id="bannerError" class="error-text"></div></div></section>
+        <section id="productsManager" class="dashboard-page"> class="panel dashboard-page" hidden><div class="section-head"><h2>Баннеры главной страницы</h2><button id="addBannerBtn" class="btn btn-primary" type="button">Добавить баннер</button></div><div id="bannerList"></div><div id="bannerEditor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden"><div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div><div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div><div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button><div id="bannerError" class="error-text"></div></div></section>
+
+    <!-- =========================
+         FILTERS / SEARCH
+    ========================== -->
+
+    <div class="panel">
+
+      <div class="toolbar">
+
+        <input
+          id="dq"
+          type="search"
+          placeholder="Поиск по артикулу или названию"
+        >
+
+
+        <select id="brandFilter">
+
+          <option value="all">
+            Все бренды
+          </option>
+
+        </select>
+
+        <select id="publishedFilter" aria-label="Фильтр публикации">
+          <option value="all">Все товары</option>
+          <option value="published">Опубликованные</option>
+          <option value="hidden">Скрытые</option>
+        </select>
+
+      </div>
+
+    </div>
+
+    <!-- =========================
+         PRODUCTS TABLE
+    ========================== -->
+
+    <div class="panel table-wrap">
+
+      <table class="table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Товар
+            </th>
+
+            <th>
+              Артикул
+            </th>
+
+            <th>
+              Цена Eman
+            </th>
+            <th>Публикация</th>
+            <th></th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="tbody">
+
+          <tr>
+
+            <td
+              colspan="5"
+              class="muted"
+            >
+              Загрузка…
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+        </section>
+        <section id="bannerManager" class="panel dashboard-page" hidden><div class="section-head"><h2>Баннеры главной страницы</h2><button id="addBannerBtn" class="btn btn-primary" type="button">Добавить баннер</button></div><div id="bannerList"></div><div id="bannerEditor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden"><div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div><div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div><div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button><div id="bannerError" class="error-text"></div></div></section>
+        <section id="tagsManager" class="panel dashboard-page" hidden>
+          <h2>Метки товаров</h2>
+          <p class="muted">Метки назначаются в карточке товара: открой товар → поле «Метки товара».</p>
+          <p>hit — Хит продаж · new — Новинка · sale — Скидка</p>
+        </section>
+        <section id="syncManager" class="panel dashboard-page" hidden>
+          <h2>Синхронизация</h2>
+          <p class="muted">Запуск обновления цен и просмотр последней успешной синхронизации.</p>
+          <div class="sync-page-actions"><span id="syncPageLast" class="muted">Последнее обновление: загрузка…</span><button id="syncPricesBtnPage" class="btn btn-primary" type="button">Обновить цены сейчас</button></div>
+          <div id="syncPageStatus" class="muted"></div>
+        </section>
+        <section id="settingsManager" class="panel dashboard-page" hidden>
+          <h2>Настройки</h2><p class="muted">Общие параметры каталога. Дополнительные настройки будут добавляться сюда.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+
+<!-- =========================
+     EDIT MODAL
+========================= -->
+
+<div
+  class="modal"
+  id="modal"
+>
+
+  <div class="modal-card">
+
+    <div class="modal-head">
+
+      <div>
+
+        <div
+          id="mbrand"
+          class="muted"
+        ></div>
+
+        <h2 id="mtitle"></h2>
+
+      </div>
+
+      <button
+        id="closeModal"
+        class="btn btn-ghost"
+        type="button"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <!-- Dynamic edit fields -->
+
+    <div id="fields"></div>
+
+    <div
+      id="saveError"
+      class="error-text"
+    ></div>
+
+    <div class="modal-actions">
+
+      <button
+        id="saveBtn"
+        class="btn btn-primary"
+        type="button"
+      >
+        Сохранить
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================
+     SCRIPTS
+========================= -->
+
+<script src="../supabase-config.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+</body>
+</html>
+
+
+  <!-- =========================
+       DASHBOARD APP
+  ========================== -->
+
+  <section
+    id="appPanel"
+    hidden
+  >
+
+    <!-- DASHBOARD HEADER -->
+
+    <div class="section-head">
+
+      <div>
+
+        <h2>
+          YECHIM Dashboard
+        </h2>
+
+
+      </div>
+
+      <div class="dash-actions">
+      <span id="lastSyncInfo" class="muted">
+  Последнее обновление: загрузка…
+</span>
+
+        <span
+          id="syncInfo"
+          class="muted"
+        >
+          Загрузка…
+        </span>
+
+
+        <button
+          id="syncPricesBtn"
+          class="btn btn-primary"
+          type="button"
+        >
+          Обновить цены сейчас
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="dashboard-layout">
+      <aside class="dashboard-sidebar" aria-label="Меню Dashboard">
+        <button class="dashboard-menu-item active" data-dash-tab="products">Товары</button>
+        <button class="dashboard-menu-item" data-dash-tab="banners">Баннеры</button>
+        <button class="dashboard-menu-item" data-dash-tab="tags">Метки товаров</button>
+        <button class="dashboard-menu-item" data-dash-tab="sync">Синхронизация</button>
+        <button class="dashboard-menu-item" data-dash-tab="settings">Настройки</button>
+        <button class="dashboard-menu-item dashboard-logout" id="menuLogoutBtn" type="button">Выйти</button>
+      </aside>
+      <div class="dashboard-content">
+        <section id="productsManager" class="dashboard-page"> class="panel dashboard-page" hidden><div class="section-head"><h2>Баннеры главной страницы</h2><button id="addBannerBtn" class="btn btn-primary" type="button">Добавить баннер</button></div><div id="bannerList"></div><div id="bannerEditor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden"><div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div><div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div><div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button><div id="bannerError" class="error-text"></div></div></section>
 
     <!-- =========================
          FILTERS / SEARCH
