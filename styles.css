@@ -1837,8 +1837,8 @@ body{background:#eee9e4}
 .topbar #cartButton .header-cart-icon{width:25px;height:25px;color:#fff}
 .topbar #cartButton .count-badge{background:#fff;color:#138353}
 .topbar #languageSwitcher{margin:0 2px;order:0}
-.topbar #languageSwitcher .language-btn{color:rgba(255,255,255,.78)}
-.topbar #languageSwitcher .language-btn.active{color:#fff;font-weight:600}
+.topbar #languageSwitcher .language-btn{color:#087448}
+.topbar #languageSwitcher .language-btn.active{color:#087448;font-weight:600}
 .topbar #catalogButton{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.28);color:#fff;white-space:nowrap}
 .topbar .header-search{min-width:180px;max-width:520px;flex:1}
 .topbar .header-search input{min-width:0}
