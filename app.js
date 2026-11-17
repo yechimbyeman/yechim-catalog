@@ -5,7 +5,7 @@ const LANGUAGE_KEY = 'yechim_language';
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === 'uz' ? 'uz' : 'ru';
 
 const UI_TRANSLATIONS = {
-'Каталог':'Katalog','Поиск по артикулу...':'Artikul bo‘yicha qidirish...','Контакты':'Aloqa','Популярные решения':'Ommabop yechimlar','Товары с метками появятся здесь после назначения меток в Dashboard.':'Teglar Dashboard’da belgilanganidan so‘ng mahsulotlar shu yerda ko‘rinadi.',
+'Каталог':'Katalog','Поиск по артикулу...':'Artikul bo‘yicha qidirish...','Поиск по артикулу…':'Artikul bo‘yicha qidirish…','Контакты':'Aloqa','Популярные решения':'Ommabop yechimlar','Товары с метками появятся здесь после назначения меток в Dashboard.':'Teglar Dashboard’da belgilanganidan so‘ng mahsulotlar shu yerda ko‘rinadi.',
 'Артикул':'Artikul','Артикул:':'Artikul:','В корзину':'Savatga','Хит продаж':'Eng ko‘p sotilgan','Новинка':'Yangi','Новинки':'Yangi mahsulotlar','Скидка':'Chegirma','В наличии:':'Mavjud:','Нет в наличии':'Mavjud emas','Цена уточняется':'Narxni aniqlashtiring','Фото товара':'Mahsulot rasmi','Фильтры':'Filtrlar','Бренд':'Brend','Бренды':'Brendlar','Все бренды':'Barcha brendlar','Сбросить':'Tozalash',
 'Найдено:':'Topildi:','Поиск':'Qidiruv','Название или артикул':'Nomi yoki artikul','Найти':'Qidirish','Найти товар или артикул':'Mahsulot yoki artikulni qidiring','Ничего не найдено.':'Hech narsa topilmadi.','Попробуйте другой запрос.':'Boshqa so‘rovni sinab ko‘ring.','Назад':'Orqaga','Далее':'Keyingi','Страница':'Sahifa','товаров':'ta mahsulot','У этого бренда пока нет опубликованных товаров.':'Bu brend uchun hozircha chop etilgan mahsulotlar yo‘q.',
 'Поделиться':'Ulashish','Схема присадки':'Montaj sxemasi','Инструкция по сборке':'Yig‘ish bo‘yicha yo‘riqnoma','Открыть инструкцию по сборке в новой вкладке':'Yig‘ish yo‘riqnomasini yangi oynada ochish','Ссылка на товар скопирована.':'Mahsulot havolasi nusxalandi.','Корзина':'Savat','позиция':'mahsulot','позиций':'mahsulot','шт.':'dona','Закрыть':'Yopish','Корзина пока пустая.':'Savat hozircha bo‘sh.','Отправить заявку':'So‘rov yuborish','Количество':'Miqdor','Итого':'Jami',
@@ -197,7 +197,7 @@ const esc = (s) =>
 const money = (v) =>
   Number(v || 0)
     .toLocaleString('ru-RU') +
-  ' сум';
+  (currentLanguage === 'uz' ? ' so‘m' : ' сум');
 
 
 const normalize = (x) =>
@@ -1056,7 +1056,9 @@ function priceMarkup(p, detail = false) {
 function productCard(p, options = {}) {
   const compact = options.compact === true;
   const tags = Array.isArray(p.product_tags) ? p.product_tags : [];
-  const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
+  const labels = currentLanguage === 'uz'
+    ? { hit: 'Eng ko‘p sotilgan', new: 'Yangi', sale: 'Chegirma' }
+    : { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
   const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
   return `
     <article class="product${compact ? " product-compact" : ""}">
@@ -1107,67 +1109,77 @@ function getProduct() {
 
 
 function getLocalizedSpecs(product) {
+  if (!product) return [];
 
-  if (!product) {
-    return {};
-  }
+  const hasContent = (value) => {
+    if (value === null || value === undefined) return false;
+    if (Array.isArray(value)) return value.some(item => item && (
+      (item.name !== undefined && item.value !== undefined) ||
+      (Array.isArray(item) && item.length >= 2)
+    ));
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return String(value).trim().length > 0;
+  };
 
+  const unwrap = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return hasContent(value) ? value : null;
+    if ('ru' in value || 'uz' in value) {
+      const preferred = value[currentLanguage];
+      const fallback = value[currentLanguage === 'uz' ? 'ru' : 'uz'];
+      return hasContent(preferred) ? preferred : (hasContent(fallback) ? fallback : null);
+    }
+    return hasContent(value) ? value : null;
+  };
 
-  const rawSpecs =
-    currentLanguage === 'uz'
-      ? (
-          product.specs_uz ||
-          product.specsUz ||
-          (product.specs && product.specs.uz) ||
-          product.characteristics_uz ||
-          product.characteristicsUz
-        )
-      : (
-          product.specs_ru ||
-          product.specsRu ||
-          (product.specs && product.specs.ru) ||
-          product.characteristics_ru ||
-          product.characteristicsRu ||
-          product.specs
-        );
+  const candidates = currentLanguage === 'uz'
+    ? [
+        product.specs_uz,
+        product.specsUz,
+        product.characteristics_uz,
+        product.characteristicsUz,
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ]
+    : [
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ];
 
-
-  if (!rawSpecs) {
-    return {};
-  }
-
+  const rawSpecs = candidates.map(unwrap).find(hasContent);
+  if (!rawSpecs) return [];
 
   if (Array.isArray(rawSpecs)) {
     return rawSpecs
-      .filter(item => item && item.name !== undefined && item.value !== undefined)
-      .map(item => [item.name, item.value]);
+      .filter(item => item && (
+        (item.name !== undefined && item.value !== undefined) ||
+        (Array.isArray(item) && item.length >= 2)
+      ))
+      .map(item => Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value]);
   }
 
-
-  if (typeof rawSpecs === 'object') {
-    return Object.entries(rawSpecs);
-  }
-
+  if (typeof rawSpecs === 'object') return Object.entries(rawSpecs);
 
   if (typeof rawSpecs === 'string') {
     return rawSpecs
-      .split(/\r?\n/)
+      .split(/\\r?\\n/)
       .map(line => line.trim())
       .filter(Boolean)
       .map(line => {
         const separator = line.indexOf(':');
-
         return separator === -1
           ? [line, '']
           : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
       });
   }
 
-
-  return {};
-
+  return [];
 }
-
 
 function renderDetail() {
 
@@ -1185,17 +1197,7 @@ function renderDetail() {
   const localizedSpecs =
     getLocalizedSpecs(p);
 
-  // Brand is already shown above the product name; omit duplicate manufacturer fields.
-  const detailSpecs = localizedSpecs.filter(([key]) => {
-    const normalizedKey = normalize(key).replace(/[ё]/g, 'е').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
-    return ![
-      'производитель',
-      'страна производитель',
-      'страна производства',
-      'страна изготовитель',
-      'страна изготовителя'
-    ].includes(normalizedKey);
-  });
+  // Keep every source characteristic, including manufacturer and country of origin.\n  const detailSpecs = localizedSpecs;
 
 
   document.title =
