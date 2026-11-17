@@ -117,6 +117,7 @@ async function init() {
   document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => openDashboardPage(b.dataset.dashTab));
   $('#menuLogoutBtn').onclick = logout;
   $('#syncPricesBtnPage').onclick = triggerPriceSync;
+  openDashboardPage('products');
 
   if (!READY) {
     $('#authError').textContent =
