@@ -346,219 +346,123 @@ window.addEventListener(
    DATA
 ========================= */
 
-async function loadProducts() {
-
-  try {
-
-    if (db) {
-
-      // PostgREST returns at most 1000 rows by default.
-      // Fetch the RPC result in ordered pages so the full catalog is loaded.
-      const pageSize = 500;
-      let offset = 0;
-      let allProducts = [];
-
-      while (true) {
-        const { data: page, error } = await db
-          .rpc('get_public_catalog')
-          .range(offset, offset + pageSize - 1);
-
-        if (error) {
-          throw error;
-        }
-
-        const rows = page || [];
-        allProducts = allProducts.concat(rows);
-
-        if (rows.length < pageSize) {
-          break;
-        }
-
-        offset += pageSize;
-      }
-
-      console.info(`YECHIM catalog loaded: ${allProducts.length} products`);
-
-      state.products =
-        allProducts.map(
-          (p) => ({
-
-            id:
-              p.eman_id,
-
-            eman_id:
-              p.eman_id,
-
-            source_url:
-              p.source_url,
-
-            sku:
-              p.yechim_sku ||
-              p.sku ||
-              '',
-
-            name:
-              p.name,
-
-            brand:
-              p.brand,
-
-            category:
-              p.category ||
-              'Без категории',
-
-            subcategory:
-              p.subcategory ||
-              '',
-
-            price:
-              p.price,
-
-            currency:
-              p.currency,
-
-            image:
-              p.image_url,
-
-            stock_quantity:
-              p.stock_quantity !== null &&
-              p.stock_quantity !== undefined
-                ? p.stock_quantity
-                : null,
-
-            stock_unit:
-              p.stock_unit ||
-              'шт.',
-
-            stock_locations:
-              p.stock_locations ||
-              [],
-
-            description:
-              p.description,
-
-            specs:
-              p.specs ||
-              {},
-
-            specs_ru:
-              p.specs_ru ||
-              p.specsRu ||
-              p.characteristics_ru ||
-              p.characteristicsRu ||
-              null,
-
-            specs_uz:
-              p.specs_uz ||
-              p.specsUz ||
-              p.characteristics_uz ||
-              p.characteristicsUz ||
-              null,
-
-            mounting_scheme:
-              p.mounting_scheme_url,
-
-            additional_images:
-              p.additional_images ||
-              [],
-
-            badge: '',
-            product_tags: p.product_tags || [],
-            is_featured: Boolean(p.is_featured),
-
-            discount_percent:
-              Number(p.discount_percent || 0),
-
-            sort_order:
-              p.sort_order ||
-              0
-
-          })
-        );
-
-    } else {
-
-      const r =
-        await fetch(
-          'data/products.json'
-        );
-
-
-      const raw =
-        await r.json();
-
-
-      state.products =
-        (raw.products || []).map(
-          (p) => ({
-
-            ...p,
-
-            stock_quantity:
-              p.stock_quantity !== null &&
-              p.stock_quantity !== undefined
-                ? p.stock_quantity
-                : null,
-
-            stock_unit:
-              p.stock_unit ||
-              'шт.',
-
-            stock_locations:
-              p.stock_locations ||
-              []
-
-          })
-        );
-
-    }
-
-    if (db) {
-      const { data: bannerRows } = await db.from('yechim_banners').select('*').eq('active', true).order('sort_order');
-      state.banners = bannerRows || [];
-      const { data: brandRows, error: brandError } = await db.from('yechim_brands').select('*').eq('active', true).order('sort_order').order('name');
-      if (!brandError && brandRows) state.brands = brandRows;
-    }
-
-  } catch (e) {
-
-    state.products = [];
-
-
-    document.querySelector(
-      '#app'
-    ).innerHTML = `
-
-      <div class="shell">
-
-        <div class="panel error">
-
-          <b>
-            Каталог временно недоступен.
-          </b>
-
-          <div class="muted">
-
-            ${esc(
-              e.message || e
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
-
-  } finally {
-
-    state.loading = false;
-
-  }
-
+function mapCatalogProduct(p) {
+  return {
+    id: p.eman_id,
+    eman_id: p.eman_id,
+    source_url: p.source_url,
+    sku: p.yechim_sku || p.sku || '',
+    name: p.name,
+    brand: p.brand,
+    category: p.category || 'Без категории',
+    subcategory: p.subcategory || '',
+    price: p.price,
+    currency: p.currency,
+    image: p.image_url,
+    stock_quantity: p.stock_quantity !== null && p.stock_quantity !== undefined ? p.stock_quantity : null,
+    stock_unit: p.stock_unit || 'шт.',
+    stock_locations: p.stock_locations || [],
+    description: p.description,
+    specs: p.specs || {},
+    specs_ru: p.specs_ru || p.specsRu || p.characteristics_ru || p.characteristicsRu || null,
+    specs_uz: p.specs_uz || p.specsUz || p.characteristics_uz || p.characteristicsUz || null,
+    mounting_scheme: p.mounting_scheme_url,
+    additional_images: p.additional_images || [],
+    badge: '',
+    product_tags: p.product_tags || [],
+    is_featured: Boolean(p.is_featured),
+    discount_percent: Number(p.discount_percent || 0),
+    sort_order: p.sort_order || 0
+  };
 }
 
+async function loadRemainingProducts(initialCount, pageSize = 250) {
+  if (!db) return;
+  let offset = initialCount;
+  let loaded = 0;
+
+  try {
+    while (true) {
+      const { data: page, error } = await db
+        .rpc('get_public_catalog')
+        .order('is_featured', { ascending: false })
+        .order('product_tags', { ascending: false })
+        .order('sort_order', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) throw error;
+      const rows = page || [];
+      if (!rows.length) break;
+
+      const existing = new Set(state.products.map(p => String(p.id)));
+      for (const row of rows) {
+        if (!existing.has(String(row.eman_id))) {
+          state.products.push(mapCatalogProduct(row));
+          existing.add(String(row.eman_id));
+        }
+      }
+
+      loaded += rows.length;
+      offset += rows.length;
+      if (rows.length < pageSize) break;
+    }
+
+    console.info(`YECHIM background catalog loaded: ${loaded} additional products`);
+
+    const route = readRoute();
+    if (route.catalog || route.brand) renderRoute();
+  } catch (error) {
+    console.warn('YECHIM background catalog load failed:', error);
+  }
+}
+
+async function loadProducts() {
+  try {
+    if (db) {
+      const pageSize = 250;
+      const [productResult, bannerResult, brandResult] = await Promise.all([
+        db.rpc('get_public_catalog')
+          .order('is_featured', { ascending: false })
+          .order('product_tags', { ascending: false })
+          .order('sort_order', { ascending: true })
+          .range(0, pageSize - 1),
+        db.from('yechim_banners').select('*').eq('active', true).order('sort_order'),
+        db.from('yechim_brands').select('*').eq('active', true).order('sort_order').order('name')
+      ]);
+
+      if (productResult.error) throw productResult.error;
+      state.products = (productResult.data || []).map(mapCatalogProduct);
+      state.banners = bannerResult.data || [];
+      if (!brandResult.error && brandResult.data) state.brands = brandResult.data;
+
+      console.info(`YECHIM priority catalog loaded: ${state.products.length} products`);
+      state.loading = false;
+      // Fetch the remaining products only after the first screen has rendered.
+      setTimeout(() => loadRemainingProducts(state.products.length, pageSize), 0);
+    } else {
+      const response = await fetch('data/products.json');
+      if (!response.ok) throw new Error('Не удалось загрузить локальный каталог');
+      const raw = await response.json();
+      state.products = (raw.products || []).map(p => ({
+        ...p,
+        stock_quantity: p.stock_quantity !== null && p.stock_quantity !== undefined ? p.stock_quantity : null,
+        stock_unit: p.stock_unit || 'шт.',
+        stock_locations: p.stock_locations || []
+      }));
+    }
+  } catch (error) {
+    state.products = [];
+    document.querySelector('#app').innerHTML = `
+      <div class="shell">
+        <div class="panel error">
+          <b>Каталог временно недоступен.</b>
+          <div class="muted">${esc(error.message || error)}</div>
+        </div>
+      </div>`;
+  } finally {
+    state.loading = false;
+  }
+}
 
 /* =========================
    CART
