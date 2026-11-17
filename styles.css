@@ -2202,3 +2202,24 @@ body{background:#f7f7f5;color:#202420}
   margin:12px 0 0!important;
   padding-top:8px;
 }
+
+
+/* Catalog cards: prevent the product body from stretching and pushing price down */
+.catalog-layout .products .product .product-link{
+  display:block!important;
+  flex:0 0 auto!important;
+}
+.catalog-layout .products .product .product-body{
+  display:block!important;
+  flex:0 0 auto!important;
+  height:auto!important;
+}
+.catalog-layout .products .product .price{
+  display:block!important;
+  margin:12px 0 0!important;
+  padding-top:0!important;
+  min-height:0!important;
+}
+.catalog-layout .products .product .card-actions{
+  margin-top:auto!important;
+}
