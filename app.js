@@ -352,21 +352,35 @@ async function loadProducts() {
 
     if (db) {
 
-      const {
-        data,
-        error
-      } = await db.rpc(
-        'get_public_catalog'
-      );
+      // PostgREST returns at most 1000 rows by default.
+      // Fetch the RPC result in ordered pages so the full catalog is loaded.
+      const pageSize = 500;
+      let offset = 0;
+      let allProducts = [];
 
+      while (true) {
+        const { data: page, error } = await db
+          .rpc('get_public_catalog')
+          .range(offset, offset + pageSize - 1);
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
+
+        const rows = page || [];
+        allProducts = allProducts.concat(rows);
+
+        if (rows.length < pageSize) {
+          break;
+        }
+
+        offset += pageSize;
       }
 
+      console.info(`YECHIM catalog loaded: ${allProducts.length} products`);
 
       state.products =
-        (data || []).map(
+        allProducts.map(
           (p) => ({
 
             id:
