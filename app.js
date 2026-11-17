@@ -692,7 +692,7 @@ function renderHome() {
                 class="products"
               >
 
-                ${popular.length ? popular.map(productCard).join('') : '<div class="muted home-no-tagged">Товары с метками появятся здесь после назначения меток в Dashboard.</div>'}
+                ${popular.length ? popular.map(p => productCard(p, { compact: true })).join('') : '<div class="muted home-no-tagged">Товары с метками появятся здесь после назначения меток в Dashboard.</div>'}
 
               </div>
 
@@ -1067,7 +1067,8 @@ function priceMarkup(p, detail = false) {
    PRODUCT CARD
 ========================= */
 
-function productCard(p) {
+function productCard(p, options = {}) {
+  const compact = options.compact === true;
   const tags = Array.isArray(p.product_tags) ? p.product_tags : [];
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
   const tagMarkup = tags.map(t => labels[t] ? '<span class="product-tag tag-' + t + '">' + labels[t] + '</span>' : '').join('');
@@ -1080,7 +1081,7 @@ function productCard(p) {
     : '<div class="product-card-specs is-empty" aria-hidden="true"><div></div><div></div></div>';
 
   return `
-    <article class="product">
+    <article class="product${compact ? " product-compact" : ""}">
       <a class="product-link" href="${productUrl(p.id)}">
         <div class="photo">
           ${tagMarkup ? `<div class="product-tags">${tagMarkup}</div>` : ''}
@@ -1096,8 +1097,8 @@ function productCard(p) {
             <span class="product-sku-value">${p.sku ? esc(p.sku) : ''}</span>
           </div>
           <h3>${esc(p.name)}</h3>
-          ${descriptionMarkup}
-          ${specsMarkup}
+          ${compact ? '' : descriptionMarkup}
+          ${compact ? '' : specsMarkup}
           ${stockMarkup(p)}
           <div class="price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
             ${priceMarkup(p)}
