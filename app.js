@@ -622,7 +622,7 @@ function renderHome() {
     'YECHIM — Решения для вашей мебели';
 
 
-  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0).slice(0, 8);
+  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0).slice(0, 5);
 
 
   document.querySelector(
@@ -737,6 +737,7 @@ function renderHome() {
                 <h2>
                   Специально для вас
                 </h2>
+                <a class="home-all-products" href="?catalog=1">Все товары →</a>
 
               </div>
 
