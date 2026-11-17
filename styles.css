@@ -2195,3 +2195,10 @@ body{background:#f7f7f5;color:#202420}
   margin:12px 0 0!important;
   padding-top:8px;
 }
+
+
+/* Catalog page: keep product price close to its title/details */
+.catalog-layout .product .price{
+  margin:12px 0 0!important;
+  padding-top:8px;
+}
