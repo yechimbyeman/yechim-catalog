@@ -107,12 +107,16 @@ async function init() {
   $('#tagAddBtn').onclick = () => { const id = $('#tagProductSelect').value; if (!id) { alert('Сначала выберите товар.'); return; } edit(encodeURIComponent(id)); };
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
+  $('#addBrandBtn').onclick = () => openBrandEditor();
+  $('#saveBrandBtn').onclick = saveBrand;
+  $('#cancelBrandBtn').onclick = () => $('#brandEditor').hidden = true;
   $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
-  const pages = { products: '#productsManager', banners: '#bannerManager', tags: '#tagsManager', sync: '#syncManager', settings: '#settingsManager' };
+  const pages = { products: '#productsManager', banners: '#bannerManager', brands: '#brandsManager', tags: '#tagsManager', sync: '#syncManager', settings: '#settingsManager' };
   function openDashboardPage(name) {
     Object.entries(pages).forEach(([key, selector]) => { const el = $(selector); if (el) el.hidden = key !== name; });
     document.querySelectorAll('[data-dash-tab]').forEach(b => b.classList.toggle('active', b.dataset.dashTab === name));
     if (name === 'banners') loadBanners();
+    if (name === 'brands') loadBrands();
     if (name === 'tags') { populateTagProductSelect(); renderTagsManager(); }
     if (name === 'sync') loadLastSyncTime().then(() => { $('#syncPageLast').textContent = $('#lastSyncInfo').textContent; });
   }
@@ -637,6 +641,43 @@ window.edit = edit;
 window.removeExistingImage = removeExistingImage;
 window.closeModal = closeModal;
 
+
+function openBrandEditor(brand = null) {
+  $('#brandEditor').hidden = false;
+  $('#brandEditorTitle').textContent = brand ? 'Редактировать бренд' : 'Новый бренд';
+  $('#brandId').value = brand?.id || '';
+  $('#brandName').value = brand?.name || '';
+  $('#brandImageUrl').value = brand?.image_url || '';
+  $('#brandImage').value = '';
+  $('#brandActive').checked = brand?.active !== false;
+  $('#brandOrder').value = brand?.sort_order ?? 0;
+  $('#brandError').textContent = '';
+}
+async function loadBrands() {
+  const { data, error } = await sb.from('yechim_brands').select('*').order('sort_order').order('name');
+  if (error) { $('#brandList').textContent = 'Ошибка загрузки брендов: ' + error.message + '. Проверьте выполнение supabase-migration-brands.sql.'; return; }
+  window.yechimBrands = data || [];
+  $('#brandList').innerHTML = window.yechimBrands.map(b => '<div class="brand-admin-row">'+(b.image_url?'<img src="'+esc(b.image_url)+'" alt="">':'<span class="muted">Нет изображения</span>')+'<b>'+esc(b.name)+'</b><span>'+(b.active?'Активен':'Скрыт')+'</span><button class="btn btn-ghost" data-edit-brand="'+b.id+'" type="button">Изменить</button><button class="btn btn-ghost" data-delete-brand="'+b.id+'" type="button" title="Удалить">🗑</button></div>').join('') || '<p class="muted">Брендов пока нет. Добавьте первый бренд.</p>';
+  $('#brandList').querySelectorAll('[data-edit-brand]').forEach(btn => btn.onclick = () => openBrandEditor(window.yechimBrands.find(b => b.id === btn.dataset.editBrand)));
+  $('#brandList').querySelectorAll('[data-delete-brand]').forEach(btn => btn.onclick = async () => { if (!confirm('Удалить бренд?')) return; const { error } = await sb.from('yechim_brands').delete().eq('id', btn.dataset.deleteBrand); if (error) alert(error.message); else loadBrands(); });
+}
+async function saveBrand() {
+  $('#brandError').textContent = '';
+  try {
+    const name = $('#brandName').value.trim();
+    if (!name) throw new Error('Укажите название бренда.');
+    let image = $('#brandImageUrl').value.trim();
+    const file = $('#brandImage').files[0];
+    if (file) image = await uploadFile(file, 'brands');
+    if (!image) throw new Error('Загрузите изображение бренда или укажите URL.');
+    const row = { name, image_url: image, active: $('#brandActive').checked, sort_order: Number($('#brandOrder').value || 0) };
+    const id = $('#brandId').value;
+    const result = id ? await sb.from('yechim_brands').update(row).eq('id', id) : await sb.from('yechim_brands').insert(row);
+    if (result.error) throw result.error;
+    $('#brandEditor').hidden = true;
+    await loadBrands();
+  } catch (e) { $('#brandError').textContent = e.message || String(e); }
+}
 
 async function saveBanner() {
   $('#bannerError').textContent = '';
