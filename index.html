@@ -44,17 +44,17 @@
       >
     </a>
 
-    <button class="btn btn-top-primary" id="catalogButton" type="button">Каталог</button>
+    <button class="btn btn-top-primary header-icon-button" id="catalogButton" type="button"><img src="./mockup/меню.png" alt="">Каталог</button>
     <div class="search header-search"><input id="headerSearch" type="search" placeholder="Поиск по артикулу..."></div>
     <div class="grow"></div>
-    <a class="btn btn-top-ghost" href="https://telegra.ph/YECHIM-12-16" target="_blank" rel="noopener">☎ Контакты</a>
+    <a class="btn btn-top-ghost header-icon-button" href="https://telegra.ph/YECHIM-12-16" target="_blank" rel="noopener"><img src="./mockup/Контакты.png" alt="">Контакты</a>
 
     <button
       class="btn btn-top-primary"
       id="cartButton"
       type="button"
     >
-      Корзина
+      <img class="header-cart-icon" src="./mockup/корзина.png" alt="">
       <span
         id="cartCount"
         class="count-badge"
@@ -85,7 +85,7 @@
 
 <script src="supabase-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20261117-2"></script>
+<script src="app.js?v=20261117-3"></script>
 
 <script>document.addEventListener("DOMContentLoaded",()=>{document.querySelector("#catalogButton")?.addEventListener("click",()=>{history.pushState({},"","?catalog=1");renderRoute()});document.querySelector("#headerSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter"){state.query=e.target.value.trim();history.pushState({},"","?catalog=1");renderRoute()}})});</script>
 </body>
