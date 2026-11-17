@@ -2336,3 +2336,33 @@ body:not(.home-shell) .catalog-layout .products .product .product-card-descripti
 body:not(.home-shell) .catalog-layout .products .product > .card-actions{
   margin-top:0!important;
 }
+
+
+/* Product detail description: expandable on demand */
+.description-expand{
+  margin-top:14px;
+  color:#465048;
+}
+.description-expand summary{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:#007831;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  list-style:none;
+  user-select:none;
+}
+.description-expand summary::-webkit-details-marker{display:none}
+.description-expand summary::after{
+  content:"＋";
+  font-size:16px;
+  line-height:1;
+}
+.description-expand[open] summary::after{content:"−"}
+.description-expand .description{
+  margin:10px 0 0;
+  color:#465048;
+  line-height:1.65;
+}
