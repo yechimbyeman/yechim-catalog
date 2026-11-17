@@ -1909,6 +1909,7 @@ body{background:#eee9e4}
 
 
 /* Keep cart glyph visible at all times */
+.topbar #cartButton .header-cart-icon{mix-blend-mode:normal!important;opacity:1!important;visibility:visible!important}
 .topbar #cartButton .header-cart-icon path{stroke:#fff!important}
 .topbar #cartButton .header-cart-icon circle{fill:#fff!important}
 .topbar #cartButton:hover .header-cart-icon path{stroke:#fff!important}
