@@ -107,7 +107,16 @@ async function init() {
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
   $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
-  document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => { $('#bannerManager').hidden = b.dataset.dashTab !== 'banners'; if (b.dataset.dashTab === 'banners') loadBanners(); });
+  const pages = { products: '#productsManager', banners: '#bannerManager', tags: '#tagsManager', sync: '#syncManager', settings: '#settingsManager' };
+  function openDashboardPage(name) {
+    Object.entries(pages).forEach(([key, selector]) => { const el = $(selector); if (el) el.hidden = key !== name; });
+    document.querySelectorAll('[data-dash-tab]').forEach(b => b.classList.toggle('active', b.dataset.dashTab === name));
+    if (name === 'banners') loadBanners();
+    if (name === 'sync') loadLastSyncTime().then(() => { $('#syncPageLast').textContent = $('#lastSyncInfo').textContent; });
+  }
+  document.querySelectorAll('[data-dash-tab]').forEach(b => b.onclick = () => openDashboardPage(b.dataset.dashTab));
+  $('#menuLogoutBtn').onclick = logout;
+  $('#syncPricesBtnPage').onclick = triggerPriceSync;
 
   if (!READY) {
     $('#authError').textContent =
@@ -261,6 +270,7 @@ async function triggerPriceSync() {
   button.disabled = true;
   button.textContent = 'Запуск…';
   info.textContent = 'Запускаем синхронизацию…';
+  if ($('#syncPageStatus')) $('#syncPageStatus').textContent = 'Запускаем синхронизацию…';
 
   try {
     const { data, error } = await sb.functions.invoke(
@@ -279,9 +289,11 @@ async function triggerPriceSync() {
       throw new Error(detail);
     }
     info.textContent = 'Обновление отправлено в GitHub Actions';
+    if ($('#syncPageStatus')) $('#syncPageStatus').textContent = 'Запрос отправлен в GitHub Actions.';
     alert('Запрос на обновление успешно отправлен. Обновление выполняется в GitHub Actions.');
   } catch (error) {
     info.textContent = 'Не удалось запустить обновление';
+    if ($('#syncPageStatus')) $('#syncPageStatus').textContent = error.message || String(error);
     alert('Не удалось запустить обновление: ' + (error.message || String(error))); 
   } finally {
     button.disabled = false;
