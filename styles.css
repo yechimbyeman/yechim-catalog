@@ -2324,3 +2324,43 @@ body:not(.home-shell) .catalog-layout .products .product > .card-actions{
 
 /* Public RU/UZ language switcher */
 .language-switcher{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:rgba(255,255,255,.65);font-size:13px}.language-switcher .language-btn{padding:6px 3px;border:0;background:transparent;color:rgba(255,255,255,.72);font:inherit;font-weight:600;cursor:pointer}.language-switcher .language-btn.active{color:#fff;font-weight:600}.language-switcher .language-btn:hover{color:#fff}
+
+
+/* High-contrast RU/UZ switcher on the green header */
+.topbar #languageSwitcher{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:2px!important;
+  padding:4px!important;
+  min-height:36px;
+  background:#fff!important;
+  border:1px solid rgba(255,255,255,.9)!important;
+  border-radius:999px!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.18)!important;
+}
+.topbar #languageSwitcher .language-btn{
+  min-width:34px!important;
+  min-height:28px!important;
+  padding:5px 9px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#087448!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  line-height:1!important;
+  opacity:1!important;
+}
+.topbar #languageSwitcher .language-btn.active{
+  background:#087448!important;
+  color:#fff!important;
+}
+.topbar #languageSwitcher .language-btn:hover{
+  background:#e8f4ed!important;
+  color:#075b39!important;
+}
+.topbar #languageSwitcher .language-btn.active:hover{
+  background:#075b39!important;
+  color:#fff!important;
+}
