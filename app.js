@@ -1434,11 +1434,14 @@ function renderDetail() {
           ${
             p.description
               ? `
-                <p class="description">
-                  ${esc(
-                    p.description
-                  )}
-                </p>
+                <details class="description-expand">
+                  <summary>Подробнее</summary>
+                  <p class="description">
+                    ${esc(
+                      p.description
+                    )}
+                  </p>
+                </details>
               `
               : ''
           }
