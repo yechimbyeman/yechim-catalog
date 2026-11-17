@@ -70,13 +70,12 @@
           </div>
         </section>
         <section id="tagsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Метки товаров</h1><p>Выделяйте товары с помощью меток</p></div></div>
-          <div class="panel dashboard-panel tag-manager-panel"><h2>Добавить метку товару</h2><div class="tag-add-row"><select id="tagProductSelect"><option value="">Выберите товар…</option></select><button class="btn btn-primary" id="tagAddBtn" type="button">Добавить метку</button></div><p class="muted small">Выберите товар — откроется его карточка, где можно указать одну или несколько меток.</p></div><div class="tag-settings-grid">
-            <div class="tag-setting tag-hit"><span class="tag-setting-icon">👍</span><div><b>Хит продаж</b><small>Метка для популярных товаров</small></div><span class="tag-setting-code">hit</span></div>
-            <div class="tag-setting tag-new"><span class="tag-setting-icon">★</span><div><b>Новинка</b><small>Метка для новых поступлений</small></div><span class="tag-setting-code">new</span></div>
-            <div class="tag-setting tag-sale"><span class="tag-setting-icon">％</span><div><b>Скидка</b><small>Метка для товаров со скидкой</small></div><span class="tag-setting-code">sale</span></div>
+          <div class="dashboard-page-heading"><div><h1>Метки товаров</h1><p>Все товары в одном списке. Нажмите на метку, чтобы сразу добавить или убрать её.</p><div id="tagProductsSummary" class="muted small"></div></div></div>
+          <div class="panel dashboard-panel tagged-products-panel">
+            <div class="tagged-products-head"><h2>Список товаров</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию, артикулу или бренду"></div>
+            <div class="tag-legend"><span class="tag-quick-chip tag-hit">Хит продаж</span><span class="tag-quick-chip tag-new">Новинка</span><span class="tag-quick-chip tag-sale">Скидка</span><span class="muted small">Цветная метка — назначена товару</span></div>
+            <div id="taggedProductsList"></div>
           </div>
-          <div class="panel dashboard-panel tagged-products-panel"><div class="tagged-products-head"><h2>Товары с метками</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию или артикулу"></div><div id="taggedProductsList"></div></div>
         </section>
         <section id="syncManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Синхронизация</h1><p>Обновление цен и данных товаров из Eman.uz</p></div></div>
@@ -91,5 +90,5 @@
   </section>
 </main>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><div id="mbrand" class="muted"></div><h2 id="mtitle"></h2></div><button id="closeModal" class="btn btn-ghost" type="button">×</button></div><div id="fields"></div><div id="saveError" class="error-text"></div><div class="modal-actions"><button id="saveBtn" class="btn btn-primary" type="button">Сохранить</button></div></div></div>
-<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261117-6"></script>
+<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261117-7"></script>
 </body></html>
