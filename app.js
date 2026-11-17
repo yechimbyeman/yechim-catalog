@@ -2459,7 +2459,7 @@ const LANG_KEY =
   'yechim_language';
 
 
-let currentLanguage =
+currentLanguage =
   localStorage.getItem(
     LANG_KEY
   ) || 'ru';
