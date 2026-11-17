@@ -106,7 +106,6 @@ async function init() {
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
   $('#tagProductSearch').oninput = renderTagsManager;
-  $('#tagAddBtn').onclick = () => { const id = $('#tagProductSelect').value; if (!id) { alert('Сначала выберите товар.'); return; } edit(encodeURIComponent(id)); };
   $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
   $('#saveBannerBtn').onclick = saveBanner;
   $('#addBrandBtn').onclick = () => openBrandEditor();
@@ -171,12 +170,27 @@ async function showApp(session) {
 }
 
 async function login() {
+  const button = $('#loginBtn');
   $('#authError').textContent = '';
   const email = $('#email').value.trim();
   const password = $('#password').value;
 
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) $('#authError').textContent = error.message;
+  if (!email || !password) {
+    $('#authError').textContent = 'Введите e-mail и пароль.';
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Входим…';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  } catch (error) {
+    $('#authError').textContent = error.message || 'Не удалось выполнить вход.';
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Войти';
+  }
 }
 
 async function logout() {
