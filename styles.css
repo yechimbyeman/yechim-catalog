@@ -1990,3 +1990,29 @@ body{background:#f7f7f5;color:#202420}
 .home-shell .product .card-actions .btn{min-height:38px;padding:8px 6px;font-size:11px;border-radius:12px}
 }
 @media(max-width:390px){.topbar .nav{column-gap:4px}.topbar .logo img{max-width:112px}.topbar .header-contact-button,.topbar #cartButton{width:38px;min-width:38px}.home-shell .brand-tile{height:52px;padding:5px}.home-shell .brand-tile .brand-logo{height:32px}.home-shell .products{gap:7px}.home-shell .product-sku,.home-shell .product-sku-value{font-size:10px}}
+
+
+/* Fix homepage brand logo visibility and product card rendering */
+.home-shell .brand-tile{position:relative;isolation:isolate;overflow:hidden}
+.home-shell .brand-tile .brand-logo{
+  position:static!important;
+  inset:auto!important;
+  left:auto!important;
+  top:auto!important;
+  transform:none!important;
+  display:block!important;
+  width:100%!important;
+  height:54px!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  z-index:1!important;
+}
+.home-shell .products{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-auto-flow:row;align-items:stretch}
+.home-shell .products>.product{display:flex!important;visibility:visible!important;opacity:1!important;min-width:0}
+@media(max-width:1050px){.home-shell .products{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:700px){.home-shell .products{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
