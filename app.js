@@ -16,7 +16,7 @@ const UI_TRANSLATIONS = {
 
 function translateTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE) return;
-  if (node.parentElement?.closest('.product-name,h1.product-title,.brand-mini,.product-sku-value,.price,.sale-price,.old-price')) return;
+  if (node.parentElement?.closest('.product h3,.info > h1,.product-name,h1.product-title,.brand-mini,.product-sku-value,.price,.sale-price,.old-price')) return;
   const original=node.nodeValue||'', value=original.trim(); if(!value) return;
   const reverse=Object.fromEntries(Object.entries(UI_TRANSLATIONS).map(([ru,uz])=>[uz,ru]));
   const dict=currentLanguage==='uz'?UI_TRANSLATIONS:reverse;
