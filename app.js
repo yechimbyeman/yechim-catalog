@@ -497,6 +497,11 @@ async function loadProducts() {
 
     }
 
+    if (db) {
+      const { data: bannerRows } = await db.from('yechim_banners').select('*').eq('active', true).order('sort_order');
+      state.banners = bannerRows || [];
+    }
+
   } catch (e) {
 
     state.products = [];
