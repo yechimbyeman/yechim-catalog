@@ -59,7 +59,7 @@ as $$
   select
     p.eman_id,
     p.source_url,
-    coalesce(e.yechim_sku, p.sku),
+    coalesce(nullif(trim(e.yechim_sku), ''), p.sku),
     p.name,
     p.brand as eman_brand,
     coalesce(e.yechim_brand, case when p.eman_group = 'Мебельная подсветка' then 'YECHIM LIGHTING' else upper(p.brand) end) as brand,
