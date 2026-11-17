@@ -1870,3 +1870,39 @@ body{background:#eee9e4}
 .tag-quick-chip.tag-sale.is-active{background:#ffecee;border-color:#f3c1c8;color:#c33d52}
 .tag-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 @media(max-width:760px){.tag-product-row{grid-template-columns:1fr;gap:9px}.tag-product-row>.btn{justify-self:start}}
+
+
+/* YECHIM responsive header: desktop single row, mobile two rows */
+.topbar .nav{display:flex;align-items:center;gap:14px}
+.topbar .logo{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;min-width:100px}
+.topbar .logo img{background:transparent!important;mix-blend-mode:normal}
+.topbar .header-contact-button,
+.topbar #cartButton{width:44px;height:44px;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent!important;border:0!important;color:#fff!important;box-shadow:none}
+.topbar .header-contact-button svg{width:22px;height:22px}
+.topbar #cartButton .header-cart-icon{width:25px;height:25px;color:#fff}
+.topbar #cartButton .count-badge{background:#fff;color:#138353}
+.topbar #languageSwitcher{margin:0 2px;order:0}
+.topbar #languageSwitcher .language-btn{color:rgba(255,255,255,.78)}
+.topbar #languageSwitcher .language-btn.active{color:#fff;font-weight:700}
+.topbar #catalogButton{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.28);color:#fff;white-space:nowrap}
+.topbar .header-search{min-width:180px;max-width:520px;flex:1}
+.topbar .header-search input{min-width:0}
+@media(max-width:700px){
+  .topbar .nav{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto auto;
+    grid-template-rows:46px 42px;
+    gap:8px 10px;
+    padding:9px 12px 11px;
+    align-items:center;
+  }
+  .topbar .logo{grid-column:1;grid-row:1;width:auto;min-width:0;height:42px;justify-self:start;justify-content:flex-start}
+  .topbar .logo img{width:auto;max-width:132px;height:100%;object-position:left center}
+  .topbar #languageSwitcher{grid-column:2;grid-row:1;justify-self:end;gap:3px}
+  .topbar .header-contact-button{grid-column:3;grid-row:1}
+  .topbar #cartButton{grid-column:4;grid-row:1}
+  .topbar #catalogButton{grid-column:1;grid-row:2;width:100%;height:40px;padding:8px 10px;justify-content:center}
+  .topbar .header-search{display:flex!important;grid-column:2/5;grid-row:2;width:100%;max-width:none;min-width:0;height:40px;padding:3px 10px;border:0;border-radius:20px;background:#fff}
+  .topbar .header-search input{width:100%;min-width:0;padding:7px 4px;font-size:13px}
+  .topbar .grow{display:none}
+}
