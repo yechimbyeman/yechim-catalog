@@ -2343,6 +2343,14 @@ body:not(.home-shell) .catalog-layout .products .product > .card-actions{
   margin-top:14px;
   color:#465048;
 }
+.description-expand .description-preview,
+.description-expand .description{
+  margin:0;
+  color:#465048;
+  line-height:1.65;
+  white-space:pre-line;
+}
+.description-expand details{margin-top:8px}
 .description-expand summary{
   display:inline-flex;
   align-items:center;
@@ -2355,14 +2363,6 @@ body:not(.home-shell) .catalog-layout .products .product > .card-actions{
   user-select:none;
 }
 .description-expand summary::-webkit-details-marker{display:none}
-.description-expand summary::after{
-  content:"＋";
-  font-size:16px;
-  line-height:1;
-}
-.description-expand[open] summary::after{content:"−"}
-.description-expand .description{
-  margin:10px 0 0;
-  color:#465048;
-  line-height:1.65;
-}
+.description-expand summary::after{content:"＋";font-size:16px;line-height:1}
+.description-expand details[open] summary::after{content:"−"}
+.description-expand details .description{margin-top:10px}
