@@ -626,7 +626,10 @@ function renderHome() {
 
 
   const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0);
-  const brandItems = state.brands.length ? state.brands : Object.entries(BRANDS).map(([name, b], i) => ({name, image_url:b.logo, sort_order:i}));
+  const brandItems = Object.entries(BRANDS).map(([name, brand]) => {
+    const saved = state.brands.find(item => normalize(item.name) === normalize(name));
+    return { name, image_url: saved?.image_url || brand.logo };
+  });
 
 
   document.querySelector(
@@ -634,29 +637,16 @@ function renderHome() {
   ).innerHTML = `
 
     <div class="shell home-shell">
-      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<a class="hero-banner" href="'+esc(b.link_url || '?catalog=1')+'" style="background-image:url(\''+esc(b.image_url)+'\')"><span><b>'+esc(b.title || '')+'</b><small>'+esc(b.subtitle || '')+'</small>'+(b.button_text?'<em>'+esc(b.button_text)+' →</em>':'')+'</span></a>').join('') : ''}
+      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<section class="hero-banner" aria-label="Баннер" style="background-image:url(\\''+esc(b.image_url)+'\\')">'+(b.button_text?'<a class="hero-cta" href="'+esc(b.link_url || '?catalog=1')+'">'+esc(b.button_text)+' <span aria-hidden="true">→</span></a>':'')+'</section>').join('') : ''}
 
 
 
 
 
-      <section>
-
-        <div
-          class="section-head"
-        >
-
-          <h2>
-            Наши бренды
-          </h2>
-
-        </div>
-
-
+      <section class="home-brands" aria-label="Бренды">
         <div class="brand-grid">
-          ${brandItems.map(b => `<article class="brand-card brand-card-simple" data-brand="${esc(b.name)}"><div class="brand-visual brand-visual-simple">${b.image_url ? `<img class="brand-logo" src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">` : `<span class="brand-name-fallback">${esc(b.name)}</span>`}</div><div class="brand-description"><div class="brand-description-title">${esc(b.name)}</div><span class="brand-arrow">›</span></div></article>`).join("")}
+          ${brandItems.map(b => `<button class="brand-tile" type="button" data-brand="${esc(b.name)}" aria-label="Открыть ассортимент ${esc(b.name)}">${b.image_url ? `<img class="brand-logo" src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">` : `<span>${esc(b.name)}</span>`}</button>`).join("")}
         </div>
-
       </section>
 
 
@@ -671,8 +661,7 @@ function renderHome() {
               >
 
                 <h2>
-                  Специально для вас
-                </h2>
+                  Популярные решения
                 <a class="home-all-products" href="?catalog=1">Все товары →</a>
 
               </div>
@@ -1109,28 +1098,14 @@ function productCard(p) {
           </div>
 
 
+          <div class="product-sku">
+            <span class="product-sku-label">Артикул</span>
+            <span class="product-sku-value">${p.sku ? esc(p.sku) : ''}</span>
+          </div>
+
           <h3>
             ${esc(p.name)}
           </h3>
-
-
-          ${
-            p.sku
-              ? `
-                <div class="product-sku">
-
-                  <span class="product-sku-label">
-                    Артикул
-                  </span>
-
-                  <span class="product-sku-value">
-                    ${esc(p.sku)}
-                  </span>
-
-                </div>
-              `
-              : ''
-          }
 
 
           ${stockMarkup(p)}
