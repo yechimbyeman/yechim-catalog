@@ -630,7 +630,7 @@ function renderHome() {
     '#app'
   ).innerHTML = `
 
-    <div class="shell">
+    <div class="shell home-shell">
       ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<a class="hero-banner" href="'+esc(b.link_url || '?catalog=1')+'" style="background-image:url(\''+esc(b.image_url)+'\')"><span><b>'+esc(b.title || '')+'</b><small>'+esc(b.subtitle || '')+'</small>'+(b.button_text?'<em>'+esc(b.button_text)+' →</em>':'')+'</span></a>').join('') : ''}
 
 
