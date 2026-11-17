@@ -625,7 +625,7 @@ function renderHome() {
     'YECHIM — Решения для вашей мебели';
 
 
-  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0).slice(0, 5);
+  const popular = state.products.filter(p => Array.isArray(p.product_tags) && p.product_tags.length > 0);
   const brandItems = state.brands.length ? state.brands : Object.entries(BRANDS).map(([name, b], i) => ({name, image_url:b.logo, sort_order:i}));
 
 
