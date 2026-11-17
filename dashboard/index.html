@@ -179,6 +179,9 @@
     </div>
 
 
+    <div class="dash-tabs"><button class="btn btn-primary" data-dash-tab="products">Товары</button><button class="btn btn-ghost" data-dash-tab="banners">Баннеры</button></div>
+    <section id="bannerManager" class="panel" hidden><div class="section-head"><h2>Баннеры главной страницы</h2><button id="addBannerBtn" class="btn btn-primary" type="button">Добавить баннер</button></div><div id="bannerList"></div><div id="bannerEditor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden"><div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div><div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div><div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button><div id="bannerError" class="error-text"></div></div></section>
+
     <!-- =========================
          FILTERS / SEARCH
     ========================== -->
