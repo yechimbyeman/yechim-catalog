@@ -203,3 +203,34 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .cart-row{grid-template-columns:1fr}
   .cart-item-actions{justify-content:flex-end}
 }
+
+/* Dashboard — unified typography, controls, navigation and tables; layout unchanged. */
+.dashboard-body{color:var(--ui-ink);background:var(--ui-page)}
+.dashboard-body .auth-panel .narrow{border:1px solid var(--ui-border);border-radius:var(--ui-card-radius)}
+.dashboard-body .auth-panel h1{font-size:32px;line-height:1.16;font-weight:600;letter-spacing:-.02em}
+.dashboard-body .auth-panel .field label{font-size:13px;font-weight:600}
+.dashboard-body .auth-panel input{border-color:var(--ui-border);border-radius:var(--ui-radius);min-height:44px}
+.dashboard-body .auth-panel .btn{min-height:44px}
+.dashboard-sidebar{border-radius:var(--ui-card-radius)}
+.dashboard-menu-item{min-height:44px;border-radius:var(--ui-radius);font-size:14px;line-height:1.3;gap:12px}
+.dashboard-menu-item .dash-icon{width:20px;min-width:20px;height:20px;align-items:center;font-size:18px}
+.dashboard-menu-item.active{border-radius:var(--ui-radius)}
+.dashboard-page-heading h1{font-size:28px;line-height:1.2;letter-spacing:-.02em;color:var(--ui-ink)}
+.dashboard-page-heading p,.dashboard-page-heading .muted{font-size:13px;color:var(--ui-muted)}
+.dashboard-panel{border:1px solid var(--ui-border);border-radius:var(--ui-card-radius)}
+.dashboard-page .panel{color:var(--ui-ink)}
+.dashboard-page .toolbar input,.dashboard-page .toolbar select{min-height:44px;border-color:var(--ui-border);border-radius:var(--ui-radius);font-size:14px}
+.dashboard-page .table{font-size:14px}
+.dashboard-page .table th{background:var(--ui-page);color:var(--ui-muted);font-size:12px;letter-spacing:.01em}
+.dashboard-page .table th,.dashboard-page .table td{border-bottom-color:var(--ui-border);vertical-align:middle}
+.dashboard-page .btn,.dashboard-body .modal .btn{min-height:44px;border-radius:var(--ui-radius);font-size:14px}
+.dashboard-page .field label,.dashboard-body .modal .field label{font-size:13px;font-weight:600}
+.dashboard-page input:not([type="checkbox"]):not([type="file"]),.dashboard-page select,.dashboard-body .modal input:not([type="checkbox"]):not([type="file"]),.dashboard-body .modal select{border-color:var(--ui-border);border-radius:var(--ui-radius)}
+.dashboard-body .modal-card{border-radius:var(--ui-card-radius)}
+.dashboard-body .banner-editor{border-radius:var(--ui-card-radius);background:var(--ui-page)}
+@media(max-width:650px){
+  .dashboard-body .auth-panel h1{font-size:26px}
+  .dashboard-page-heading h1{font-size:24px}
+  .dashboard-menu-item{font-size:13px;min-height:44px}
+  .dashboard-page .table{font-size:13px}
+}
