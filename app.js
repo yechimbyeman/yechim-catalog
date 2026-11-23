@@ -1175,11 +1175,21 @@ function getLocalizedSpecs(product) {
     ? parseLines(brandData[currentLanguage] || brandData.ru || '')
     : [];
 
+  // Hide duplicate catalog metadata only in the characteristics section.
+  // Keep the original Eman.uz SKU in the product header and database.
+  const excludedSpecNames = new Set([
+    'артикул', 'артикул модели', 'бренд',
+    'artikul', 'model artikuli', 'brend'
+  ]);
+  const cleanSpecs = (rows) => rows.filter(([name]) =>
+    !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
+  );
+
   const rawSpecs = candidates.map(unwrap).find(hasContent);
-  if (!rawSpecs) return manufacturerRows;
+  if (!rawSpecs) return cleanSpecs(manufacturerRows);
 
   if (Array.isArray(rawSpecs)) {
-    return rawSpecs
+    return cleanSpecs(rawSpecs
       .filter(item => item && (
         (item.name !== undefined && item.value !== undefined) ||
         (Array.isArray(item) && item.length >= 2)
@@ -1187,13 +1197,13 @@ function getLocalizedSpecs(product) {
       .flatMap(item => {
         const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
         return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
-      });
+      }));
   }
 
-  if (typeof rawSpecs === 'object') return Object.entries(rawSpecs);
+  if (typeof rawSpecs === 'object') return cleanSpecs(Object.entries(rawSpecs));
 
   if (typeof rawSpecs === 'string') {
-    return rawSpecs
+    return cleanSpecs(rawSpecs
       .split(/\r?\n/)
       .map(line => line.trim())
       .filter(Boolean)
