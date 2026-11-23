@@ -129,3 +129,47 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .product .price{font-size:16px}
   .detail-price{font-size:24px}
 }
+
+/* Pass 3 — catalog card typography and rhythm.
+   Keep full descriptions and original natural-height catalog behavior. */
+.catalog-layout .catalog-results .products>.product .product-body,
+.catalog-layout .products>.product .product-body,
+.brand-products .products>.product .product-body{
+  padding:12px 13px 10px;
+}
+.catalog-layout .products>.product .brand-mini,
+.catalog-layout .products>.product .product-sku{
+  line-height:1.4;
+}
+.catalog-layout .products>.product .brand-mini{margin-bottom:5px;font-size:12px}
+.catalog-layout .products>.product .product-sku{
+  display:inline-flex;align-items:baseline;gap:5px;
+  width:fit-content;max-width:100%;min-height:0;
+  margin:0 0 8px;padding:3px 6px;
+  border:1px solid #d7e9df;border-radius:6px;
+  background:#f7fbf9;font-size:12px;line-height:1.4;
+}
+.catalog-layout .products>.product .product-sku-label,
+.catalog-layout .products>.product .product-sku-value{font-size:12px;line-height:1.4}
+.catalog-layout .products>.product h3{font-size:14px;line-height:1.4;font-weight:600}
+.catalog-layout .products>.product .product-card-description{font-size:12px;line-height:1.5;color:var(--ui-muted)}
+.catalog-layout .products>.product .product-card-spec{font-size:12px;line-height:1.45}
+.catalog-layout .products>.product .product-body>.price{
+  margin:12px 0 10px!important;
+  font-size:19px;line-height:1.3;
+}
+.catalog-layout .products>.product .card-actions{padding:0 13px 13px}
+.catalog-layout .products>.product .card-actions .btn{min-height:44px}
+.product .product-tag{font-size:11px;line-height:1.2}
+@media(max-width:700px){
+  .catalog-layout .products>.product .product-body{padding:10px 10px 8px}
+  .catalog-layout .products>.product .brand-mini{font-size:11px}
+  .catalog-layout .products>.product .product-sku{font-size:11px;padding:3px 5px}
+  .catalog-layout .products>.product .product-sku-label,
+  .catalog-layout .products>.product .product-sku-value{font-size:11px}
+  .catalog-layout .products>.product h3{font-size:13px;line-height:1.4}
+  .catalog-layout .products>.product .product-card-description,
+  .catalog-layout .products>.product .product-card-spec{font-size:11px;line-height:1.45}
+  .catalog-layout .products>.product .product-body>.price{font-size:16px}
+  .catalog-layout .products>.product .card-actions{padding:0 10px 10px}
+}
