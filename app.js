@@ -1151,8 +1151,32 @@ function getLocalizedSpecs(product) {
         product.specs
       ];
 
+  // Imported manufacturer characteristics are stored separately from price/stock
+  // under specs.manufacturer_specs. The catalog RPC wraps them as a nested row.
+  const parseLines = (value) => String(value || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const separator = line.indexOf(':');
+      return separator < 0 ? [line, ''] :
+        [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    });
+
+  const imported = product.specs?.manufacturer_specs;
+  const nested = Array.isArray(product.specs?.ru)
+    ? product.specs.ru.find(item => item?.name === 'manufacturer_specs')?.value
+    : null;
+  const manufacturer = imported || nested;
+  const brandData = manufacturer && typeof manufacturer === 'object'
+    ? Object.values(manufacturer).find(item => item && typeof item === 'object' && (item.ru || item.uz))
+    : null;
+  const manufacturerRows = brandData
+    ? parseLines(brandData[currentLanguage] || brandData.ru || '')
+    : [];
+
   const rawSpecs = candidates.map(unwrap).find(hasContent);
-  if (!rawSpecs) return [];
+  if (!rawSpecs) return manufacturerRows;
 
   if (Array.isArray(rawSpecs)) {
     return rawSpecs
@@ -1160,7 +1184,10 @@ function getLocalizedSpecs(product) {
         (item.name !== undefined && item.value !== undefined) ||
         (Array.isArray(item) && item.length >= 2)
       ))
-      .map(item => Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value]);
+      .flatMap(item => {
+        const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
+        return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
+      });
   }
 
   if (typeof rawSpecs === 'object') return Object.entries(rawSpecs);
