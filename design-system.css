@@ -234,3 +234,31 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .dashboard-menu-item{font-size:13px;min-height:44px}
   .dashboard-page .table{font-size:13px}
 }
+
+/* Keep the Dashboard logout button visible on long product/tag lists.
+   Desktop sidebar uses viewport height rather than stretching with page content. */
+@media(min-width:651px){
+  .dashboard-body .dashboard-sidebar{
+    position:sticky;
+    top:28px;
+    align-self:start;
+    box-sizing:border-box;
+    height:calc(100vh - 56px);
+    height:calc(100dvh - 56px);
+    min-height:0;
+    max-height:calc(100dvh - 56px);
+    overflow-y:auto;
+  }
+  .dashboard-body .dashboard-menu-item.dashboard-logout{
+    margin-top:auto;
+    flex-shrink:0;
+  }
+}
+@media(min-width:651px) and (max-width:900px){
+  .dashboard-body .dashboard-sidebar{
+    top:16px;
+    height:calc(100vh - 32px);
+    height:calc(100dvh - 32px);
+    max-height:calc(100dvh - 32px);
+  }
+}
