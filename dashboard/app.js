@@ -58,6 +58,11 @@ function specsToText(specs) {
 
   if (typeof specs === 'string') return specs;
 
+  if (typeof specs === 'object' && !Array.isArray(specs) && specs.manufacturer_specs) {
+    specs = { ...specs };
+    delete specs.manufacturer_specs;
+  }
+
   if (typeof specs === 'object') {
     return Object.entries(specs)
       .map(([name, value]) => `${name}: ${value ?? ''}`)
@@ -629,6 +634,7 @@ async function saveEdit() {
       // Храним оба языка в существующем JSON-поле specs.
       // Это не требует добавления новых колонок в Supabase.
       specs: {
+        ...((currentE.specs && typeof currentE.specs === 'object' && !Array.isArray(currentE.specs)) ? currentE.specs : {}),
         ru: specsRu,
         uz: specsUz
       },
