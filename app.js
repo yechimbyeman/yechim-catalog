@@ -1212,7 +1212,7 @@ function getLocalizedSpecs(product) {
         return separator === -1
           ? [line, '']
           : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-      });
+      }));
   }
 
   return [];
