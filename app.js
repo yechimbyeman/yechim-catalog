@@ -743,8 +743,61 @@ function renderCatalog() {
    BRAND PRODUCTS
 ========================= */
 
+// Fetch a selected brand directly: the initial catalog request contains only
+// 250 products, so brands later in the global sort can initially look empty.
+const loadedBrandKeys = new Set();
+const fetchingBrandKeys = new Set();
+const brandLoadErrors = new Map();
+
+async function fetchBrandProducts(brand) {
+  const key = normalize(brand);
+  if (!db || loadedBrandKeys.has(key) || fetchingBrandKeys.has(key)) return;
+  fetchingBrandKeys.add(key);
+  brandLoadErrors.delete(key);
+
+  try {
+    const pageSize = 250;
+    const existing = new Set(state.products.map(p => String(p.id)));
+
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await db
+        .rpc('get_public_catalog')
+        .eq('brand', brand)
+        .order('eman_id', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw error;
+
+      const rows = data || [];
+      for (const row of rows) {
+        const id = String(row.eman_id);
+        if (!existing.has(id)) {
+          state.products.push(mapCatalogProduct(row));
+          existing.add(id);
+        }
+      }
+      if (rows.length < pageSize) break;
+    }
+    loadedBrandKeys.add(key);
+  } catch (error) {
+    console.warn('YECHIM brand products load failed:', brand, error);
+    brandLoadErrors.set(key, error.message || String(error));
+  } finally {
+    fetchingBrandKeys.delete(key);
+    if (normalize(readRoute().brand) === key) renderBrandProducts();
+  }
+}
+
 function renderBrandProducts() {
   const brand = state.selectedBrand;
+  const brandKey = normalize(brand);
+  if (db && !loadedBrandKeys.has(brandKey) &&
+      !fetchingBrandKeys.has(brandKey) && !brandLoadErrors.has(brandKey)) {
+    void fetchBrandProducts(brand);
+  }
+  const brandLoading = !!db && !loadedBrandKeys.has(brandKey) &&
+    !brandLoadErrors.has(brandKey);
+  const brandError = brandLoadErrors.get(brandKey);
+
   const pageSize = 24;
   const products = state.products.filter((p) =>
     normalize(p.brand) === normalize(brand)
@@ -764,13 +817,20 @@ function renderBrandProducts() {
       <div class="section-head brand-products-head">
         <div>
           <h1>${esc(brand)}</h1>
-          <p class="muted">${products.length.toLocaleString('ru-RU')} товаров</p>
+          <p class="muted">${brandLoading ? 'Загрузка товаров…' : products.length.toLocaleString('ru-RU') + ' товаров'}</p>
         </div>
         <button class="btn btn-ghost" id="backBrand" type="button">Назад</button>
       </div>
 
       <section class="products">
-        ${visible.length ? visible.map(productCard).join('') : `
+        ${brandError ? `
+          <div class="panel"><b>Не удалось загрузить товары этого бренда.</b>
+            <p class="muted">${esc(brandError)}</p>
+            <button class="btn" id="retryBrandLoad" type="button">Повторить загрузку</button>
+          </div>
+        ` : brandLoading ? `
+          <div class="panel"><b>Загружаем товары бренда…</b></div>
+        ` : visible.length ? visible.map(productCard).join('') : `
           <div class="panel"><b>У этого бренда пока нет опубликованных товаров.</b></div>
         `}
       </section>
@@ -792,6 +852,12 @@ function renderBrandProducts() {
   };
   document.querySelector('#backHome').onclick = goHome;
   document.querySelector('#backBrand').onclick = goHome;
+
+  const retryBrandLoad = document.querySelector('#retryBrandLoad');
+  if (retryBrandLoad) retryBrandLoad.onclick = () => {
+    brandLoadErrors.delete(brandKey);
+    renderBrandProducts();
+  };
 
   document.querySelectorAll('[data-page]').forEach((button) => {
     button.onclick = () => {
