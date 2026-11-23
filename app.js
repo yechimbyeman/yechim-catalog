@@ -1161,6 +1161,41 @@ function productCard(p, options = {}) {
    DETAIL
 ========================= */
 
+// Keep product links working even when the item is not in the initial
+// 250-record catalog page. Fetch a deep-linked product by its stable Eman ID.
+const pendingProductLoads = new Set();
+const productLoadErrors = new Map();
+
+async function fetchProductDetailById(id) {
+  const key = String(id || '');
+  if (!key || !db || pendingProductLoads.has(key)) return;
+  pendingProductLoads.add(key);
+  productLoadErrors.delete(key);
+
+  try {
+    const { data, error } = await db
+      .rpc('get_public_catalog')
+      .eq('eman_id', key)
+      .limit(1);
+    if (error) throw error;
+    const row = (data || [])[0];
+
+    if (row) {
+      if (!state.products.some(p => String(p.id) === key)) {
+        state.products.push(mapCatalogProduct(row));
+      }
+    } else {
+      productLoadErrors.set(key, 'Товар не найден в опубликованном каталоге.');
+    }
+  } catch (error) {
+    console.warn('YECHIM product detail load failed:', key, error);
+    productLoadErrors.set(key, error.message || 'Не удалось загрузить товар.');
+  } finally {
+    pendingProductLoads.delete(key);
+    if (String(readRoute().product || '') === key) renderRoute();
+  }
+}
+
 function getProduct() {
 
   return state.products.find(
@@ -1291,9 +1326,28 @@ function renderDetail() {
 
 
   if (!p) {
+    const id = String(state.productId || '');
+    const error = productLoadErrors.get(id);
+    if (db && id && !error && !pendingProductLoads.has(id)) {
+      void fetchProductDetailById(id);
+    }
 
-    return renderHome();
+    document.title = 'YECHIM — Товар';
+    document.querySelector('#app').innerHTML = `
+      <div class="shell">
+        <div class="panel">
+          <b>${error ? 'Не удалось открыть товар' : db ? 'Загрузка товара…' : 'Товар не найден'}</b>
+          ${error ? `<p class="muted">${esc(error)}</p><button class="btn" type="button" id="retryProductDetail">Повторить</button>` : ''}
+          <p><a href="./">Вернуться в каталог</a></p>
+        </div>
+      </div>`;
 
+    const retry = document.querySelector('#retryProductDetail');
+    if (retry) retry.onclick = () => {
+      productLoadErrors.delete(id);
+      renderRoute();
+    };
+    return;
   }
 
 
@@ -2507,6 +2561,21 @@ document.addEventListener(
 
   }
 );
+
+
+// Client-side navigation prevents a brand product from disappearing on a
+// full page reload; direct links are supported by fetchProductDetailById.
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a.product-link');
+  if (!link || event.defaultPrevented || event.button !== 0 ||
+      event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+      (link.target && link.target !== '_self')) return;
+
+  event.preventDefault();
+  history.pushState({}, '', link.getAttribute('href'));
+  renderRoute();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
 
 
 /* =========================
