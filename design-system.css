@@ -65,3 +65,33 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){
   .btn,.product,.brand-card{transition:none}
 }
+
+/* Header search repair: the wrapper is the only visible white surface.
+   The nested input must not draw its own background or rounded corners. */
+.topbar .header-search{
+  display:flex!important;align-items:center;
+  box-sizing:border-box;
+  height:44px!important;min-height:44px!important;
+  padding:0 12px!important;
+  border:1px solid var(--ui-border)!important;
+  border-radius:var(--ui-radius)!important;
+  background:#fff!important;
+  overflow:hidden;
+}
+.topbar .header-search input,
+.topbar .header-search input[type="search"]{
+  display:block;
+  box-sizing:border-box;
+  width:100%;height:100%!important;min-height:0!important;
+  margin:0!important;padding:0 10px!important;
+  border:0!important;outline:0;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font-size:14px;
+}
+.topbar #catalogButton{height:44px!important;min-height:44px!important;border-radius:var(--ui-radius)!important}
+@media(max-width:700px){
+  .topbar .header-search{height:44px!important;min-height:44px!important;padding:0 8px!important}
+  .topbar #catalogButton{height:44px!important;min-height:44px!important}
+}
