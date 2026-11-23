@@ -95,3 +95,37 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .topbar .header-search{height:44px!important;min-height:44px!important;padding:0 8px!important}
   .topbar #catalogButton{height:44px!important;min-height:44px!important}
 }
+
+/* Pass 2: product grids and catalog/brand views.
+   Do not alter content visibility, grid columns or item ordering. */
+.product .photo{border-radius:var(--ui-radius);background:#f5f7f5}
+.product .product-body{color:var(--ui-ink)}
+.product .brand-mini{color:var(--ui-muted);font-size:12px;letter-spacing:.025em}
+.product .product-sku-label{color:var(--ui-green)}
+.product .product-sku-value{color:#536057}
+.product .price{color:var(--ui-ink);font-size:19px;line-height:1.3}
+.product .card-actions .btn,
+.home-shell .product .card-actions .btn{
+  min-height:44px;border-radius:var(--ui-radius);
+  background:var(--ui-green);color:#fff;
+  font-size:13px;font-weight:600;line-height:1.3;
+}
+.product .card-actions .btn:hover,
+.home-shell .product .card-actions .btn:hover{background:var(--ui-green-dark)}
+.catalog-filters.panel{border-radius:var(--ui-card-radius)}
+.catalog-filters label{font-size:13px;color:var(--ui-muted)}
+.catalog-filters select,.toolbar select{border-color:var(--ui-border);background-color:#fff}
+.catalog-layout .catalog-results .products>.product{border-radius:var(--ui-card-radius)}
+.catalog-layout .catalog-results .products>.product .photo{border-radius:var(--ui-radius)}
+.breadcrumbs{font-size:13px;color:var(--ui-muted)}
+.detail-price{font-size:28px;line-height:1.25;color:var(--ui-ink)}
+.cart-drawer{border-radius:var(--ui-card-radius)}
+.cart-head h3{font-size:20px;line-height:1.3}
+.cart-row{border-bottom-color:var(--ui-border)}
+@media(max-width:700px){
+  .product,.catalog-layout .catalog-results .products>.product{border-radius:var(--ui-card-radius)}
+  .product .photo{border-radius:var(--ui-radius)}
+  .product .card-actions .btn,.home-shell .product .card-actions .btn{min-height:44px;border-radius:var(--ui-radius);font-size:12px}
+  .product .price{font-size:16px}
+  .detail-price{font-size:24px}
+}
