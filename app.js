@@ -380,6 +380,8 @@ function readRoute() {
 
 function renderRoute() {
 
+  stopHomeBannerTimer();
+
   const route =
     readRoute();
 
@@ -611,11 +613,114 @@ function clearCart() {
 }
 
 
+
+/* =========================
+   HOME PROMO CAROUSEL
+========================= */
+
+let homeBannerTimer = null;
+
+function stopHomeBannerTimer() {
+  if (homeBannerTimer !== null) {
+    clearInterval(homeBannerTimer);
+    homeBannerTimer = null;
+  }
+}
+
+function setupHomeBannerCarousel() {
+  const root = document.querySelector('#homeBannerCarousel');
+  if (!root) return;
+
+  const slides = Array.from(root.querySelectorAll('[data-banner-slide]'));
+  const dots = Array.from(root.querySelectorAll('[data-banner-index]'));
+  if (slides.length < 2) return;
+
+  let current = 0;
+
+  function showBanner(index) {
+    current = (index + slides.length) % slides.length;
+    slides.forEach((slide, i) => {
+      const active = i === current;
+      slide.style.display = active ? 'flex' : 'none';
+      slide.setAttribute('aria-hidden', String(!active));
+    });
+    dots.forEach((dot, i) => {
+      const active = i === current;
+      dot.classList.toggle('is-active', active);
+      dot.setAttribute('aria-current', String(active));
+    });
+  }
+
+  function start() {
+    stopHomeBannerTimer();
+    if (window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    homeBannerTimer = setInterval(() => {
+      if (!document.hidden && root.isConnected) showBanner(current + 1);
+    }, 6000);
+  }
+
+  root.querySelectorAll('[data-banner-nav]').forEach(button => {
+    button.addEventListener('click', () => {
+      showBanner(current + (button.dataset.bannerNav === 'next' ? 1 : -1));
+      start();
+    });
+  });
+  dots.forEach(button => button.addEventListener('click', () => {
+    showBanner(Number(button.dataset.bannerIndex));
+    start();
+  }));
+  root.addEventListener('mouseenter', stopHomeBannerTimer);
+  root.addEventListener('mouseleave', start);
+  root.addEventListener('focusin', stopHomeBannerTimer);
+  root.addEventListener('focusout', e => {
+    if (!root.contains(e.relatedTarget)) start();
+  });
+
+  showBanner(0);
+  start();
+}
+
+function renderHomeBannerMarkup() {
+  const banners = (state.banners || []).filter(b => b.active !== false && b.image_url);
+  if (!banners.length) return '';
+
+  const slides = banners.map((b, i) => {
+    const label = b.title || ('Баннер ' + (i + 1));
+    return '<section class="hero-banner" data-banner-slide="' + i +
+      '" role="group" aria-roledescription="слайд" aria-label="' + esc(label) +
+      '" aria-hidden="' + (i !== 0) +
+      '" style="display:' + (i === 0 ? 'flex' : 'none') +
+      ';background-image:url(\'' + esc(b.image_url) + '\')">' +
+      (b.button_text ? '<a class="hero-cta" href="' + esc(b.link_url || '?catalog=1') +
+        '">' + esc(b.button_text) + ' <span aria-hidden="true">→</span></a>' : '') +
+      '</section>';
+  }).join('');
+
+  const controls = banners.length < 2 ? '' : 
+    '<div class="banner-carousel-controls" role="group" aria-label="Переключение баннеров">' +
+      '<button type="button" class="banner-carousel-arrow" data-banner-nav="prev" aria-label="Предыдущий баннер">‹</button>' +
+      '<div class="banner-carousel-dots">' +
+      banners.map((b, i) => '<button type="button" class="banner-carousel-dot' +
+        (i === 0 ? ' is-active' : '') + '" data-banner-index="' + i +
+        '" aria-label="' + esc(b.title || ('Баннер ' + (i + 1))) +
+        '" aria-current="' + (i === 0) + '"></button>').join('') +
+      '</div>' +
+      '<button type="button" class="banner-carousel-arrow" data-banner-nav="next" aria-label="Следующий баннер">›</button>' +
+    '</div>';
+
+  return '<div class="home-banner-carousel" id="homeBannerCarousel" aria-label="Баннеры YECHIM">' +
+    slides + controls + '</div>';
+}
+
+
 /* =========================
    HOME
 ========================= */
 
 function renderHome() {
+
+  stopHomeBannerTimer();
 
   state.productId =
     null;
@@ -644,7 +749,7 @@ function renderHome() {
   ).innerHTML = `
 
     <div class="shell home-shell">
-      ${state.banners && state.banners.length ? state.banners.filter(b=>b.active!==false).slice(0,1).map(b=>'<section class="hero-banner" aria-label="Баннер" style="background-image:url(\''+esc(b.image_url)+'\')">'+(b.button_text?'<a class="hero-cta" href="'+esc(b.link_url || '?catalog=1')+'">'+esc(b.button_text)+' <span aria-hidden="true">→</span></a>':'')+'</section>').join('') : ''}
+      ${renderHomeBannerMarkup()}
 
 
 
@@ -697,6 +802,8 @@ function renderHome() {
 
   `;
 
+
+  setupHomeBannerCarousel();
 
   document
     .querySelectorAll(
