@@ -173,3 +173,33 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .catalog-layout .products>.product .product-body>.price{font-size:16px}
   .catalog-layout .products>.product .card-actions{padding:0 10px 10px}
 }
+
+/* Pass 4 — cart polish. Preserve bottom-right placement, dimensions and behavior. */
+.cart-drawer{color:var(--ui-ink);border-color:var(--ui-border);border-radius:var(--ui-card-radius)}
+.cart-head{gap:12px}
+.cart-head h3{font-size:20px;line-height:1.25}
+.cart-head .muted{font-size:13px;line-height:1.45}
+.cart-head-actions{gap:8px}
+.cart-head-actions .btn{height:44px;min-height:44px;border-radius:var(--ui-radius)}
+.cart-head-actions .cart-clear-button{width:44px;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.cart-clear-button svg{width:18px;height:18px;display:block}
+.cart-row{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:14px 0;border-bottom:1px solid var(--ui-border)}
+.cart-row>div:first-child{min-width:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.cart-row>div:first-child>b{display:block;margin-bottom:4px;font-size:13px;font-weight:600}
+.cart-row>div:first-child>.muted{display:block;margin-top:4px;font-size:12px}
+.cart-item-actions{gap:4px;flex:0 0 auto;white-space:nowrap}
+.cart-item-actions .btn{width:40px;min-width:40px;height:40px;min-height:40px;padding:0;border-radius:var(--ui-radius);font-size:16px}
+.cart-item-actions>b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:40px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.cart-actions{margin-top:14px}
+.cart-actions .btn{height:44px;min-height:44px;border-radius:var(--ui-radius)}
+@media(max-width:560px){
+  .cart-drawer{padding:14px}
+  .cart-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .cart-item-actions{justify-content:flex-end}
+  .cart-item-actions .btn{width:40px;min-width:40px}
+  .cart-item-actions>b{min-width:18px}
+}
+@media(max-width:390px){
+  .cart-row{grid-template-columns:1fr}
+  .cart-item-actions{justify-content:flex-end}
+}
