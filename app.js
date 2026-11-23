@@ -1781,11 +1781,13 @@ function renderCart() {
           items.length
             ? `
               <button
-                class="btn btn-ghost"
+                class="btn btn-ghost cart-clear-button"
                 id="clearCart"
                 type="button"
+                title="Очистить корзину"
+                aria-label="Очистить корзину"
               >
-                ×
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>
               </button>
             `
             : ''
