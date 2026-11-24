@@ -1317,6 +1317,5104 @@ function getProduct() {
 }
 
 
+function normalizeDimensionRows(rows, language) {
+  const uz = language === 'uz';
+  const names = uz ? {l:'Uzunligi',w:'Eni',d:'Chuqurligi',h:'Balandligi',diam:'Diametri',pl:'Qadoq uzunligi',pw:'Qadoq eni',ph:'Qadoq balandligi'} : {l:'Длина',w:'Ширина',d:'Глубина',h:'Высота',diam:'Диаметр',pl:'Длина упаковки',pw:'Ширина упаковки',ph:'Высота упаковки'};
+  const norm = s => String(s ?? '').trim().toLowerCase().replace(/[‘’ʻʼ`]/g,"'").replace(/\s+/g,' ');
+  const nameKey = s => norm(s).replace(/\s*,?\s*(?:мм|mm|см|sm|cm)$/,'').trim();
+  const axes = {
+    'длина':'l','длина изделия':'l','uzunligi':'l','uzunlik':'l',
+    'ширина':'w','ширина изделия':'w','eni':'w','kengligi':'w','kenglik':'w',
+    'глубина':'d','глубина изделия':'d','chuqurligi':'d','chuqurlik':'d',
+    'высота':'h','высота изделия':'h','balandligi':'h','balandlik':'h',
+    'диаметр':'diam','diametri':'diam',
+    'длина упаковки':'pl','qadoq uzunligi':'pl','ширина упаковки':'pw','qadoq eni':'pw','высота упаковки':'ph','qadoq balandligi':'ph',
+    'ширина модуля':'module','modul kengligi':'module','ширина шкафа':'module',
+    'страна производитель':'country','страна производства':'country','ishlab chiqarilgan mamlakat':'country','rangi':'color','цвет':'color'
+  };
+  const key = n => axes[nameKey(n)] || nameKey(n);
+  const num = String.raw`\d+(?:[.,]\d+)?(?:\s*[-–—/]\s*\d+(?:[.,]\d+)?)*`;
+  const units = '(мм|mm|см|sm|cm)';
+  const dimValue = new RegExp('^('+num+')\\s*(?:'+units+')?
+  if (!product) return [];
+
+  const hasContent = (value) => {
+    if (value === null || value === undefined) return false;
+    if (Array.isArray(value)) return value.some(item => item && (
+      (item.name !== undefined && item.value !== undefined) ||
+      (Array.isArray(item) && item.length >= 2)
+    ));
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return String(value).trim().length > 0;
+  };
+
+  const unwrap = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return hasContent(value) ? value : null;
+    if ('ru' in value || 'uz' in value) {
+      const preferred = value[currentLanguage];
+      const fallback = value[currentLanguage === 'uz' ? 'ru' : 'uz'];
+      return hasContent(preferred) ? preferred : (hasContent(fallback) ? fallback : null);
+    }
+    return hasContent(value) ? value : null;
+  };
+
+  const candidates = currentLanguage === 'uz'
+    ? [
+        product.specs_uz,
+        product.specsUz,
+        product.characteristics_uz,
+        product.characteristicsUz,
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ]
+    : [
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ];
+
+  // Imported manufacturer characteristics are stored separately from price/stock
+  // under specs.manufacturer_specs. The catalog RPC wraps them as a nested row.
+  const parseLines = (value) => String(value || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const separator = line.indexOf(':');
+      return separator < 0 ? [line, ''] :
+        [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    });
+
+  const imported = product.specs?.manufacturer_specs;
+  const nested = Array.isArray(product.specs?.ru)
+    ? product.specs.ru.find(item => item?.name === 'manufacturer_specs')?.value
+    : null;
+  const manufacturer = imported || nested;
+  const brandData = manufacturer && typeof manufacturer === 'object'
+    ? Object.values(manufacturer).find(item => item && typeof item === 'object' && (item.ru || item.uz))
+    : null;
+  const manufacturerRows = brandData
+    ? parseLines(brandData[currentLanguage] || brandData.ru || '')
+    : [];
+
+  // Hide duplicate catalog metadata only in the characteristics section.
+  // Keep the original Eman.uz SKU in the product header and database.
+  const excludedSpecNames = new Set([
+    'артикул', 'артикул модели', 'бренд',
+    'artikul', 'model artikuli', 'brend'
+  ]);
+  const cleanSpecs = (rows) => normalizeDimensionRows(rows.filter(([name]) =>
+    !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
+  ), currentLanguage);
+
+  const rawSpecs = candidates.map(unwrap).find(hasContent);
+  if (!rawSpecs) return cleanSpecs(manufacturerRows);
+
+  if (Array.isArray(rawSpecs)) {
+    return cleanSpecs(rawSpecs
+      .filter(item => item && (
+        (item.name !== undefined && item.value !== undefined) ||
+        (Array.isArray(item) && item.length >= 2)
+      ))
+      .flatMap(item => {
+        const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
+        return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
+      }));
+  }
+
+  if (typeof rawSpecs === 'object') return cleanSpecs(Object.entries(rawSpecs));
+
+  if (typeof rawSpecs === 'string') {
+    return cleanSpecs(rawSpecs
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const separator = line.indexOf(':');
+        return separator === -1
+          ? [line, '']
+          : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+      }));
+  }
+
+  return [];
+}
+
+function renderDetail() {
+
+  const p =
+    getProduct();
+
+
+  if (!p) {
+    const id = String(state.productId || '');
+    const error = productLoadErrors.get(id);
+    if (db && id && !error && !pendingProductLoads.has(id)) {
+      void fetchProductDetailById(id);
+    }
+
+    document.title = 'YECHIM — Товар';
+    document.querySelector('#app').innerHTML = `
+      <div class="shell">
+        <div class="panel">
+          <b>${error ? 'Не удалось открыть товар' : db ? 'Загрузка товара…' : 'Товар не найден'}</b>
+          ${error ? `<p class="muted">${esc(error)}</p><button class="btn" type="button" id="retryProductDetail">Повторить</button>` : ''}
+          <p><a href="./">Вернуться в каталог</a></p>
+        </div>
+      </div>`;
+
+    const retry = document.querySelector('#retryProductDetail');
+    if (retry) retry.onclick = () => {
+      productLoadErrors.delete(id);
+      renderRoute();
+    };
+    return;
+  }
+
+
+  const localizedSpecs =
+    getLocalizedSpecs(p);
+
+  // Keep every source characteristic, including manufacturer and country of origin.
+  const detailSpecs = localizedSpecs;
+
+
+  document.title =
+    `YECHIM — ${p.name}`;
+
+
+  const thumbs =
+    [
+      p.image,
+      ...(p.additional_images || [])
+    ]
+      .filter(Boolean);
+
+
+  document.querySelector(
+    '#app'
+  ).innerHTML = `
+
+    <div class="shell">
+
+      <div class="breadcrumbs">
+
+        <a
+          href="./"
+          id="detailHome"
+        >
+          Каталог
+        </a>
+
+        <span>
+          ›
+        </span>
+
+        <span>
+          ${esc(p.brand)}
+        </span>
+
+        <span>
+          ›
+        </span>
+
+        <b>
+          ${esc(p.name)}
+        </b>
+
+      </div>
+
+
+      <div class="detail">
+
+
+        <div class="gallery">
+
+          <div class="gallery-main">
+
+            ${
+              p.image
+                ? `
+                  <img
+                    id="mainImage"
+                    src="${esc(
+                      p.image
+                    )}"
+                    alt="${esc(
+                      p.name
+                    )}"
+                  >
+                `
+                : `
+                  <span>
+                    Фото товара
+                  </span>
+                `
+            }
+
+          </div>
+
+
+          ${
+            thumbs.length > 1
+              ? `
+                <div class="thumbs">
+
+                  ${thumbs
+                    .map(
+                      (u, i) => `
+
+                        <button
+                          class="thumb ${
+                            i === 0
+                              ? 'active'
+                              : ''
+                          }"
+                          data-img="${esc(
+                            u
+                          )}"
+                          type="button"
+                        >
+
+                          <img
+                            src="${esc(
+                              u
+                            )}"
+                            alt=""
+                          >
+
+                        </button>
+
+                      `
+                    )
+                    .join('')}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+
+        <div class="info">
+
+          <div class="brand-mini">
+            ${esc(p.brand)}
+          </div>
+
+
+          <h1>
+            ${esc(p.name)}
+          </h1>
+
+
+          ${
+            p.sku
+              ? `
+                <div class="product-sku product-sku-detail">
+
+                  <span class="product-sku-label">
+                    Артикул
+                  </span>
+
+                  <span class="product-sku-value">
+                    ${esc(p.sku)}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+
+          ${
+            p.badge
+              ? `
+                <div class="badge">
+                  ${esc(p.badge)}
+                </div>
+              `
+              : ''
+          }
+
+
+          ${stockMarkup(
+            p,
+            true
+          )}
+
+
+          <div class="price detail-price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+            ${priceMarkup(p, true)}
+          </div>
+
+
+          <div class="buyline">
+
+            <div class="qty">
+
+              <button
+                class="btn btn-ghost"
+                id="minus"
+                type="button"
+              >
+                −
+              </button>
+
+
+              <b>
+                ${cart[p.id] || 0}
+              </b>
+
+
+              <button
+                class="btn btn-ghost"
+                id="plus"
+                type="button"
+              >
+                +
+              </button>
+
+            </div>
+
+
+            <button
+              class="btn btn-primary grow-btn"
+              id="addToCart"
+              type="button"
+            >
+              В корзину
+            </button>
+
+
+            <button
+              class="btn btn-ghost"
+              id="share"
+              type="button"
+            >
+              Поделиться
+            </button>
+
+          </div>
+
+
+
+          ${
+            detailSpecs.length
+              ? `
+                <div class="specs">
+
+                  ${
+                    detailSpecs
+                      .map(
+                        ([k, v]) => `
+
+                          <div class="spec">
+
+                            <b>
+                              ${esc(k)}
+                            </b>
+
+                            <span>
+                              ${esc(v)}
+                            </span>
+
+                          </div>
+
+                        `
+                      )
+                      .join('')
+                  }
+
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            p.mounting_scheme
+              ? `
+                <div
+                  class="extra-block"
+                >
+
+                  <h3>
+                    Схема присадки
+                  </h3>
+
+
+${
+  /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
+    ? `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="scheme-pdf"
+        style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;padding:12px 16px;background:#176b43;color:#ffffff;border:2px solid #2d9b67;border-radius:10px;font-weight:700;font-size:14px;line-height:1.35;text-decoration:none;box-shadow:0 3px 10px rgba(23,107,67,.18);transition:background .2s ease,transform .2s ease;"
+        onmouseover="this.style.background='#0f5232';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='#176b43';this.style.transform='translateY(0)'"
+        aria-label="Открыть инструкцию по сборке в новой вкладке"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 22px;">
+          <path d="M14.2 6.1a5.1 5.1 0 0 0 6.1 6.1L11 21.5a2.1 2.1 0 0 1-3-3l9.3-9.3a5.1 5.1 0 0 0-6.1-6.1l3.1 3.1-3 3-3.1-3.1a5.1 5.1 0 0 0 6-0.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Инструкция по сборке</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 16px;margin-left:2px;">
+          <path d="M14 4h6v6M20 4l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </a>
+    `
+    : `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          class="scheme"
+          src="${esc(p.mounting_scheme)}"
+          alt="Схема присадки"
+        >
+      </a>
+    `
+}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.querySelector(
+    '#detailHome'
+  ).onclick =
+    (event) => {
+
+      event.preventDefault();
+
+
+      history.pushState(
+        {},
+        '',
+        './'
+      );
+
+
+      renderRoute();
+
+    };
+
+
+  document
+    .querySelectorAll(
+      '.thumb'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          const img =
+            document.querySelector(
+              '#mainImage'
+            );
+
+
+          if (img) {
+
+            img.src =
+              button.dataset.img;
+
+          }
+
+
+          document
+            .querySelectorAll(
+              '.thumb'
+            )
+            .forEach(
+              (x) =>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+
+          button.classList.add(
+            'active'
+          );
+
+        };
+
+      }
+    );
+
+
+  document.querySelector(
+    '#minus'
+  ).onclick = () =>
+    add(
+      p.id,
+      -1
+    );
+
+
+  document.querySelector(
+    '#plus'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#addToCart'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#share'
+  ).onclick =
+    shareProduct;
+
+
+  updateCartBadge();
+
+}
+
+
+/* =========================
+   SHARE
+========================= */
+
+async function shareProduct() {
+
+  const p =
+    getProduct();
+
+
+  const url =
+    location.href;
+
+
+  try {
+
+    if (
+      navigator.share
+    ) {
+
+      await navigator.share({
+
+        title:
+          p?.name ||
+          'YECHIM',
+
+        text:
+          p?.sku
+            ? `Артикул ${p.sku}`
+            : 'Товар YECHIM',
+
+        url
+
+      });
+
+    } else {
+
+      await navigator.clipboard
+        .writeText(
+          url
+        );
+
+
+      alert(
+        'Ссылка на товар скопирована.'
+      );
+
+    }
+
+  } catch {
+
+    /* cancelled */
+
+  }
+
+}
+
+
+/* =========================
+   CART
+========================= */
+
+function renderCart() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        ([id, quantity]) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  const old =
+    document.querySelector(
+      '.cart-drawer'
+    );
+
+
+  if (old) {
+
+    old.remove();
+
+  }
+
+
+  const drawer =
+    document.createElement(
+      'aside'
+    );
+
+
+  drawer.className =
+    'cart-drawer';
+
+
+  drawer.innerHTML = `
+
+    <div class="cart-head">
+
+      <div>
+
+        <h3>
+          Корзина
+        </h3>
+
+        <span
+          class="muted"
+        >
+
+          ${items.length}
+
+          ${
+            items.length === 1
+              ? 'позиция'
+              : 'позиций'
+          }
+
+          ·
+
+          ${cartQty()}
+          шт.
+
+        </span>
+
+      </div>
+
+
+      <div
+        class="cart-head-actions"
+      >
+
+        ${
+          items.length
+            ? `
+              <button
+                class="btn btn-ghost cart-clear-button"
+                id="clearCart"
+                type="button"
+                title="Очистить корзину"
+                aria-label="Очистить корзину"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>
+              </button>
+            `
+            : ''
+        }
+
+
+        <button
+          class="btn btn-ghost"
+          id="closeCart"
+          type="button"
+        >
+          Закрыть
+        </button>
+
+      </div>
+
+    </div>
+
+
+    ${
+      items.length
+        ? items
+            .map(
+              ({ p, q }) => `
+
+                <div class="cart-row">
+
+                  <div>
+
+                    <b>
+                      ${esc(
+                        p.brand
+                      )}
+                    </b>
+
+
+                    <div>
+                      ${esc(
+                        p.name
+                      )}
+                    </div>
+
+
+                    ${
+                      p.sku
+                        ? `
+                          <div
+                            class="muted"
+                          >
+                            Артикул:
+                            ${esc(
+                              p.sku
+                            )}
+                          </div>
+                        `
+                        : ''
+                    }
+
+                  </div>
+
+
+                  <div
+                    class="cart-item-actions"
+                  >
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-minus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      −
+                    </button>
+
+
+                    <b>
+                      ${q}
+                    </b>
+
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-plus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      +
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `
+            )
+            .join('')
+
+        : `
+
+          <div class="empty">
+            Корзина пока пустая.
+          </div>
+
+        `
+    }
+
+
+    ${
+      items.length
+        ? `
+
+          <div class="cart-actions">
+
+            <button
+              class="btn btn-primary"
+              id="sendRequest"
+              type="button"
+            >
+              Отправить заявку
+            </button>
+
+          </div>
+
+        `
+        : ''
+    }
+
+  `;
+
+
+  document.body.append(
+    drawer
+  );
+
+
+  drawer.querySelector(
+    '#closeCart'
+  ).onclick = () =>
+    drawer.remove();
+
+
+  const clearButton =
+    drawer.querySelector(
+      '#clearCart'
+    );
+
+
+  if (clearButton) {
+
+    clearButton.onclick = () => {
+
+      clearCart();
+
+      updateCartBadge();
+
+    };
+
+  }
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-minus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartMinus
+            ),
+            -1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-plus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartPlus
+            ),
+            1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  const sendButton =
+    drawer.querySelector(
+      '#sendRequest'
+    );
+
+
+  if (sendButton) {
+
+    sendButton.onclick =
+      sendRequest;
+
+  }
+
+}
+/* =========================
+   EXCEL EXPORT
+========================= */
+
+async function loadXlsxLibrary() {
+
+  if (window.XLSX) {
+
+    return window.XLSX;
+
+  }
+
+
+  await new Promise(
+    (resolve, reject) => {
+
+      const existing =
+        document.querySelector(
+          'script[data-yechim-xlsx="true"]'
+        );
+
+
+      if (existing) {
+
+        existing.addEventListener(
+          'load',
+          resolve,
+          {
+            once: true
+          }
+        );
+
+
+        existing.addEventListener(
+          'error',
+          () =>
+            reject(
+              new Error(
+                'Не удалось загрузить Excel-модуль.'
+              )
+            ),
+          {
+            once: true
+          }
+        );
+
+
+        return;
+
+      }
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      script.src =
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+
+      script.async =
+        true;
+
+
+      script.dataset.yechimXlsx =
+        'true';
+
+
+      script.onload =
+        resolve;
+
+
+      script.onerror =
+        () =>
+          reject(
+            new Error(
+              'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
+            )
+          );
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
+
+
+  if (!window.XLSX) {
+
+    throw new Error(
+      'Excel-модуль загрузился некорректно.'
+    );
+
+  }
+
+
+  return window.XLSX;
+
+}
+
+
+/* =========================
+   SEND REQUEST
+========================= */
+
+async function sendRequest() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        (
+          [id, quantity]
+        ) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  if (!items.length) {
+
+    return;
+
+  }
+
+
+  /*
+   * Объединяем одинаковые артикулы.
+   */
+
+  const rowsBySku =
+    new Map();
+
+
+  items.forEach(
+    ({ p, q }) => {
+
+      const sku =
+        String(
+          p.sku ||
+          p.name ||
+          p.id
+        ).trim();
+
+
+      rowsBySku.set(
+        sku,
+        (
+          rowsBySku.get(
+            sku
+          ) ||
+          0
+        ) + q
+      );
+
+    }
+  );
+
+
+  /*
+   * Формируем строки Excel.
+   */
+
+  const rows =
+    Array.from(
+      rowsBySku,
+      (
+        [sku, quantity]
+      ) => ({
+
+        'Артикул':
+          sku,
+
+        'Количество':
+          quantity
+
+      })
+    );
+
+
+  /*
+   * Итоговое количество.
+   */
+
+  const total =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row['Количество'] ||
+          0
+        ),
+      0
+    );
+
+
+  /*
+   * Добавляем итог.
+   */
+
+  rows.push({
+
+    'Артикул':
+      'Итого',
+
+    'Количество':
+      total
+
+  });
+
+
+  try {
+
+    const XLSX =
+      await loadXlsxLibrary();
+
+
+    /*
+     * Создаём лист.
+     */
+
+    const worksheet =
+      XLSX.utils.json_to_sheet(
+        rows
+      );
+
+
+    /*
+     * Ширина колонок.
+     */
+
+    worksheet['!cols'] = [
+
+      {
+        wch: 24
+      },
+
+      {
+        wch: 14
+      }
+
+    ];
+
+
+    /*
+     * Создаём книгу.
+     */
+
+    const workbook =
+      XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Заявка'
+    );
+
+
+    /*
+     * Имя файла.
+     */
+
+    const now =
+      new Date();
+
+
+    const pad =
+      (value) =>
+        String(
+          value
+        ).padStart(
+          2,
+          '0'
+        );
+
+
+    const filename =
+      `YECHIM_Request_${now.getFullYear()}-${pad(
+        now.getMonth() + 1
+      )}-${pad(
+        now.getDate()
+      )}_${pad(
+        now.getHours()
+      )}-${pad(
+        now.getMinutes()
+      )}.xlsx`;
+
+
+    /*
+     * Скачать Excel.
+     */
+
+    XLSX.writeFile(
+      workbook,
+      filename
+    );
+
+
+    /*
+     * После успешного
+     * скачивания очищаем корзину.
+     */
+
+    clearCart();
+
+
+  } catch (error) {
+
+    console.error(
+      'Excel export error:',
+      error
+    );
+
+
+    alert(
+      error.message ||
+      'Не удалось создать Excel-файл.'
+    );
+
+  }
+
+}
+
+
+/* =========================
+   ADD TO CART
+========================= */
+
+document.addEventListener(
+  'click',
+  (event) => {
+
+    const button =
+      event.target.closest(
+        '[data-add]'
+      );
+
+
+    if (!button) {
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    event.stopPropagation();
+
+
+    add(
+      decodeURIComponent(
+        button.dataset.add
+      ),
+      1
+    );
+
+  }
+);
+
+
+// Client-side navigation prevents a brand product from disappearing on a
+// full page reload; direct links are supported by fetchProductDetailById.
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a.product-link');
+  if (!link || event.defaultPrevented || event.button !== 0 ||
+      event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+      (link.target && link.target !== '_self')) return;
+
+  event.preventDefault();
+  history.pushState({}, '', link.getAttribute('href'));
+  renderRoute();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
+
+
+/* =========================
+   INIT
+========================= */
+
+const cartButton =
+  document.querySelector(
+    '#cartButton'
+  );
+
+
+if (cartButton) {
+
+  cartButton.onclick =
+    renderCart;
+
+}
+
+
+/* =========================
+   START APP
+========================= */
+
+(async () => {
+
+  initLanguageSwitcher();
+  await loadProducts();
+
+  renderRoute();
+  applyPublicTranslations();
+
+  updateCartBadge();
+
+})();
+/* =========================
+   LANGUAGE STYLES
+========================= */
+
+const languageStyles =
+  document.createElement(
+    'style'
+  );
+
+
+languageStyles.textContent = `
+
+  /* =========================
+     LANGUAGE SWITCHER
+  ========================= */
+
+  #languageSwitcher {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-right: 10px;
+
+    white-space: nowrap;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn {
+
+    border: 0;
+
+    background: transparent;
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .75
+    );
+
+    font: inherit;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    padding: 3px 4px;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn.active {
+
+    color: #fff;
+
+  }
+
+
+  #languageSwitcher
+  .language-divider {
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .35
+    );
+
+  }
+
+
+  /* =========================
+     PRODUCT SKU
+  ========================= */
+
+  .product-sku {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border: 1px solid #b7dfcf;
+
+    border-radius: 5px;
+
+    background: #f5fbf8;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+  }
+
+
+  .product-sku-label {
+
+    color: #078451;
+
+    font-weight: 700;
+
+  }
+
+
+  .product-sku-value {
+
+    color: #222;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+  }
+
+
+  .product-sku-detail {
+
+    margin-top: 9px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .product-sku-detail
+  .product-sku-value {
+
+    font-size: 12px;
+
+  }
+
+
+  /* =========================
+     STOCK STATUS
+  ========================= */
+
+  .stock-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+    font-weight: 500;
+
+  }
+
+
+  .stock-status .stock-dot {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 15px;
+
+    height: 15px;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+  }
+
+
+  .stock-in {
+
+    color: #087c4f;
+
+    background: #f1faf6;
+
+    border: 1px solid #b7dfcf;
+
+  }
+
+
+  .stock-in .stock-dot {
+
+    color: #fff;
+
+    background: #078451;
+
+  }
+
+
+  .stock-out {
+
+    color: #a33d3d;
+
+    background: #fff7f7;
+
+    border: 1px solid #e8c4c4;
+
+  }
+
+
+  .stock-out .stock-dot {
+
+    color: #fff;
+
+    background: #b84a4a;
+
+  }
+
+
+  .stock-status-detail {
+
+    margin-top: 10px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .stock-status-detail
+  .stock-dot {
+
+    width: 17px;
+
+    height: 17px;
+
+    font-size: 11px;
+
+  }
+
+`;
+
+
+document.head.appendChild(
+  languageStyles
+);
+
+
+/* =========================
+   START LANGUAGE SYSTEM
+========================= */
+
+initLanguageSwitcher();
+
+applyPublicTranslations();
+,'i');
+  const fullVal = new RegExp('^(.+?)\\s*'+units+'
+  if (!product) return [];
+
+  const hasContent = (value) => {
+    if (value === null || value === undefined) return false;
+    if (Array.isArray(value)) return value.some(item => item && (
+      (item.name !== undefined && item.value !== undefined) ||
+      (Array.isArray(item) && item.length >= 2)
+    ));
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return String(value).trim().length > 0;
+  };
+
+  const unwrap = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return hasContent(value) ? value : null;
+    if ('ru' in value || 'uz' in value) {
+      const preferred = value[currentLanguage];
+      const fallback = value[currentLanguage === 'uz' ? 'ru' : 'uz'];
+      return hasContent(preferred) ? preferred : (hasContent(fallback) ? fallback : null);
+    }
+    return hasContent(value) ? value : null;
+  };
+
+  const candidates = currentLanguage === 'uz'
+    ? [
+        product.specs_uz,
+        product.specsUz,
+        product.characteristics_uz,
+        product.characteristicsUz,
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ]
+    : [
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ];
+
+  // Imported manufacturer characteristics are stored separately from price/stock
+  // under specs.manufacturer_specs. The catalog RPC wraps them as a nested row.
+  const parseLines = (value) => String(value || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const separator = line.indexOf(':');
+      return separator < 0 ? [line, ''] :
+        [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    });
+
+  const imported = product.specs?.manufacturer_specs;
+  const nested = Array.isArray(product.specs?.ru)
+    ? product.specs.ru.find(item => item?.name === 'manufacturer_specs')?.value
+    : null;
+  const manufacturer = imported || nested;
+  const brandData = manufacturer && typeof manufacturer === 'object'
+    ? Object.values(manufacturer).find(item => item && typeof item === 'object' && (item.ru || item.uz))
+    : null;
+  const manufacturerRows = brandData
+    ? parseLines(brandData[currentLanguage] || brandData.ru || '')
+    : [];
+
+  // Hide duplicate catalog metadata only in the characteristics section.
+  // Keep the original Eman.uz SKU in the product header and database.
+  const excludedSpecNames = new Set([
+    'артикул', 'артикул модели', 'бренд',
+    'artikul', 'model artikuli', 'brend'
+  ]);
+  const cleanSpecs = (rows) => rows.filter(([name]) =>
+    !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
+  );
+
+  const rawSpecs = candidates.map(unwrap).find(hasContent);
+  if (!rawSpecs) return cleanSpecs(manufacturerRows);
+
+  if (Array.isArray(rawSpecs)) {
+    return cleanSpecs(rawSpecs
+      .filter(item => item && (
+        (item.name !== undefined && item.value !== undefined) ||
+        (Array.isArray(item) && item.length >= 2)
+      ))
+      .flatMap(item => {
+        const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
+        return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
+      }));
+  }
+
+  if (typeof rawSpecs === 'object') return cleanSpecs(Object.entries(rawSpecs));
+
+  if (typeof rawSpecs === 'string') {
+    return cleanSpecs(rawSpecs
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const separator = line.indexOf(':');
+        return separator === -1
+          ? [line, '']
+          : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+      }));
+  }
+
+  return [];
+}
+
+function renderDetail() {
+
+  const p =
+    getProduct();
+
+
+  if (!p) {
+    const id = String(state.productId || '');
+    const error = productLoadErrors.get(id);
+    if (db && id && !error && !pendingProductLoads.has(id)) {
+      void fetchProductDetailById(id);
+    }
+
+    document.title = 'YECHIM — Товар';
+    document.querySelector('#app').innerHTML = `
+      <div class="shell">
+        <div class="panel">
+          <b>${error ? 'Не удалось открыть товар' : db ? 'Загрузка товара…' : 'Товар не найден'}</b>
+          ${error ? `<p class="muted">${esc(error)}</p><button class="btn" type="button" id="retryProductDetail">Повторить</button>` : ''}
+          <p><a href="./">Вернуться в каталог</a></p>
+        </div>
+      </div>`;
+
+    const retry = document.querySelector('#retryProductDetail');
+    if (retry) retry.onclick = () => {
+      productLoadErrors.delete(id);
+      renderRoute();
+    };
+    return;
+  }
+
+
+  const localizedSpecs =
+    getLocalizedSpecs(p);
+
+  // Keep every source characteristic, including manufacturer and country of origin.
+  const detailSpecs = localizedSpecs;
+
+
+  document.title =
+    `YECHIM — ${p.name}`;
+
+
+  const thumbs =
+    [
+      p.image,
+      ...(p.additional_images || [])
+    ]
+      .filter(Boolean);
+
+
+  document.querySelector(
+    '#app'
+  ).innerHTML = `
+
+    <div class="shell">
+
+      <div class="breadcrumbs">
+
+        <a
+          href="./"
+          id="detailHome"
+        >
+          Каталог
+        </a>
+
+        <span>
+          ›
+        </span>
+
+        <span>
+          ${esc(p.brand)}
+        </span>
+
+        <span>
+          ›
+        </span>
+
+        <b>
+          ${esc(p.name)}
+        </b>
+
+      </div>
+
+
+      <div class="detail">
+
+
+        <div class="gallery">
+
+          <div class="gallery-main">
+
+            ${
+              p.image
+                ? `
+                  <img
+                    id="mainImage"
+                    src="${esc(
+                      p.image
+                    )}"
+                    alt="${esc(
+                      p.name
+                    )}"
+                  >
+                `
+                : `
+                  <span>
+                    Фото товара
+                  </span>
+                `
+            }
+
+          </div>
+
+
+          ${
+            thumbs.length > 1
+              ? `
+                <div class="thumbs">
+
+                  ${thumbs
+                    .map(
+                      (u, i) => `
+
+                        <button
+                          class="thumb ${
+                            i === 0
+                              ? 'active'
+                              : ''
+                          }"
+                          data-img="${esc(
+                            u
+                          )}"
+                          type="button"
+                        >
+
+                          <img
+                            src="${esc(
+                              u
+                            )}"
+                            alt=""
+                          >
+
+                        </button>
+
+                      `
+                    )
+                    .join('')}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+
+        <div class="info">
+
+          <div class="brand-mini">
+            ${esc(p.brand)}
+          </div>
+
+
+          <h1>
+            ${esc(p.name)}
+          </h1>
+
+
+          ${
+            p.sku
+              ? `
+                <div class="product-sku product-sku-detail">
+
+                  <span class="product-sku-label">
+                    Артикул
+                  </span>
+
+                  <span class="product-sku-value">
+                    ${esc(p.sku)}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+
+          ${
+            p.badge
+              ? `
+                <div class="badge">
+                  ${esc(p.badge)}
+                </div>
+              `
+              : ''
+          }
+
+
+          ${stockMarkup(
+            p,
+            true
+          )}
+
+
+          <div class="price detail-price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+            ${priceMarkup(p, true)}
+          </div>
+
+
+          <div class="buyline">
+
+            <div class="qty">
+
+              <button
+                class="btn btn-ghost"
+                id="minus"
+                type="button"
+              >
+                −
+              </button>
+
+
+              <b>
+                ${cart[p.id] || 0}
+              </b>
+
+
+              <button
+                class="btn btn-ghost"
+                id="plus"
+                type="button"
+              >
+                +
+              </button>
+
+            </div>
+
+
+            <button
+              class="btn btn-primary grow-btn"
+              id="addToCart"
+              type="button"
+            >
+              В корзину
+            </button>
+
+
+            <button
+              class="btn btn-ghost"
+              id="share"
+              type="button"
+            >
+              Поделиться
+            </button>
+
+          </div>
+
+
+
+          ${
+            detailSpecs.length
+              ? `
+                <div class="specs">
+
+                  ${
+                    detailSpecs
+                      .map(
+                        ([k, v]) => `
+
+                          <div class="spec">
+
+                            <b>
+                              ${esc(k)}
+                            </b>
+
+                            <span>
+                              ${esc(v)}
+                            </span>
+
+                          </div>
+
+                        `
+                      )
+                      .join('')
+                  }
+
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            p.mounting_scheme
+              ? `
+                <div
+                  class="extra-block"
+                >
+
+                  <h3>
+                    Схема присадки
+                  </h3>
+
+
+${
+  /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
+    ? `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="scheme-pdf"
+        style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;padding:12px 16px;background:#176b43;color:#ffffff;border:2px solid #2d9b67;border-radius:10px;font-weight:700;font-size:14px;line-height:1.35;text-decoration:none;box-shadow:0 3px 10px rgba(23,107,67,.18);transition:background .2s ease,transform .2s ease;"
+        onmouseover="this.style.background='#0f5232';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='#176b43';this.style.transform='translateY(0)'"
+        aria-label="Открыть инструкцию по сборке в новой вкладке"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 22px;">
+          <path d="M14.2 6.1a5.1 5.1 0 0 0 6.1 6.1L11 21.5a2.1 2.1 0 0 1-3-3l9.3-9.3a5.1 5.1 0 0 0-6.1-6.1l3.1 3.1-3 3-3.1-3.1a5.1 5.1 0 0 0 6-0.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Инструкция по сборке</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 16px;margin-left:2px;">
+          <path d="M14 4h6v6M20 4l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </a>
+    `
+    : `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          class="scheme"
+          src="${esc(p.mounting_scheme)}"
+          alt="Схема присадки"
+        >
+      </a>
+    `
+}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.querySelector(
+    '#detailHome'
+  ).onclick =
+    (event) => {
+
+      event.preventDefault();
+
+
+      history.pushState(
+        {},
+        '',
+        './'
+      );
+
+
+      renderRoute();
+
+    };
+
+
+  document
+    .querySelectorAll(
+      '.thumb'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          const img =
+            document.querySelector(
+              '#mainImage'
+            );
+
+
+          if (img) {
+
+            img.src =
+              button.dataset.img;
+
+          }
+
+
+          document
+            .querySelectorAll(
+              '.thumb'
+            )
+            .forEach(
+              (x) =>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+
+          button.classList.add(
+            'active'
+          );
+
+        };
+
+      }
+    );
+
+
+  document.querySelector(
+    '#minus'
+  ).onclick = () =>
+    add(
+      p.id,
+      -1
+    );
+
+
+  document.querySelector(
+    '#plus'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#addToCart'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#share'
+  ).onclick =
+    shareProduct;
+
+
+  updateCartBadge();
+
+}
+
+
+/* =========================
+   SHARE
+========================= */
+
+async function shareProduct() {
+
+  const p =
+    getProduct();
+
+
+  const url =
+    location.href;
+
+
+  try {
+
+    if (
+      navigator.share
+    ) {
+
+      await navigator.share({
+
+        title:
+          p?.name ||
+          'YECHIM',
+
+        text:
+          p?.sku
+            ? `Артикул ${p.sku}`
+            : 'Товар YECHIM',
+
+        url
+
+      });
+
+    } else {
+
+      await navigator.clipboard
+        .writeText(
+          url
+        );
+
+
+      alert(
+        'Ссылка на товар скопирована.'
+      );
+
+    }
+
+  } catch {
+
+    /* cancelled */
+
+  }
+
+}
+
+
+/* =========================
+   CART
+========================= */
+
+function renderCart() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        ([id, quantity]) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  const old =
+    document.querySelector(
+      '.cart-drawer'
+    );
+
+
+  if (old) {
+
+    old.remove();
+
+  }
+
+
+  const drawer =
+    document.createElement(
+      'aside'
+    );
+
+
+  drawer.className =
+    'cart-drawer';
+
+
+  drawer.innerHTML = `
+
+    <div class="cart-head">
+
+      <div>
+
+        <h3>
+          Корзина
+        </h3>
+
+        <span
+          class="muted"
+        >
+
+          ${items.length}
+
+          ${
+            items.length === 1
+              ? 'позиция'
+              : 'позиций'
+          }
+
+          ·
+
+          ${cartQty()}
+          шт.
+
+        </span>
+
+      </div>
+
+
+      <div
+        class="cart-head-actions"
+      >
+
+        ${
+          items.length
+            ? `
+              <button
+                class="btn btn-ghost cart-clear-button"
+                id="clearCart"
+                type="button"
+                title="Очистить корзину"
+                aria-label="Очистить корзину"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>
+              </button>
+            `
+            : ''
+        }
+
+
+        <button
+          class="btn btn-ghost"
+          id="closeCart"
+          type="button"
+        >
+          Закрыть
+        </button>
+
+      </div>
+
+    </div>
+
+
+    ${
+      items.length
+        ? items
+            .map(
+              ({ p, q }) => `
+
+                <div class="cart-row">
+
+                  <div>
+
+                    <b>
+                      ${esc(
+                        p.brand
+                      )}
+                    </b>
+
+
+                    <div>
+                      ${esc(
+                        p.name
+                      )}
+                    </div>
+
+
+                    ${
+                      p.sku
+                        ? `
+                          <div
+                            class="muted"
+                          >
+                            Артикул:
+                            ${esc(
+                              p.sku
+                            )}
+                          </div>
+                        `
+                        : ''
+                    }
+
+                  </div>
+
+
+                  <div
+                    class="cart-item-actions"
+                  >
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-minus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      −
+                    </button>
+
+
+                    <b>
+                      ${q}
+                    </b>
+
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-plus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      +
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `
+            )
+            .join('')
+
+        : `
+
+          <div class="empty">
+            Корзина пока пустая.
+          </div>
+
+        `
+    }
+
+
+    ${
+      items.length
+        ? `
+
+          <div class="cart-actions">
+
+            <button
+              class="btn btn-primary"
+              id="sendRequest"
+              type="button"
+            >
+              Отправить заявку
+            </button>
+
+          </div>
+
+        `
+        : ''
+    }
+
+  `;
+
+
+  document.body.append(
+    drawer
+  );
+
+
+  drawer.querySelector(
+    '#closeCart'
+  ).onclick = () =>
+    drawer.remove();
+
+
+  const clearButton =
+    drawer.querySelector(
+      '#clearCart'
+    );
+
+
+  if (clearButton) {
+
+    clearButton.onclick = () => {
+
+      clearCart();
+
+      updateCartBadge();
+
+    };
+
+  }
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-minus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartMinus
+            ),
+            -1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-plus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartPlus
+            ),
+            1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  const sendButton =
+    drawer.querySelector(
+      '#sendRequest'
+    );
+
+
+  if (sendButton) {
+
+    sendButton.onclick =
+      sendRequest;
+
+  }
+
+}
+/* =========================
+   EXCEL EXPORT
+========================= */
+
+async function loadXlsxLibrary() {
+
+  if (window.XLSX) {
+
+    return window.XLSX;
+
+  }
+
+
+  await new Promise(
+    (resolve, reject) => {
+
+      const existing =
+        document.querySelector(
+          'script[data-yechim-xlsx="true"]'
+        );
+
+
+      if (existing) {
+
+        existing.addEventListener(
+          'load',
+          resolve,
+          {
+            once: true
+          }
+        );
+
+
+        existing.addEventListener(
+          'error',
+          () =>
+            reject(
+              new Error(
+                'Не удалось загрузить Excel-модуль.'
+              )
+            ),
+          {
+            once: true
+          }
+        );
+
+
+        return;
+
+      }
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      script.src =
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+
+      script.async =
+        true;
+
+
+      script.dataset.yechimXlsx =
+        'true';
+
+
+      script.onload =
+        resolve;
+
+
+      script.onerror =
+        () =>
+          reject(
+            new Error(
+              'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
+            )
+          );
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
+
+
+  if (!window.XLSX) {
+
+    throw new Error(
+      'Excel-модуль загрузился некорректно.'
+    );
+
+  }
+
+
+  return window.XLSX;
+
+}
+
+
+/* =========================
+   SEND REQUEST
+========================= */
+
+async function sendRequest() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        (
+          [id, quantity]
+        ) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  if (!items.length) {
+
+    return;
+
+  }
+
+
+  /*
+   * Объединяем одинаковые артикулы.
+   */
+
+  const rowsBySku =
+    new Map();
+
+
+  items.forEach(
+    ({ p, q }) => {
+
+      const sku =
+        String(
+          p.sku ||
+          p.name ||
+          p.id
+        ).trim();
+
+
+      rowsBySku.set(
+        sku,
+        (
+          rowsBySku.get(
+            sku
+          ) ||
+          0
+        ) + q
+      );
+
+    }
+  );
+
+
+  /*
+   * Формируем строки Excel.
+   */
+
+  const rows =
+    Array.from(
+      rowsBySku,
+      (
+        [sku, quantity]
+      ) => ({
+
+        'Артикул':
+          sku,
+
+        'Количество':
+          quantity
+
+      })
+    );
+
+
+  /*
+   * Итоговое количество.
+   */
+
+  const total =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row['Количество'] ||
+          0
+        ),
+      0
+    );
+
+
+  /*
+   * Добавляем итог.
+   */
+
+  rows.push({
+
+    'Артикул':
+      'Итого',
+
+    'Количество':
+      total
+
+  });
+
+
+  try {
+
+    const XLSX =
+      await loadXlsxLibrary();
+
+
+    /*
+     * Создаём лист.
+     */
+
+    const worksheet =
+      XLSX.utils.json_to_sheet(
+        rows
+      );
+
+
+    /*
+     * Ширина колонок.
+     */
+
+    worksheet['!cols'] = [
+
+      {
+        wch: 24
+      },
+
+      {
+        wch: 14
+      }
+
+    ];
+
+
+    /*
+     * Создаём книгу.
+     */
+
+    const workbook =
+      XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Заявка'
+    );
+
+
+    /*
+     * Имя файла.
+     */
+
+    const now =
+      new Date();
+
+
+    const pad =
+      (value) =>
+        String(
+          value
+        ).padStart(
+          2,
+          '0'
+        );
+
+
+    const filename =
+      `YECHIM_Request_${now.getFullYear()}-${pad(
+        now.getMonth() + 1
+      )}-${pad(
+        now.getDate()
+      )}_${pad(
+        now.getHours()
+      )}-${pad(
+        now.getMinutes()
+      )}.xlsx`;
+
+
+    /*
+     * Скачать Excel.
+     */
+
+    XLSX.writeFile(
+      workbook,
+      filename
+    );
+
+
+    /*
+     * После успешного
+     * скачивания очищаем корзину.
+     */
+
+    clearCart();
+
+
+  } catch (error) {
+
+    console.error(
+      'Excel export error:',
+      error
+    );
+
+
+    alert(
+      error.message ||
+      'Не удалось создать Excel-файл.'
+    );
+
+  }
+
+}
+
+
+/* =========================
+   ADD TO CART
+========================= */
+
+document.addEventListener(
+  'click',
+  (event) => {
+
+    const button =
+      event.target.closest(
+        '[data-add]'
+      );
+
+
+    if (!button) {
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    event.stopPropagation();
+
+
+    add(
+      decodeURIComponent(
+        button.dataset.add
+      ),
+      1
+    );
+
+  }
+);
+
+
+// Client-side navigation prevents a brand product from disappearing on a
+// full page reload; direct links are supported by fetchProductDetailById.
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a.product-link');
+  if (!link || event.defaultPrevented || event.button !== 0 ||
+      event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+      (link.target && link.target !== '_self')) return;
+
+  event.preventDefault();
+  history.pushState({}, '', link.getAttribute('href'));
+  renderRoute();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
+
+
+/* =========================
+   INIT
+========================= */
+
+const cartButton =
+  document.querySelector(
+    '#cartButton'
+  );
+
+
+if (cartButton) {
+
+  cartButton.onclick =
+    renderCart;
+
+}
+
+
+/* =========================
+   START APP
+========================= */
+
+(async () => {
+
+  initLanguageSwitcher();
+  await loadProducts();
+
+  renderRoute();
+  applyPublicTranslations();
+
+  updateCartBadge();
+
+})();
+/* =========================
+   LANGUAGE STYLES
+========================= */
+
+const languageStyles =
+  document.createElement(
+    'style'
+  );
+
+
+languageStyles.textContent = `
+
+  /* =========================
+     LANGUAGE SWITCHER
+  ========================= */
+
+  #languageSwitcher {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-right: 10px;
+
+    white-space: nowrap;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn {
+
+    border: 0;
+
+    background: transparent;
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .75
+    );
+
+    font: inherit;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    padding: 3px 4px;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn.active {
+
+    color: #fff;
+
+  }
+
+
+  #languageSwitcher
+  .language-divider {
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .35
+    );
+
+  }
+
+
+  /* =========================
+     PRODUCT SKU
+  ========================= */
+
+  .product-sku {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border: 1px solid #b7dfcf;
+
+    border-radius: 5px;
+
+    background: #f5fbf8;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+  }
+
+
+  .product-sku-label {
+
+    color: #078451;
+
+    font-weight: 700;
+
+  }
+
+
+  .product-sku-value {
+
+    color: #222;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+  }
+
+
+  .product-sku-detail {
+
+    margin-top: 9px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .product-sku-detail
+  .product-sku-value {
+
+    font-size: 12px;
+
+  }
+
+
+  /* =========================
+     STOCK STATUS
+  ========================= */
+
+  .stock-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+    font-weight: 500;
+
+  }
+
+
+  .stock-status .stock-dot {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 15px;
+
+    height: 15px;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+  }
+
+
+  .stock-in {
+
+    color: #087c4f;
+
+    background: #f1faf6;
+
+    border: 1px solid #b7dfcf;
+
+  }
+
+
+  .stock-in .stock-dot {
+
+    color: #fff;
+
+    background: #078451;
+
+  }
+
+
+  .stock-out {
+
+    color: #a33d3d;
+
+    background: #fff7f7;
+
+    border: 1px solid #e8c4c4;
+
+  }
+
+
+  .stock-out .stock-dot {
+
+    color: #fff;
+
+    background: #b84a4a;
+
+  }
+
+
+  .stock-status-detail {
+
+    margin-top: 10px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .stock-status-detail
+  .stock-dot {
+
+    width: 17px;
+
+    height: 17px;
+
+    font-size: 11px;
+
+  }
+
+`;
+
+
+document.head.appendChild(
+  languageStyles
+);
+
+
+/* =========================
+   START LANGUAGE SYSTEM
+========================= */
+
+initLanguageSwitcher();
+
+applyPublicTranslations();
+,'i');
+  const partsWithLabels = new RegExp('^(?:длина|uzunligi)\\s*('+num+')\\s*[×xх]\\s*(?:ширина|eni|kengligi)\\s*('+num+')\\s*[×xх]\\s*(?:высота|balandligi)\\s*('+num+')\\s*'+units+'
+  if (!product) return [];
+
+  const hasContent = (value) => {
+    if (value === null || value === undefined) return false;
+    if (Array.isArray(value)) return value.some(item => item && (
+      (item.name !== undefined && item.value !== undefined) ||
+      (Array.isArray(item) && item.length >= 2)
+    ));
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return String(value).trim().length > 0;
+  };
+
+  const unwrap = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return hasContent(value) ? value : null;
+    if ('ru' in value || 'uz' in value) {
+      const preferred = value[currentLanguage];
+      const fallback = value[currentLanguage === 'uz' ? 'ru' : 'uz'];
+      return hasContent(preferred) ? preferred : (hasContent(fallback) ? fallback : null);
+    }
+    return hasContent(value) ? value : null;
+  };
+
+  const candidates = currentLanguage === 'uz'
+    ? [
+        product.specs_uz,
+        product.specsUz,
+        product.characteristics_uz,
+        product.characteristicsUz,
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ]
+    : [
+        product.specs_ru,
+        product.specsRu,
+        product.characteristics_ru,
+        product.characteristicsRu,
+        product.specs
+      ];
+
+  // Imported manufacturer characteristics are stored separately from price/stock
+  // under specs.manufacturer_specs. The catalog RPC wraps them as a nested row.
+  const parseLines = (value) => String(value || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const separator = line.indexOf(':');
+      return separator < 0 ? [line, ''] :
+        [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    });
+
+  const imported = product.specs?.manufacturer_specs;
+  const nested = Array.isArray(product.specs?.ru)
+    ? product.specs.ru.find(item => item?.name === 'manufacturer_specs')?.value
+    : null;
+  const manufacturer = imported || nested;
+  const brandData = manufacturer && typeof manufacturer === 'object'
+    ? Object.values(manufacturer).find(item => item && typeof item === 'object' && (item.ru || item.uz))
+    : null;
+  const manufacturerRows = brandData
+    ? parseLines(brandData[currentLanguage] || brandData.ru || '')
+    : [];
+
+  // Hide duplicate catalog metadata only in the characteristics section.
+  // Keep the original Eman.uz SKU in the product header and database.
+  const excludedSpecNames = new Set([
+    'артикул', 'артикул модели', 'бренд',
+    'artikul', 'model artikuli', 'brend'
+  ]);
+  const cleanSpecs = (rows) => rows.filter(([name]) =>
+    !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
+  );
+
+  const rawSpecs = candidates.map(unwrap).find(hasContent);
+  if (!rawSpecs) return cleanSpecs(manufacturerRows);
+
+  if (Array.isArray(rawSpecs)) {
+    return cleanSpecs(rawSpecs
+      .filter(item => item && (
+        (item.name !== undefined && item.value !== undefined) ||
+        (Array.isArray(item) && item.length >= 2)
+      ))
+      .flatMap(item => {
+        const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
+        return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
+      }));
+  }
+
+  if (typeof rawSpecs === 'object') return cleanSpecs(Object.entries(rawSpecs));
+
+  if (typeof rawSpecs === 'string') {
+    return cleanSpecs(rawSpecs
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const separator = line.indexOf(':');
+        return separator === -1
+          ? [line, '']
+          : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+      }));
+  }
+
+  return [];
+}
+
+function renderDetail() {
+
+  const p =
+    getProduct();
+
+
+  if (!p) {
+    const id = String(state.productId || '');
+    const error = productLoadErrors.get(id);
+    if (db && id && !error && !pendingProductLoads.has(id)) {
+      void fetchProductDetailById(id);
+    }
+
+    document.title = 'YECHIM — Товар';
+    document.querySelector('#app').innerHTML = `
+      <div class="shell">
+        <div class="panel">
+          <b>${error ? 'Не удалось открыть товар' : db ? 'Загрузка товара…' : 'Товар не найден'}</b>
+          ${error ? `<p class="muted">${esc(error)}</p><button class="btn" type="button" id="retryProductDetail">Повторить</button>` : ''}
+          <p><a href="./">Вернуться в каталог</a></p>
+        </div>
+      </div>`;
+
+    const retry = document.querySelector('#retryProductDetail');
+    if (retry) retry.onclick = () => {
+      productLoadErrors.delete(id);
+      renderRoute();
+    };
+    return;
+  }
+
+
+  const localizedSpecs =
+    getLocalizedSpecs(p);
+
+  // Keep every source characteristic, including manufacturer and country of origin.
+  const detailSpecs = localizedSpecs;
+
+
+  document.title =
+    `YECHIM — ${p.name}`;
+
+
+  const thumbs =
+    [
+      p.image,
+      ...(p.additional_images || [])
+    ]
+      .filter(Boolean);
+
+
+  document.querySelector(
+    '#app'
+  ).innerHTML = `
+
+    <div class="shell">
+
+      <div class="breadcrumbs">
+
+        <a
+          href="./"
+          id="detailHome"
+        >
+          Каталог
+        </a>
+
+        <span>
+          ›
+        </span>
+
+        <span>
+          ${esc(p.brand)}
+        </span>
+
+        <span>
+          ›
+        </span>
+
+        <b>
+          ${esc(p.name)}
+        </b>
+
+      </div>
+
+
+      <div class="detail">
+
+
+        <div class="gallery">
+
+          <div class="gallery-main">
+
+            ${
+              p.image
+                ? `
+                  <img
+                    id="mainImage"
+                    src="${esc(
+                      p.image
+                    )}"
+                    alt="${esc(
+                      p.name
+                    )}"
+                  >
+                `
+                : `
+                  <span>
+                    Фото товара
+                  </span>
+                `
+            }
+
+          </div>
+
+
+          ${
+            thumbs.length > 1
+              ? `
+                <div class="thumbs">
+
+                  ${thumbs
+                    .map(
+                      (u, i) => `
+
+                        <button
+                          class="thumb ${
+                            i === 0
+                              ? 'active'
+                              : ''
+                          }"
+                          data-img="${esc(
+                            u
+                          )}"
+                          type="button"
+                        >
+
+                          <img
+                            src="${esc(
+                              u
+                            )}"
+                            alt=""
+                          >
+
+                        </button>
+
+                      `
+                    )
+                    .join('')}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+
+        <div class="info">
+
+          <div class="brand-mini">
+            ${esc(p.brand)}
+          </div>
+
+
+          <h1>
+            ${esc(p.name)}
+          </h1>
+
+
+          ${
+            p.sku
+              ? `
+                <div class="product-sku product-sku-detail">
+
+                  <span class="product-sku-label">
+                    Артикул
+                  </span>
+
+                  <span class="product-sku-value">
+                    ${esc(p.sku)}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+
+          ${
+            p.badge
+              ? `
+                <div class="badge">
+                  ${esc(p.badge)}
+                </div>
+              `
+              : ''
+          }
+
+
+          ${stockMarkup(
+            p,
+            true
+          )}
+
+
+          <div class="price detail-price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+            ${priceMarkup(p, true)}
+          </div>
+
+
+          <div class="buyline">
+
+            <div class="qty">
+
+              <button
+                class="btn btn-ghost"
+                id="minus"
+                type="button"
+              >
+                −
+              </button>
+
+
+              <b>
+                ${cart[p.id] || 0}
+              </b>
+
+
+              <button
+                class="btn btn-ghost"
+                id="plus"
+                type="button"
+              >
+                +
+              </button>
+
+            </div>
+
+
+            <button
+              class="btn btn-primary grow-btn"
+              id="addToCart"
+              type="button"
+            >
+              В корзину
+            </button>
+
+
+            <button
+              class="btn btn-ghost"
+              id="share"
+              type="button"
+            >
+              Поделиться
+            </button>
+
+          </div>
+
+
+
+          ${
+            detailSpecs.length
+              ? `
+                <div class="specs">
+
+                  ${
+                    detailSpecs
+                      .map(
+                        ([k, v]) => `
+
+                          <div class="spec">
+
+                            <b>
+                              ${esc(k)}
+                            </b>
+
+                            <span>
+                              ${esc(v)}
+                            </span>
+
+                          </div>
+
+                        `
+                      )
+                      .join('')
+                  }
+
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            p.mounting_scheme
+              ? `
+                <div
+                  class="extra-block"
+                >
+
+                  <h3>
+                    Схема присадки
+                  </h3>
+
+
+${
+  /\.pdf(?:$|[?#])/i.test(p.mounting_scheme)
+    ? `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="scheme-pdf"
+        style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;padding:12px 16px;background:#176b43;color:#ffffff;border:2px solid #2d9b67;border-radius:10px;font-weight:700;font-size:14px;line-height:1.35;text-decoration:none;box-shadow:0 3px 10px rgba(23,107,67,.18);transition:background .2s ease,transform .2s ease;"
+        onmouseover="this.style.background='#0f5232';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='#176b43';this.style.transform='translateY(0)'"
+        aria-label="Открыть инструкцию по сборке в новой вкладке"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 22px;">
+          <path d="M14.2 6.1a5.1 5.1 0 0 0 6.1 6.1L11 21.5a2.1 2.1 0 0 1-3-3l9.3-9.3a5.1 5.1 0 0 0-6.1-6.1l3.1 3.1-3 3-3.1-3.1a5.1 5.1 0 0 0 6-0.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Инструкция по сборке</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:0 0 16px;margin-left:2px;">
+          <path d="M14 4h6v6M20 4l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </a>
+    `
+    : `
+      <a
+        href="${esc(p.mounting_scheme)}"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          class="scheme"
+          src="${esc(p.mounting_scheme)}"
+          alt="Схема присадки"
+        >
+      </a>
+    `
+}
+
+                </div>
+              `
+              : ''
+          }
+
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.querySelector(
+    '#detailHome'
+  ).onclick =
+    (event) => {
+
+      event.preventDefault();
+
+
+      history.pushState(
+        {},
+        '',
+        './'
+      );
+
+
+      renderRoute();
+
+    };
+
+
+  document
+    .querySelectorAll(
+      '.thumb'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          const img =
+            document.querySelector(
+              '#mainImage'
+            );
+
+
+          if (img) {
+
+            img.src =
+              button.dataset.img;
+
+          }
+
+
+          document
+            .querySelectorAll(
+              '.thumb'
+            )
+            .forEach(
+              (x) =>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+
+          button.classList.add(
+            'active'
+          );
+
+        };
+
+      }
+    );
+
+
+  document.querySelector(
+    '#minus'
+  ).onclick = () =>
+    add(
+      p.id,
+      -1
+    );
+
+
+  document.querySelector(
+    '#plus'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#addToCart'
+  ).onclick = () =>
+    add(
+      p.id,
+      1
+    );
+
+
+  document.querySelector(
+    '#share'
+  ).onclick =
+    shareProduct;
+
+
+  updateCartBadge();
+
+}
+
+
+/* =========================
+   SHARE
+========================= */
+
+async function shareProduct() {
+
+  const p =
+    getProduct();
+
+
+  const url =
+    location.href;
+
+
+  try {
+
+    if (
+      navigator.share
+    ) {
+
+      await navigator.share({
+
+        title:
+          p?.name ||
+          'YECHIM',
+
+        text:
+          p?.sku
+            ? `Артикул ${p.sku}`
+            : 'Товар YECHIM',
+
+        url
+
+      });
+
+    } else {
+
+      await navigator.clipboard
+        .writeText(
+          url
+        );
+
+
+      alert(
+        'Ссылка на товар скопирована.'
+      );
+
+    }
+
+  } catch {
+
+    /* cancelled */
+
+  }
+
+}
+
+
+/* =========================
+   CART
+========================= */
+
+function renderCart() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        ([id, quantity]) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  const old =
+    document.querySelector(
+      '.cart-drawer'
+    );
+
+
+  if (old) {
+
+    old.remove();
+
+  }
+
+
+  const drawer =
+    document.createElement(
+      'aside'
+    );
+
+
+  drawer.className =
+    'cart-drawer';
+
+
+  drawer.innerHTML = `
+
+    <div class="cart-head">
+
+      <div>
+
+        <h3>
+          Корзина
+        </h3>
+
+        <span
+          class="muted"
+        >
+
+          ${items.length}
+
+          ${
+            items.length === 1
+              ? 'позиция'
+              : 'позиций'
+          }
+
+          ·
+
+          ${cartQty()}
+          шт.
+
+        </span>
+
+      </div>
+
+
+      <div
+        class="cart-head-actions"
+      >
+
+        ${
+          items.length
+            ? `
+              <button
+                class="btn btn-ghost cart-clear-button"
+                id="clearCart"
+                type="button"
+                title="Очистить корзину"
+                aria-label="Очистить корзину"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>
+              </button>
+            `
+            : ''
+        }
+
+
+        <button
+          class="btn btn-ghost"
+          id="closeCart"
+          type="button"
+        >
+          Закрыть
+        </button>
+
+      </div>
+
+    </div>
+
+
+    ${
+      items.length
+        ? items
+            .map(
+              ({ p, q }) => `
+
+                <div class="cart-row">
+
+                  <div>
+
+                    <b>
+                      ${esc(
+                        p.brand
+                      )}
+                    </b>
+
+
+                    <div>
+                      ${esc(
+                        p.name
+                      )}
+                    </div>
+
+
+                    ${
+                      p.sku
+                        ? `
+                          <div
+                            class="muted"
+                          >
+                            Артикул:
+                            ${esc(
+                              p.sku
+                            )}
+                          </div>
+                        `
+                        : ''
+                    }
+
+                  </div>
+
+
+                  <div
+                    class="cart-item-actions"
+                  >
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-minus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      −
+                    </button>
+
+
+                    <b>
+                      ${q}
+                    </b>
+
+
+                    <button
+                      class="btn btn-ghost"
+                      data-cart-plus="${encodeURIComponent(
+                        p.id
+                      )}"
+                      type="button"
+                    >
+                      +
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `
+            )
+            .join('')
+
+        : `
+
+          <div class="empty">
+            Корзина пока пустая.
+          </div>
+
+        `
+    }
+
+
+    ${
+      items.length
+        ? `
+
+          <div class="cart-actions">
+
+            <button
+              class="btn btn-primary"
+              id="sendRequest"
+              type="button"
+            >
+              Отправить заявку
+            </button>
+
+          </div>
+
+        `
+        : ''
+    }
+
+  `;
+
+
+  document.body.append(
+    drawer
+  );
+
+
+  drawer.querySelector(
+    '#closeCart'
+  ).onclick = () =>
+    drawer.remove();
+
+
+  const clearButton =
+    drawer.querySelector(
+      '#clearCart'
+    );
+
+
+  if (clearButton) {
+
+    clearButton.onclick = () => {
+
+      clearCart();
+
+      updateCartBadge();
+
+    };
+
+  }
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-minus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartMinus
+            ),
+            -1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  drawer
+    .querySelectorAll(
+      '[data-cart-plus]'
+    )
+    .forEach(
+      (button) => {
+
+        button.onclick = () => {
+
+          add(
+            decodeURIComponent(
+              button.dataset.cartPlus
+            ),
+            1
+          );
+
+
+          renderCart();
+
+        };
+
+      }
+    );
+
+
+  const sendButton =
+    drawer.querySelector(
+      '#sendRequest'
+    );
+
+
+  if (sendButton) {
+
+    sendButton.onclick =
+      sendRequest;
+
+  }
+
+}
+/* =========================
+   EXCEL EXPORT
+========================= */
+
+async function loadXlsxLibrary() {
+
+  if (window.XLSX) {
+
+    return window.XLSX;
+
+  }
+
+
+  await new Promise(
+    (resolve, reject) => {
+
+      const existing =
+        document.querySelector(
+          'script[data-yechim-xlsx="true"]'
+        );
+
+
+      if (existing) {
+
+        existing.addEventListener(
+          'load',
+          resolve,
+          {
+            once: true
+          }
+        );
+
+
+        existing.addEventListener(
+          'error',
+          () =>
+            reject(
+              new Error(
+                'Не удалось загрузить Excel-модуль.'
+              )
+            ),
+          {
+            once: true
+          }
+        );
+
+
+        return;
+
+      }
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      script.src =
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+
+      script.async =
+        true;
+
+
+      script.dataset.yechimXlsx =
+        'true';
+
+
+      script.onload =
+        resolve;
+
+
+      script.onerror =
+        () =>
+          reject(
+            new Error(
+              'Не удалось загрузить Excel-модуль. Проверьте подключение к интернету.'
+            )
+          );
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
+
+
+  if (!window.XLSX) {
+
+    throw new Error(
+      'Excel-модуль загрузился некорректно.'
+    );
+
+  }
+
+
+  return window.XLSX;
+
+}
+
+
+/* =========================
+   SEND REQUEST
+========================= */
+
+async function sendRequest() {
+
+  const items =
+    Object.entries(
+      cart
+    )
+      .map(
+        (
+          [id, quantity]
+        ) => ({
+
+          p:
+            state.products.find(
+              (product) =>
+                String(
+                  product.id
+                ) ===
+                String(
+                  id
+                )
+            ),
+
+          q:
+            Number(
+              quantity
+            )
+
+        })
+      )
+      .filter(
+        (item) =>
+          item.p &&
+          item.q > 0
+      );
+
+
+  if (!items.length) {
+
+    return;
+
+  }
+
+
+  /*
+   * Объединяем одинаковые артикулы.
+   */
+
+  const rowsBySku =
+    new Map();
+
+
+  items.forEach(
+    ({ p, q }) => {
+
+      const sku =
+        String(
+          p.sku ||
+          p.name ||
+          p.id
+        ).trim();
+
+
+      rowsBySku.set(
+        sku,
+        (
+          rowsBySku.get(
+            sku
+          ) ||
+          0
+        ) + q
+      );
+
+    }
+  );
+
+
+  /*
+   * Формируем строки Excel.
+   */
+
+  const rows =
+    Array.from(
+      rowsBySku,
+      (
+        [sku, quantity]
+      ) => ({
+
+        'Артикул':
+          sku,
+
+        'Количество':
+          quantity
+
+      })
+    );
+
+
+  /*
+   * Итоговое количество.
+   */
+
+  const total =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row['Количество'] ||
+          0
+        ),
+      0
+    );
+
+
+  /*
+   * Добавляем итог.
+   */
+
+  rows.push({
+
+    'Артикул':
+      'Итого',
+
+    'Количество':
+      total
+
+  });
+
+
+  try {
+
+    const XLSX =
+      await loadXlsxLibrary();
+
+
+    /*
+     * Создаём лист.
+     */
+
+    const worksheet =
+      XLSX.utils.json_to_sheet(
+        rows
+      );
+
+
+    /*
+     * Ширина колонок.
+     */
+
+    worksheet['!cols'] = [
+
+      {
+        wch: 24
+      },
+
+      {
+        wch: 14
+      }
+
+    ];
+
+
+    /*
+     * Создаём книгу.
+     */
+
+    const workbook =
+      XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Заявка'
+    );
+
+
+    /*
+     * Имя файла.
+     */
+
+    const now =
+      new Date();
+
+
+    const pad =
+      (value) =>
+        String(
+          value
+        ).padStart(
+          2,
+          '0'
+        );
+
+
+    const filename =
+      `YECHIM_Request_${now.getFullYear()}-${pad(
+        now.getMonth() + 1
+      )}-${pad(
+        now.getDate()
+      )}_${pad(
+        now.getHours()
+      )}-${pad(
+        now.getMinutes()
+      )}.xlsx`;
+
+
+    /*
+     * Скачать Excel.
+     */
+
+    XLSX.writeFile(
+      workbook,
+      filename
+    );
+
+
+    /*
+     * После успешного
+     * скачивания очищаем корзину.
+     */
+
+    clearCart();
+
+
+  } catch (error) {
+
+    console.error(
+      'Excel export error:',
+      error
+    );
+
+
+    alert(
+      error.message ||
+      'Не удалось создать Excel-файл.'
+    );
+
+  }
+
+}
+
+
+/* =========================
+   ADD TO CART
+========================= */
+
+document.addEventListener(
+  'click',
+  (event) => {
+
+    const button =
+      event.target.closest(
+        '[data-add]'
+      );
+
+
+    if (!button) {
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    event.stopPropagation();
+
+
+    add(
+      decodeURIComponent(
+        button.dataset.add
+      ),
+      1
+    );
+
+  }
+);
+
+
+// Client-side navigation prevents a brand product from disappearing on a
+// full page reload; direct links are supported by fetchProductDetailById.
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a.product-link');
+  if (!link || event.defaultPrevented || event.button !== 0 ||
+      event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+      (link.target && link.target !== '_self')) return;
+
+  event.preventDefault();
+  history.pushState({}, '', link.getAttribute('href'));
+  renderRoute();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
+
+
+/* =========================
+   INIT
+========================= */
+
+const cartButton =
+  document.querySelector(
+    '#cartButton'
+  );
+
+
+if (cartButton) {
+
+  cartButton.onclick =
+    renderCart;
+
+}
+
+
+/* =========================
+   START APP
+========================= */
+
+(async () => {
+
+  initLanguageSwitcher();
+  await loadProducts();
+
+  renderRoute();
+  applyPublicTranslations();
+
+  updateCartBadge();
+
+})();
+/* =========================
+   LANGUAGE STYLES
+========================= */
+
+const languageStyles =
+  document.createElement(
+    'style'
+  );
+
+
+languageStyles.textContent = `
+
+  /* =========================
+     LANGUAGE SWITCHER
+  ========================= */
+
+  #languageSwitcher {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-right: 10px;
+
+    white-space: nowrap;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn {
+
+    border: 0;
+
+    background: transparent;
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .75
+    );
+
+    font: inherit;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    padding: 3px 4px;
+
+  }
+
+
+  #languageSwitcher
+  .language-btn.active {
+
+    color: #fff;
+
+  }
+
+
+  #languageSwitcher
+  .language-divider {
+
+    color: rgba(
+      255,
+      255,
+      255,
+      .35
+    );
+
+  }
+
+
+  /* =========================
+     PRODUCT SKU
+  ========================= */
+
+  .product-sku {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border: 1px solid #b7dfcf;
+
+    border-radius: 5px;
+
+    background: #f5fbf8;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+  }
+
+
+  .product-sku-label {
+
+    color: #078451;
+
+    font-weight: 700;
+
+  }
+
+
+  .product-sku-value {
+
+    color: #222;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+  }
+
+
+  .product-sku-detail {
+
+    margin-top: 9px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .product-sku-detail
+  .product-sku-value {
+
+    font-size: 12px;
+
+  }
+
+
+  /* =========================
+     STOCK STATUS
+  ========================= */
+
+  .stock-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: fit-content;
+
+    margin-top: 8px;
+
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    line-height: 1.2;
+
+    font-weight: 500;
+
+  }
+
+
+  .stock-status .stock-dot {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 15px;
+
+    height: 15px;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+  }
+
+
+  .stock-in {
+
+    color: #087c4f;
+
+    background: #f1faf6;
+
+    border: 1px solid #b7dfcf;
+
+  }
+
+
+  .stock-in .stock-dot {
+
+    color: #fff;
+
+    background: #078451;
+
+  }
+
+
+  .stock-out {
+
+    color: #a33d3d;
+
+    background: #fff7f7;
+
+    border: 1px solid #e8c4c4;
+
+  }
+
+
+  .stock-out .stock-dot {
+
+    color: #fff;
+
+    background: #b84a4a;
+
+  }
+
+
+  .stock-status-detail {
+
+    margin-top: 10px;
+
+    margin-bottom: 3px;
+
+    padding: 5px 8px;
+
+    font-size: 12px;
+
+  }
+
+
+  .stock-status-detail
+  .stock-dot {
+
+    width: 17px;
+
+    height: 17px;
+
+    font-size: 11px;
+
+  }
+
+`;
+
+
+document.head.appendChild(
+  languageStyles
+);
+
+
+/* =========================
+   START LANGUAGE SYSTEM
+========================= */
+
+initLanguageSwitcher();
+
+applyPublicTranslations();
+,'i');
+  const unitFor = unit => /^(см|sm|cm)$/i.test(unit) ? (uz ? 'sm':'см') : (uz ? 'mm':'мм');
+  const equivalent = (a,b) => norm(a).replace(/,/g,'.').replace(/[–—]/g,'-').replace(/\s/g,'').replace(/мм|mm$/g,'mm').replace(/см|sm|cm$/g,'cm')===norm(b).replace(/,/g,'.').replace(/[–—]/g,'-').replace(/\s/g,'').replace(/мм|mm$/g,'mm').replace(/см|sm|cm$/g,'cm');
+  const expanded = rows.flatMap(([name,value]) => {
+    const n = norm(name), v = String(value ?? '').trim();
+    if(!/^(?:размеры?|габариты|o'lcham|o'lchami|o'lchamlari|transport qadoq o'lchamlari)/.test(n)) return [[name,value]];
+    const labeled = v.match(partsWithLabels);
+    if(labeled) return ['l','w','h'].map((k,i)=>[names[k],labeled[i+1]+' '+unitFor(labeled[4])]);
+    const packed = /транспортной упаковки|transport qadoq/.test(n);
+    const order = /ш\s*[×xх]\s*г\s*[×xх]\s*в|e\s*[×xх]\s*ch\s*[×xх]\s*b/.test(n) ? ['w','d','h'] :
+      /д\s*[×xх]\s*ш\s*[×xх]\s*в|u\s*[×xх]\s*e\s*[×xх]\s*b/.test(n) ? (packed?['pl','pw','ph']:['l','w','h']) : null;
+    if(!order) return [[name,value]];
+    const match=v.match(fullVal);
+    if(!match) return [[name,value]];
+    const pieces=match[1].split(/\s*[×xх]\s*/i);
+    if(pieces.length!==order.length || !pieces.every(p=>dimValue.test(p.trim()))) return [[name,value]];
+    return order.map((k,i)=>[names[k],pieces[i].trim()+' '+unitFor(match[2])]);
+  });
+  const out=[];
+  for(const [name,value] of expanded) {
+    const k=key(name);
+    const dim = ['l','w','d','h','diam','pl','pw','ph','module'].includes(k);
+    let v=value;
+    if(dim && /^\d+(?:[.,]\d+)?(?:[-–—/]\d+(?:[.,]\d+)?)*$/.test(String(value).trim()) && /(?:мм|mm|см|sm|cm)$/i.test(String(name))) {
+      v=String(value).trim()+' '+unitFor(String(name).match(/(мм|mm|см|sm|cm)$/i)[1]);
+    }
+    if(out.some(([n,x])=>key(n)===k && equivalent(x,v))) continue;
+    out.push([name,v]);
+  }
+  return out;
+}
+
 function getLocalizedSpecs(product) {
   if (!product) return [];
 
