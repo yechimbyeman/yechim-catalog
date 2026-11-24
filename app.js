@@ -100,6 +100,8 @@ const db = SUPABASE_READY
 const state = {
   products: [],
   loading: true,
+  catalogLoading: true,
+  catalogLoadError: null,
   query: '',
   selectedBrand: null,
   productId: null,
@@ -460,24 +462,28 @@ function mapCatalogProduct(p) {
   };
 }
 
+// A unique final sort key is required for deterministic offset pagination.
+function catalogPageQuery() {
+  return db.rpc('get_public_catalog')
+    .order('is_featured', { ascending: false })
+    .order('product_tags', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('eman_id', { ascending: true });
+}
+
 async function loadRemainingProducts(initialCount, pageSize = 250) {
   if (!db) return;
+  state.catalogLoading = true;
+  state.catalogLoadError = null;
   let offset = initialCount;
   let loaded = 0;
-
   try {
     while (true) {
-      const { data: page, error } = await db
-        .rpc('get_public_catalog')
-        .order('is_featured', { ascending: false })
-        .order('product_tags', { ascending: false })
-        .order('sort_order', { ascending: true })
+      const { data: page, error } = await catalogPageQuery()
         .range(offset, offset + pageSize - 1);
-
       if (error) throw error;
       const rows = page || [];
       if (!rows.length) break;
-
       const existing = new Set(state.products.map(p => String(p.id)));
       for (const row of rows) {
         if (!existing.has(String(row.eman_id))) {
@@ -485,18 +491,18 @@ async function loadRemainingProducts(initialCount, pageSize = 250) {
           existing.add(String(row.eman_id));
         }
       }
-
       loaded += rows.length;
       offset += rows.length;
       if (rows.length < pageSize) break;
     }
-
-    console.info(`YECHIM background catalog loaded: ${loaded} additional products`);
-
+    console.info('YECHIM background catalog loaded:', loaded, 'total:', state.products.length);
+  } catch (error) {
+    state.catalogLoadError = error.message || String(error);
+    console.warn('YECHIM background catalog load failed:', error);
+  } finally {
+    state.catalogLoading = false;
     const route = readRoute();
     if (route.catalog || route.brand) renderRoute();
-  } catch (error) {
-    console.warn('YECHIM background catalog load failed:', error);
   }
 }
 
@@ -505,11 +511,7 @@ async function loadProducts() {
     if (db) {
       const pageSize = 250;
       const [productResult, bannerResult, brandResult] = await Promise.all([
-        db.rpc('get_public_catalog')
-          .order('is_featured', { ascending: false })
-          .order('product_tags', { ascending: false })
-          .order('sort_order', { ascending: true })
-          .range(0, pageSize - 1),
+        catalogPageQuery().range(0, pageSize - 1),
         db.from('yechim_banners').select('*').eq('active', true).order('sort_order'),
         db.from('yechim_brands').select('*').eq('active', true).order('sort_order').order('name')
       ]);
@@ -522,8 +524,11 @@ async function loadProducts() {
       console.info(`YECHIM priority catalog loaded: ${state.products.length} products`);
       state.loading = false;
       // Fetch the remaining products only after the first screen has rendered.
-      setTimeout(() => loadRemainingProducts(state.products.length, pageSize), 0);
+      const initialCount = (productResult.data || []).length;
+      if (initialCount < pageSize) state.catalogLoading = false;
+      else setTimeout(() => loadRemainingProducts(initialCount, pageSize), 0);
     } else {
+      state.catalogLoading = false;
       const response = await fetch('data/products.json');
       if (!response.ok) throw new Error('Не удалось загрузить локальный каталог');
       const raw = await response.json();
@@ -535,6 +540,8 @@ async function loadProducts() {
       }));
     }
   } catch (error) {
+    state.catalogLoading = false;
+    state.catalogLoadError = error.message || String(error);
     state.products = [];
     document.querySelector('#app').innerHTML = `
       <div class="shell">
@@ -837,12 +844,18 @@ function renderHome() {
 }
 
 function renderCatalog() {
-  const brands = [...new Set(state.products.map(p => p.brand).filter(Boolean))].sort();
+  const brands = [...new Set([...state.products.map(p => p.brand), ...state.brands.map(b => b.name)].filter(Boolean))].sort();
   const q = normalize(state.query);
-  const list = state.products.filter(p => (!q || [p.name,p.sku,p.brand].some(v => normalize(v).includes(q))) && (state.catalogBrand === 'all' || p.brand === state.catalogBrand));
-  document.querySelector('#app').innerHTML = '<div class="shell"><div class="section-head"><h1>Каталог</h1><span class="muted">Найдено: '+list.length+'</span></div><div class="catalog-layout"><aside class="catalog-filters panel"><b>Фильтры</b><label>Бренд<select id="catalogBrand"><option value="all">Все бренды</option>'+brands.map(b=>'<option value="'+esc(b)+'" '+(state.catalogBrand===b?'selected':'')+'>'+esc(b)+'</option>').join('')+'</select></label><button id="resetCatalog" class="btn btn-ghost">Сбросить</button></aside><div class="catalog-results"><div class="products">'+list.map(productCard).join('')+'</div></div></div></div>';
+  const list = state.products.filter(p => (!q || [p.name,p.sku,p.brand,p.category,p.subcategory].some(v => normalize(v).includes(q))) && (state.catalogBrand === 'all' || p.brand === state.catalogBrand));
+  const loading = state.loading || state.catalogLoading;
+  const error = state.catalogLoadError;
+  const count = loading ? 'Загрузка каталога…' : error ? 'Каталог загружен не полностью' : 'Найдено: '+list.length;
+  const notice = loading ? '<p class="muted" role="status">Поиск по всему каталогу…</p>' : error ? '<div class="panel" role="alert"><p>Не удалось загрузить весь каталог.</p><button id="retryCatalogLoad" type="button" class="btn btn-ghost">Повторить загрузку</button></div>' : !list.length ? '<p class="muted">Товары не найдены.</p>' : '';
+  document.querySelector('#app').innerHTML = '<div class="shell"><div class="section-head"><h1>Каталог</h1><span class="muted">'+count+'</span></div><div class="catalog-layout"><aside class="catalog-filters panel"><b>Фильтры</b><label>Бренд<select id="catalogBrand"><option value="all">Все бренды</option>'+brands.map(b=>'<option value="'+esc(b)+'" '+(state.catalogBrand===b?'selected':'')+'>'+esc(b)+'</option>').join('')+'</select></label><button id="resetCatalog" class="btn btn-ghost">Сбросить</button></aside><div class="catalog-results">'+notice+'<div class="products">'+list.map(productCard).join('')+'</div></div></div></div>';
   document.querySelector('#catalogBrand').onchange=e=>{state.catalogBrand=e.target.value;renderCatalog()};
-  document.querySelector('#resetCatalog').onclick=()=>{state.catalogBrand='all';state.query='';renderCatalog()};
+  document.querySelector('#resetCatalog').onclick=()=>{state.catalogBrand='all';state.query='';const input=document.querySelector('#headerSearch');if(input)input.value='';renderCatalog()};
+  const retry=document.querySelector('#retryCatalogLoad');
+  if(retry)retry.onclick=async()=>{if(state.catalogLoading)return;if(db){const pending=loadRemainingProducts(0);renderCatalog();await pending;}else{state.loading=true;renderCatalog();await loadProducts();renderRoute();}};
   updateCartBadge();
 }
 
@@ -865,8 +878,6 @@ async function fetchBrandProducts(brand) {
 
   try {
     const pageSize = 250;
-    const existing = new Set(state.products.map(p => String(p.id)));
-
     for (let offset = 0; ; offset += pageSize) {
       const { data, error } = await db
         .rpc('get_public_catalog')
@@ -876,6 +887,7 @@ async function fetchBrandProducts(brand) {
       if (error) throw error;
 
       const rows = data || [];
+      const existing = new Set(state.products.map(p => String(p.id)));
       for (const row of rows) {
         const id = String(row.eman_id);
         if (!existing.has(id)) {
@@ -898,13 +910,14 @@ async function fetchBrandProducts(brand) {
 function renderBrandProducts() {
   const brand = state.selectedBrand;
   const brandKey = normalize(brand);
-  if (db && !loadedBrandKeys.has(brandKey) &&
+  if (db && (state.catalogLoading || state.catalogLoadError) && !loadedBrandKeys.has(brandKey) &&
       !fetchingBrandKeys.has(brandKey) && !brandLoadErrors.has(brandKey)) {
     void fetchBrandProducts(brand);
   }
-  const brandLoading = !!db && !loadedBrandKeys.has(brandKey) &&
+  const brandIncomplete = state.catalogLoading || state.catalogLoadError;
+  const brandLoading = !!db && !!brandIncomplete && !loadedBrandKeys.has(brandKey) &&
     !brandLoadErrors.has(brandKey);
-  const brandError = brandLoadErrors.get(brandKey);
+  const brandError = brandIncomplete ? brandLoadErrors.get(brandKey) : null;
 
   const pageSize = 24;
   const products = state.products.filter((p) =>
