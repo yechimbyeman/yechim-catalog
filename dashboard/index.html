@@ -43,8 +43,8 @@
       </aside>
       <div class="dashboard-content">
         <section id="productsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Товары</h1></div><button id="exportCharacteristicsBtn" class="btn btn-primary" type="button">Скачать характеристики (Excel CSV)</button><span id="lastSyncInfo" class="muted" hidden></span><span id="syncInfo" class="muted" hidden></span></div>
-          <div class="panel dashboard-panel"><div class="toolbar"><input id="dq" type="search" placeholder="Поиск по артикулу или названию"><select id="brandFilter"><option value="all">Все бренды</option></select><select id="publishedFilter" aria-label="Фильтр публикации"><option value="all">Все товары</option><option value="published">Опубликованные</option><option value="hidden">Скрытые</option></select></div></div>
+          <div class="dashboard-page-heading"><div><h1>Товары</h1></div><button id="exportCharacteristicsBtn" class="btn btn-primary" type="button">Скачать каталог (Excel)</button><button id="importCatalogBtn" class="btn btn-ghost" type="button">Загрузить каталог</button><input id="importCatalogFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden><span id="lastSyncInfo" class="muted" hidden></span><span id="syncInfo" class="muted" hidden></span></div>
+          <div class="panel dashboard-panel"><p class="muted small">Скачайте Excel, редактируйте характеристики, артикул, бренд и описание. Добавляйте столбцы «Название · RU» / «Nomi · UZ». Пустая ячейка удаляет значение, удалённый столбец не меняется. Ссылки и наименования не изменяйте. Цены и остатки обновляются из Eman.uz.</p><div id="catalogExcelStatus" class="muted small" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere"></div></div><div class="panel dashboard-panel"><div class="toolbar"><input id="dq" type="search" placeholder="Поиск по артикулу или названию"><select id="brandFilter"><option value="all">Все бренды</option></select><select id="publishedFilter" aria-label="Фильтр публикации"><option value="all">Все товары</option><option value="published">Опубликованные</option><option value="hidden">Скрытые</option></select></div></div>
           <div class="panel table-wrap dashboard-panel"><table class="table"><thead><tr><th>Товар</th><th>Артикул</th><th>Цена Eman</th><th>Публикация</th><th></th></tr></thead><tbody id="tbody"><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody></table></div>
         </section>
         <section id="bannerManager" class="dashboard-page" hidden>
@@ -98,4 +98,5 @@
 </main>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><div id="mbrand" class="muted"></div><h2 id="mtitle"></h2></div><button id="closeModal" class="btn btn-ghost" type="button">×</button></div><div id="fields"></div><div id="saveError" class="error-text"></div><div class="modal-actions"><button id="saveBtn" class="btn btn-primary" type="button">Сохранить</button></div></div></div>
 <script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261124-banner-preview-1"></script>
+<script src="catalog-excel.js?v=20261124-xlsx-1"></script>
 </body></html>
