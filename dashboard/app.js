@@ -198,6 +198,7 @@ async function init() {
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
   $('#tagProductSearch').oninput = renderTagsManager;
+  $('#tagProductFilter').onchange = renderTagsManager;
   $('#addBannerBtn').onclick = () => openBannerEditor();
   $('#previewDesktop').onclick = () => setBannerPreviewMode('desktop');
   $('#previewPhone').onclick = () => setBannerPreviewMode('phone');
@@ -384,19 +385,37 @@ async function loadData() {
   }
 }
 
+function matchesProductTag(tags, filter) {
+  const list = Array.isArray(tags) ? tags : [];
+  if (filter === 'untagged') return list.length === 0;
+  if (filter === 'tagged') return list.length > 0;
+  return filter === 'all' || list.includes(filter);
+}
+
 function renderTagsManager() {
   const q = normalize($('#tagProductSearch')?.value || '');
   const list = $('#taggedProductsList');
   if (!list) return;
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
-  const shown = products.filter(p => {
+  const select = $('#tagProductFilter');
+  const filter = select?.value || 'all';
+  const options = [['all','Все товары'],['tagged','С метками'],['hit',labels.hit],['new',labels.new],['sale',labels.sale],['untagged','Без меток']];
+  const matchingSearch = products.filter(p => {
     const e = enrichment[p.eman_id] || {};
-    const haystack = [p.name, p.sku, e.yechim_sku, p.brand].map(normalize).join(' ');
+    const haystack = [p.name, p.sku, e.yechim_sku, p.brand, e.yechim_brand].map(normalize).join(' ');
     return !q || haystack.includes(q);
   });
-  const taggedCount = products.filter(p => (enrichment[p.eman_id]?.product_tags || []).length).length;
+  if (select) {
+    select.innerHTML = options.map(([key,label]) => {
+      const count = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags,key)).length;
+      return '<option value="'+key+'">'+label+' ('+count+')</option>';
+    }).join('');
+    select.value = options.some(([key])=>key===filter) ? filter : 'all';
+  }
+  const shown = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags, filter));
+  const taggedCount = products.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags,'tagged')).length;
   const summary = $('#tagProductsSummary');
-  if (summary) summary.textContent = 'Всего товаров: ' + products.length + ' · С метками: ' + taggedCount;
+  if (summary) summary.textContent = 'Всего товаров: ' + products.length + ' · С метками: ' + taggedCount + ' · Найдено: ' + shown.length;
   list.innerHTML = shown.map(p => {
     const e = enrichment[p.eman_id] || {};
     const tags = Array.isArray(e.product_tags) ? e.product_tags : [];
