@@ -1354,19 +1354,31 @@ function splitCatalogDimensions(rows, language) {
   return out;
 }
 
-function getLocalizedSpecs(product) {
-  if (!product) return [];
-  const specs=product.specs;
-  const nested=[specs?.[currentLanguage],specs?.ru,specs?.uz].filter(Array.isArray).flat().find(item=>item?.name==='manufacturer_specs')?.value;
+function catalogBrandEntry(specs,language){
+  const nested=[specs?.[language],specs?.ru,specs?.uz].filter(Array.isArray).flat().find(item=>item?.name==='manufacturer_specs')?.value;
   const manufacturer=specs?.manufacturer_specs||nested;
-  const brandData=manufacturer&&typeof manufacturer==='object'?Object.values(manufacturer).find(item=>item&&typeof item==='object'&&(item.ru||item.uz)):null;
-  if(!brandData)return [];
+  if(!manufacturer||typeof manufacturer!=='object'||Array.isArray(manufacturer))return null;
+  return Object.entries(manufacturer).find(([,item])=>item&&typeof item==='object'&&('ru' in item||'uz' in item||item.manual_specs))||null;
+}
+
+function catalogCharacteristicText(specs,language){
+  const entry=catalogBrandEntry(specs,language);
+  if(!entry)return '';
+  const data=entry[1], manual=data.manual_specs;
+  if(manual&&Object.prototype.hasOwnProperty.call(manual,language))return String(manual[language]??'');
+  return String(data[language]??data.ru??'');
+}
+
+function catalogCharacteristicRows(specs,language){
   const excluded=new Set(['артикул','артикул модели','бренд','artikul','model artikuli','brend']);
-  const rows=String(brandData[currentLanguage]||brandData.ru||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
-    const i=line.indexOf(':');
-    return i<0?[line,'']:[line.slice(0,i).trim(),line.slice(i+1).trim()];
+  const rows=catalogCharacteristicText(specs,language).split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
+    const i=line.indexOf(':');return i<0?[line,'']:[line.slice(0,i).trim(),line.slice(i+1).trim()];
   }).filter(([name])=>!excluded.has(name.toLowerCase()));
-  return splitCatalogDimensions(rows,currentLanguage);
+  return splitCatalogDimensions(rows,language);
+}
+
+function getLocalizedSpecs(product) {
+  return product ? catalogCharacteristicRows(product.specs,currentLanguage) : [];
 }
 
 function renderDetail() {
