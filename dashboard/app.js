@@ -72,11 +72,97 @@ function specsToText(specs) {
   return '';
 }
 
+function splitCatalogDimensions(rows, language) {
+  const uz=language==='uz';
+  const names=uz?{l:'Uzunligi',w:'Eni',d:'Chuqurligi',h:'Balandligi',pl:'Qadoq uzunligi',pw:'Qadoq eni',ph:'Qadoq balandligi'}:{l:'Длина',w:'Ширина',d:'Глубина',h:'Высота',pl:'Длина упаковки',pw:'Ширина упаковки',ph:'Высота упаковки'};
+  const norm=s=>String(s??'').trim().toLowerCase().replace(/[‘’ʻʼ`]/g,"'").replace(/\s+/g,' ');
+  const aliases={ 'длина':'l','длина изделия':'l','uzunligi':'l','uzunlik':'l','ширина':'w','ширина изделия':'w','eni':'w','kengligi':'w','глубина':'d','глубина изделия':'d','chuqurligi':'d','высота':'h','высота изделия':'h','balandligi':'h','длина упаковки':'pl','qadoq uzunligi':'pl','ширина упаковки':'pw','qadoq eni':'pw','высота упаковки':'ph','qadoq balandligi':'ph','ширина модуля':'module','ширина шкафа':'module','modul kengligi':'module','страна производитель':'country','страна производства':'country','ishlab chiqarilgan mamlakat':'country','цвет':'color','rangi':'color'};
+  const key=n=>{const s=norm(n).replace(/\s*,\s*(?:мм|mm|см|sm|cm)$/,'');return Object.prototype.hasOwnProperty.call(aliases,s)?aliases[s]:s;};
+  const num=String.raw`\d+(?:[.,]\d+)?(?:\s*[-–—/]\s*\d+(?:[.,]\d+)?)*`;
+  const unit='(мм|mm|см|sm|cm)';
+  const dimension=new RegExp('^'+num+'$');
+  const labeled=new RegExp('^(?:длина|uzunligi)\\s*('+num+')\\s*[×xх]\\s*(?:ширина|eni|kengligi)\\s*('+num+')\\s*[×xх]\\s*(?:высота|balandligi)\\s*('+num+')\\s*'+unit+'$','i');
+  const full=new RegExp('^(.+?)\\s*'+unit+'$','i');
+  const displayUnit=u=>/^(см|sm|cm)$/i.test(u)?(uz?'sm':'см'):(uz?'mm':'мм');
+  const canonical=v=>norm(v).replace(/,/g,'.').replace(/[–—]/g,'-').replace(/\s/g,'').replace(/мм$/,'mm').replace(/(?:см|sm)$/,'cm');
+  const expanded=rows.flatMap(([name,value])=>{
+    const n=norm(name),v=String(value??'').trim();
+    if(!/^(?:размеры?|габариты|o'lcham|transport qadoq o'lchamlari)/.test(n))return [[name,value]];
+    const m=v.match(labeled);
+    if(m)return ['l','w','h'].map((k,i)=>[names[k],m[i+1]+' '+displayUnit(m[4])]);
+    const packed=/транспортной упаковки|transport qadoq/.test(n);
+    const order=/ш\s*[×xх]\s*г\s*[×xх]\s*в|e\s*[×xх]\s*ch\s*[×xх]\s*b/.test(n)?['w','d','h']:/д\s*[×xх]\s*ш\s*[×xх]\s*в|u\s*[×xх]\s*e\s*[×xх]\s*b/.test(n)?(packed?['pl','pw','ph']:['l','w','h']):null;
+    const f=v.match(full);
+    if(!order||!f)return [[name,value]];
+    const p=f[1].split(/\s*[×xх]\s*/i);
+    if(p.length!==3||!p.every(s=>dimension.test(s.trim())))return [[name,value]];
+    return order.map((k,i)=>[names[k],p[i].trim()+' '+displayUnit(f[2])]);
+  });
+  const out=[];
+  for(const [name,raw] of expanded){
+    let v=raw;
+    const m=String(name).match(/,\s*(мм|mm|см|sm|cm)$/i);
+    if(m&&dimension.test(String(raw).trim()))v=String(raw).trim()+' '+displayUnit(m[1]);
+    if(out.some(([n,x])=>key(n)===key(name)&&canonical(x)===canonical(v)))continue;
+    out.push([name,v]);
+  }
+  return out;
+}
+
+function catalogBrandEntry(specs,language){
+  const nested=[specs?.[language],specs?.ru,specs?.uz].filter(Array.isArray).flat().find(item=>item?.name==='manufacturer_specs')?.value;
+  const manufacturer=specs?.manufacturer_specs||nested;
+  if(!manufacturer||typeof manufacturer!=='object'||Array.isArray(manufacturer))return null;
+  return Object.entries(manufacturer).find(([,item])=>item&&typeof item==='object'&&('ru' in item||'uz' in item||item.manual_specs))||null;
+}
+
+function catalogCharacteristicText(specs,language){
+  const entry=catalogBrandEntry(specs,language);
+  if(!entry)return '';
+  const data=entry[1], manual=data.manual_specs;
+  if(manual&&Object.prototype.hasOwnProperty.call(manual,language))return String(manual[language]??'');
+  return String(data[language]??data.ru??'');
+}
+
+function catalogCharacteristicRows(specs,language){
+  const excluded=new Set(['артикул','артикул модели','бренд','artikul','model artikuli','brend']);
+  const rows=catalogCharacteristicText(specs,language).split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
+    const i=line.indexOf(':');return i<0?[line,'']:[line.slice(0,i).trim(),line.slice(i+1).trim()];
+  }).filter(([name])=>!excluded.has(name.toLowerCase()));
+  return splitCatalogDimensions(rows,language);
+}
+
+function editableCatalogText(specs,language){return catalogCharacteristicRows(specs,language).map(([name,value])=>`${name}: ${value}`).join('\n');}
+
+function updateCatalogCharacteristics(specs,ru,uz){
+  const base=specs&&typeof specs==='object'&&!Array.isArray(specs)?specs:{};
+  const entry=catalogBrandEntry(base,'ru');
+  const [key,brand]=entry||['manual',{}];
+  const manuals={...(brand.manual_specs||{})};
+  let changed=false;
+  for(const [language,rows] of [['ru',ru],['uz',uz]]){
+    const next=rows.map(({name,value})=>`${name}: ${value}`).join('\n');
+    if(next!==editableCatalogText(base,language)){manuals[language]=next;changed=true;}
+  }
+  if(!changed)return base;
+  return {...base,manufacturer_specs:{...(base.manufacturer_specs||{}),[key]:{...brand,manual_specs:manuals,manual_specs_updated_at:new Date().toISOString()}}};
+}
+
+function downloadCatalogCharacteristics(){
+  if(!products.length){alert('Сначала загрузите список товаров.');return;}
+  const headers=['Артикул','Бренд','Наименование','Характеристики RU','Характеристики UZ','Описание YECHIM'];
+  const quote=value=>{let s=String(value??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
+  const rows=[headers,...products.map(p=>{const e=enrichment[p.eman_id]||{};return [e.yechim_sku||p.sku||'',e.yechim_brand||p.brand||'',p.name||'',editableCatalogText(e.specs,'ru'),editableCatalogText(e.specs,'uz'),e.description||''];})];
+  const csv='\uFEFF'+rows.map(row=>row.map(quote).join(';')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download='YECHIM_Characteristics_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 function parseSpecs(text, languageLabel) {
   const value = String(text || '').trim();
   if (!value) return [];
 
-  return value.split(/\r?\n/).map((line) => {
+  return value.split(/\r?\n/).filter(line=>line.trim()).map((line) => {
     const separator = line.indexOf(':');
 
     if (separator === -1) {
@@ -107,6 +193,7 @@ async function init() {
   $('#logoutBtn').onclick = logout;
   $('#closeModal').onclick = closeModal;
   $('#saveBtn').onclick = saveEdit;
+  $('#exportCharacteristicsBtn').onclick = downloadCatalogCharacteristics;
   $('#dq').oninput = renderTable;
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
@@ -471,17 +558,8 @@ function edit(encodedId) {
     sort_order: 0
   };
 
-  // Поддержка старых товаров: прежние характеристики считаются русскими.
-  const savedSpecs = e.specs || {};
-  const specsRu = savedSpecs && typeof savedSpecs === 'object' && !Array.isArray(savedSpecs) && ('ru' in savedSpecs || 'uz' in savedSpecs)
-    ? savedSpecs.ru
-    : savedSpecs;
-  const specsUz = savedSpecs && typeof savedSpecs === 'object' && !Array.isArray(savedSpecs)
-    ? savedSpecs.uz
-    : [];
-  const emanExtra = p.extra && typeof p.extra === 'object' ? p.extra : {};
-  const emanDescription = emanExtra.eman_description || '';
-  const emanSpecs = Array.isArray(emanExtra.eman_specs) ? emanExtra.eman_specs : [];
+  const specsRu = editableCatalogText(e.specs,'ru');
+  const specsUz = editableCatalogText(e.specs,'uz');
 
   $('#mbrand').textContent = p?.brand || '';
   $('#mtitle').textContent = p?.name || id;
@@ -507,31 +585,21 @@ function edit(encodedId) {
     </div>
 
     <div class="field">
-      <label>Описание с Eman.uz</label>
-      <div class="source-content">${emanDescription ? esc(emanDescription) : '<span class="muted">На странице Eman описание не найдено.</span>'}</div>
-    </div>
-
-    <div class="field">
-      <label>Дополнение к описанию YECHIM</label>
+      <label>Описание YECHIM</label>
       <textarea id="description" placeholder="Добавь дополнительную информацию, если необходимо">${esc(e.description || '')}</textarea>
-      <div class="muted small">Это дополнение будет показано после описания, полученного с Eman.uz.</div>
+      <div class="muted small">Собственное описание товара YECHIM (при необходимости).</div>
     </div>
 
     <div class="field">
-      <label>Характеристики с Eman.uz</label>
-      <div class="source-content source-specs">${emanSpecs.length ? esc(specsToText(emanSpecs)) : '<span class="muted">На странице Eman характеристики не найдены. Их можно добавить ниже.</span>'}</div>
-    </div>
-
-    <div class="field">
-      <label>Дополнительные характеристики на русском языке</label>
-      <textarea id="specs_ru" placeholder="Цвет: Черный&#10;Материал: Сталь&#10;Длина (мм): 500">${esc(specsToText(specsRu))}</textarea>
-      <div class="muted small">Добавляй только недостающие характеристики — по одной на строку в формате «Название: значение». Они будут добавлены к характеристикам с Eman.uz.</div>
+      <label>Характеристики на русском языке</label>
+      <textarea id="specs_ru" rows="10" placeholder="Цвет: Черный&#10;Материал: Сталь&#10;Длина (мм): 500">${esc(specsToText(specsRu))}</textarea>
+      <div class="muted small">Текущие характеристики производителя. Можно изменять, добавлять и удалять строки. Формат: «Название: значение».</div>
     </div>
 
     <div class="field">
       <label>Характеристики на узбекском языке</label>
-      <textarea id="specs_uz" placeholder="Artikul: S-6835-A&#10;Eni (mm): 700&#10;Chuqurligi (mm): 360&#10;Balandligi (mm): 1910–2110">${esc(specsToText(specsUz))}</textarea>
-      <div class="muted small">Вводи собственный узбекский перевод. Автоматического перевода нет. Если поле оставить пустым, характеристики на узбекском не показываются.</div>
+      <textarea id="specs_uz" rows="10" placeholder="Artikul: S-6835-A&#10;Eni (mm): 700&#10;Chuqurligi (mm): 360&#10;Balandligi (mm): 1910–2110">${esc(specsToText(specsUz))}</textarea>
+      <div class="muted small">Текущие характеристики на узбекском. Изменения сохраняются отдельно от русского языка.</div>
     </div>
 
     <div class="field">
@@ -633,11 +701,7 @@ async function saveEdit() {
 
       // Храним оба языка в существующем JSON-поле specs.
       // Это не требует добавления новых колонок в Supabase.
-      specs: {
-        ...((currentE.specs && typeof currentE.specs === 'object' && !Array.isArray(currentE.specs)) ? currentE.specs : {}),
-        ru: specsRu,
-        uz: specsUz
-      },
+      specs: updateCatalogCharacteristics(currentE.specs, specsRu, specsUz),
 
       mounting_scheme_url: scheme,
       additional_images: images,
