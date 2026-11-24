@@ -79,7 +79,7 @@
         <section id="tagsManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Метки товаров</h1><p>Все товары в одном списке. Нажмите на метку, чтобы сразу добавить или убрать её.</p><div id="tagProductsSummary" class="muted small"></div></div></div>
           <div class="panel dashboard-panel tagged-products-panel">
-            <div class="tagged-products-head"><h2>Список товаров</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию, артикулу или бренду"></div>
+            <div class="tagged-products-head"><h2>Список товаров</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию, артикулу или бренду"></div><div class="toolbar" style="margin:12px 0"><label for="tagProductFilter" class="muted small">Фильтр по меткам</label><select id="tagProductFilter" aria-label="Фильтр по меткам товаров"><option value="all">Все товары</option><option value="tagged">С метками</option><option value="hit">Хит продаж</option><option value="new">Новинка</option><option value="sale">Скидка</option><option value="untagged">Без меток</option></select></div>
             <div class="tag-legend"><span class="tag-quick-chip tag-hit">Хит продаж</span><span class="tag-quick-chip tag-new">Новинка</span><span class="tag-quick-chip tag-sale">Скидка</span><span class="muted small">Цветная метка — назначена товару</span></div>
             <div id="taggedProductsList"></div>
           </div>
@@ -97,6 +97,6 @@
   </section>
 </main>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><div id="mbrand" class="muted"></div><h2 id="mtitle"></h2></div><button id="closeModal" class="btn btn-ghost" type="button">×</button></div><div id="fields"></div><div id="saveError" class="error-text"></div><div class="modal-actions"><button id="saveBtn" class="btn btn-primary" type="button">Сохранить</button></div></div></div>
-<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261124-manual-price-1"></script>
+<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261124-tag-filter-1"></script>
 <script src="catalog-excel.js?v=20261124-xlsx-1"></script>
 </body></html>
