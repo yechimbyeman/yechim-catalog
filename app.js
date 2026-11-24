@@ -1356,112 +1356,17 @@ function splitCatalogDimensions(rows, language) {
 
 function getLocalizedSpecs(product) {
   if (!product) return [];
-
-  const hasContent = (value) => {
-    if (value === null || value === undefined) return false;
-    if (Array.isArray(value)) return value.some(item => item && (
-      (item.name !== undefined && item.value !== undefined) ||
-      (Array.isArray(item) && item.length >= 2)
-    ));
-    if (typeof value === 'object') return Object.keys(value).length > 0;
-    return String(value).trim().length > 0;
-  };
-
-  const unwrap = (value) => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return hasContent(value) ? value : null;
-    if ('ru' in value || 'uz' in value) {
-      const preferred = value[currentLanguage];
-      const fallback = value[currentLanguage === 'uz' ? 'ru' : 'uz'];
-      return hasContent(preferred) ? preferred : (hasContent(fallback) ? fallback : null);
-    }
-    return hasContent(value) ? value : null;
-  };
-
-  const candidates = currentLanguage === 'uz'
-    ? [
-        product.specs_uz,
-        product.specsUz,
-        product.characteristics_uz,
-        product.characteristicsUz,
-        product.specs_ru,
-        product.specsRu,
-        product.characteristics_ru,
-        product.characteristicsRu,
-        product.specs
-      ]
-    : [
-        product.specs_ru,
-        product.specsRu,
-        product.characteristics_ru,
-        product.characteristicsRu,
-        product.specs
-      ];
-
-  // Imported manufacturer characteristics are stored separately from price/stock
-  // under specs.manufacturer_specs. The catalog RPC wraps them as a nested row.
-  const parseLines = (value) => String(value || '')
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const separator = line.indexOf(':');
-      return separator < 0 ? [line, ''] :
-        [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-    });
-
-  const imported = product.specs?.manufacturer_specs;
-  const nested = Array.isArray(product.specs?.ru)
-    ? product.specs.ru.find(item => item?.name === 'manufacturer_specs')?.value
-    : null;
-  const manufacturer = imported || nested;
-  const brandData = manufacturer && typeof manufacturer === 'object'
-    ? Object.values(manufacturer).find(item => item && typeof item === 'object' && (item.ru || item.uz))
-    : null;
-  const manufacturerRows = brandData
-    ? parseLines(brandData[currentLanguage] || brandData.ru || '')
-    : [];
-
-  // Hide duplicate catalog metadata only in the characteristics section.
-  // Keep the original Eman.uz SKU in the product header and database.
-  const excludedSpecNames = new Set([
-    'артикул', 'артикул модели', 'бренд',
-    'artikul', 'model artikuli', 'brend'
-  ]);
-  const cleanSpecs = (rows) => splitCatalogDimensions(rows.filter(([name]) =>
-    !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
-  ), currentLanguage);
-
-  const rawSpecs = candidates.map(unwrap).find(hasContent);
-  if (!rawSpecs) return cleanSpecs(manufacturerRows);
-
-  if (Array.isArray(rawSpecs)) {
-    return cleanSpecs(rawSpecs
-      .filter(item => item && (
-        (item.name !== undefined && item.value !== undefined) ||
-        (Array.isArray(item) && item.length >= 2)
-      ))
-      .flatMap(item => {
-        const pair = Array.isArray(item) ? [item[0], item[1]] : [item.name, item.value];
-        return pair[0] === 'manufacturer_specs' ? manufacturerRows : [pair];
-      }));
-  }
-
-  if (typeof rawSpecs === 'object') return cleanSpecs(Object.entries(rawSpecs));
-
-  if (typeof rawSpecs === 'string') {
-    return cleanSpecs(rawSpecs
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean)
-      .map(line => {
-        const separator = line.indexOf(':');
-        return separator === -1
-          ? [line, '']
-          : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-      }));
-  }
-
-  return [];
+  const specs=product.specs;
+  const nested=[specs?.[currentLanguage],specs?.ru,specs?.uz].filter(Array.isArray).flat().find(item=>item?.name==='manufacturer_specs')?.value;
+  const manufacturer=specs?.manufacturer_specs||nested;
+  const brandData=manufacturer&&typeof manufacturer==='object'?Object.values(manufacturer).find(item=>item&&typeof item==='object'&&(item.ru||item.uz)):null;
+  if(!brandData)return [];
+  const excluded=new Set(['артикул','артикул модели','бренд','artikul','model artikuli','brend']);
+  const rows=String(brandData[currentLanguage]||brandData.ru||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
+    const i=line.indexOf(':');
+    return i<0?[line,'']:[line.slice(0,i).trim(),line.slice(i+1).trim()];
+  }).filter(([name])=>!excluded.has(name.toLowerCase()));
+  return splitCatalogDimensions(rows,currentLanguage);
 }
 
 function renderDetail() {
