@@ -44,7 +44,7 @@
       <div class="dashboard-content">
         <section id="productsManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Товары</h1></div><button id="exportCharacteristicsBtn" class="btn btn-primary" type="button">Скачать каталог (Excel)</button><button id="importCatalogBtn" class="btn btn-ghost" type="button">Загрузить каталог</button><input id="importCatalogFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden><span id="lastSyncInfo" class="muted" hidden></span><span id="syncInfo" class="muted" hidden></span></div>
-          <div class="panel dashboard-panel"><p class="muted small">Скачайте Excel, редактируйте характеристики, артикул, бренд и описание. Добавляйте столбцы «Название · RU» / «Nomi · UZ». Пустая ячейка удаляет значение, удалённый столбец не меняется. Ссылки и наименования не изменяйте. Цены и остатки обновляются из Eman.uz.</p><div id="catalogExcelStatus" class="muted small" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere"></div></div><div class="panel dashboard-panel"><div class="toolbar"><input id="dq" type="search" placeholder="Поиск по артикулу или названию"><select id="brandFilter"><option value="all">Все бренды</option></select><select id="publishedFilter" aria-label="Фильтр публикации"><option value="all">Все товары</option><option value="published">Опубликованные</option><option value="hidden">Скрытые</option></select></div></div>
+          <div id="catalogExcelStatus" class="muted small" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere"></div><div class="panel dashboard-panel"><div class="toolbar"><input id="dq" type="search" placeholder="Поиск по артикулу или названию"><select id="brandFilter"><option value="all">Все бренды</option></select><select id="publishedFilter" aria-label="Фильтр публикации"><option value="all">Все товары</option><option value="published">Опубликованные</option><option value="hidden">Скрытые</option></select></div></div>
           <div class="panel table-wrap dashboard-panel"><table class="table"><thead><tr><th>Товар</th><th>Артикул</th><th>Цена Eman</th><th>Публикация</th><th></th></tr></thead><tbody id="tbody"><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody></table></div>
         </section>
         <section id="bannerManager" class="dashboard-page" hidden>
@@ -65,7 +65,7 @@
           </div>
         </section>
         <section id="brandsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Бренды</h1><p>Управляйте названиями и изображениями брендов на главной странице.</p></div><button id="addBrandBtn" class="btn btn-primary" type="button">＋ Добавить бренд</button></div>
+          <div class="dashboard-page-heading"><div><h1>Бренды</h1></div><button id="addBrandBtn" class="btn btn-primary" type="button">＋ Добавить бренд</button></div>
           <div class="panel dashboard-panel"><div id="brandList"></div>
             <div id="brandEditor" class="banner-editor" hidden><h3 id="brandEditorTitle">Новый бренд</h3><input id="brandId" type="hidden">
               <div class="field"><label>Название бренда</label><input id="brandName" placeholder="Например, STARAX"></div>
@@ -77,19 +77,19 @@
           </div>
         </section>
         <section id="tagsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Метки товаров</h1><p>Все товары в одном списке. Нажмите на метку, чтобы сразу добавить или убрать её.</p><div id="tagProductsSummary" class="muted small"></div></div></div>
+          <div class="dashboard-page-heading"><div><h1>Метки товаров</h1></div></div>
           <div class="panel dashboard-panel tagged-products-panel">
             <div class="tagged-products-head"><h2>Список товаров</h2><input id="tagProductSearch" type="search" placeholder="Поиск по названию, артикулу или бренду"></div>
-            <div class="tag-legend" role="group" aria-label="Фильтр по меткам"><button type="button" class="tag-quick-chip tag-hit" data-tag-filter="hit" aria-pressed="false">Хит продаж</button><button type="button" class="tag-quick-chip tag-new" data-tag-filter="new" aria-pressed="false">Новинка</button><button type="button" class="tag-quick-chip tag-sale" data-tag-filter="sale" aria-pressed="false">Скидка</button><span class="muted small">Нажмите метку для фильтрации, повторно — для сброса</span></div>
+            <div class="tag-legend" role="group" aria-label="Фильтр по меткам"><button type="button" class="tag-quick-chip tag-hit" data-tag-filter="hit" aria-pressed="false">Хит продаж</button><button type="button" class="tag-quick-chip tag-new" data-tag-filter="new" aria-pressed="false">Новинка</button><button type="button" class="tag-quick-chip tag-sale" data-tag-filter="sale" aria-pressed="false">Скидка</button></div>
             <div id="taggedProductsList"></div>
           </div>
         </section>
         <section id="syncManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Синхронизация</h1><p>Обновление цен и данных товаров из Eman.uz</p></div></div>
+          <div class="dashboard-page-heading"><div><h1>Синхронизация</h1></div></div>
           <div class="panel dashboard-panel sync-panel"><span id="syncPageLast" class="muted">Последнее обновление: загрузка…</span><button id="syncPricesBtnPage" class="btn btn-primary" type="button">Обновить цены сейчас</button><div id="syncPageStatus" class="muted"></div></div>
         </section>
         <section id="settingsManager" class="dashboard-page" hidden>
-          <div class="dashboard-page-heading"><div><h1>Настройки</h1><p>Основные параметры панели управления</p></div></div>
+          <div class="dashboard-page-heading"><div><h1>Настройки</h1></div></div>
           <div class="panel dashboard-panel"><p class="muted">Дополнительные настройки будут добавляться сюда.</p></div>
         </section>
       </div>
