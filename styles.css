@@ -2718,3 +2718,27 @@ textarea{border-radius:var(--ui-radius);font-size:14px;line-height:1.5}
   .home-banner-carousel .banner-carousel-arrow{width:26px;height:26px;font-size:20px}
   .home-banner-carousel .banner-carousel-dots{gap:5px}
 }
+
+/* Dashboard banner management and responsive previews */
+.dashboard-body .banner-admin-row{display:grid;grid-template-columns:120px minmax(100px,1fr) auto auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #e7ebe8}
+.dashboard-body .banner-admin-thumb{width:120px;height:66px;object-fit:contain;background:#f3f5f2;border-radius:8px}
+.dashboard-body .banner-admin-info{display:grid;gap:4px;min-width:0}
+.dashboard-body .banner-admin-info small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#65736c}
+.dashboard-body .banner-admin-actions{display:flex;gap:6px;flex-wrap:wrap}
+.dashboard-body .banner-toggle{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #d7ddd9;background:#f3f5f4;color:#526057;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.dashboard-body .banner-toggle i{width:10px;height:10px;border-radius:50%;background:#8b9690}
+.dashboard-body .banner-toggle.is-on{background:#e7f5eb;color:#087448;border-color:#bddfc8}
+.dashboard-body .banner-toggle.is-on i{background:#087448}
+.dashboard-body .banner-preview-panel{margin:16px 0;padding:14px;border:1px solid #dfe5e1;border-radius:12px;background:#fff}
+.dashboard-body .banner-preview-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dashboard-body .banner-preview-top h3{margin:0 0 4px}
+.dashboard-body .banner-preview-modes{display:flex;gap:4px;border:1px solid #dfe5e1;border-radius:10px;padding:3px}
+.dashboard-body .banner-preview-modes button{padding:7px 12px;border:0;background:transparent;border-radius:7px;cursor:pointer;color:#456050;font-weight:600}
+.dashboard-body .banner-preview-modes button[aria-pressed="true"]{background:#087448;color:white}
+.dashboard-body .banner-preview-viewport{width:100%;overflow:hidden;display:flex;justify-content:center;background:#f4f5f2;border-radius:10px}
+.dashboard-body .banner-preview-viewport[hidden],.dashboard-body .banner-preview-empty[hidden]{display:none}
+.dashboard-body #bannerPreviewStage{position:relative;overflow:hidden;flex:none}
+.dashboard-body #bannerPreviewFrame{position:absolute;top:0;left:0;border:0;transform-origin:top left;display:block;pointer-events:none}
+.dashboard-body .banner-preview-empty{padding:30px 12px;text-align:center;background:#f5f6f3;color:#718078;border-radius:8px}
+@media(max-width:900px){.dashboard-body .banner-admin-row{grid-template-columns:90px minmax(0,1fr) auto}.dashboard-body .banner-admin-thumb{width:90px;height:54px}.dashboard-body .banner-admin-actions{grid-column:2/-1}}
+@media(max-width:480px){.dashboard-body .banner-admin-row{grid-template-columns:76px minmax(0,1fr)}.dashboard-body .banner-admin-thumb{width:76px}.dashboard-body .banner-toggle{grid-column:2;justify-self:start}.dashboard-body .banner-admin-actions{grid-column:1/-1}}
