@@ -1211,7 +1211,7 @@ def parse_detail(
     # Description and characteristics from Eman
     # -----------------------------------------------------
 
-    description, specs = extract_product_content(page)
+    description, specs = '', []  # Manufacturer catalogs are the only technical content source.
 
 
     # -----------------------------------------------------
