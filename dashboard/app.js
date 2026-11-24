@@ -513,7 +513,7 @@ function renderTable() {
           </div>
         </td>
         <td>${esc(e.yechim_sku || p.sku || '—')}</td>
-        <td>${p.price ? money(p.price) : '—'}</td>
+        <td>${p.price ? money(p.price) : '—'}${e.manual_price!=null||e.old_price!=null?`<div class="muted small">На сайте: ${money(calcPrice(p.price,e.discount_percent,e.manual_price,e.old_price).current)}</div>`:''}</td>
         <td><button class="btn ${((e.published ?? true) ? 'btn-primary' : 'btn-ghost')}" onclick="togglePublished('${encodeURIComponent(p.eman_id)}')">${((e.published ?? true) ? 'Опубликован' : 'Скрыт')}</button></td>
         <td><button class="btn btn-ghost" onclick="edit('${encodeURIComponent(p.eman_id)}')">Редактировать</button></td>
       </tr>
@@ -543,6 +543,24 @@ window.togglePublished = togglePublished;
    EDIT PRODUCT
 ========================= */
 
+function calcPrice(base,discount,manual,old){
+ const positive=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:0;};
+ const source=positive(base),custom=positive(manual),reference=positive(old);
+ const percent=Math.min(99,Math.max(0,Number(discount)||0));
+ const explicit=Boolean(custom||reference);
+ const current=custom||(explicit?source:source&&Math.round(source*(100-percent)/100));
+ const previous=reference||(custom?source:(!explicit&&percent>0?source:0));
+ const onSale=current>0&&previous>current;
+ const pct=onSale?(explicit?Math.round((1-current/previous)*1000)/10:percent):0;
+ return {current,old:onSale?previous:0,discount:onSale?pct:0,onSale};
+}
+function optionalPrice(id) {
+  const raw=$(id).value.trim();
+  if(!raw)return null;
+  const n=Number(raw);
+  if(!Number.isSafeInteger(n)||n<=0||n>1000000000000)throw new Error('Введите целую положительную цену в сумах (до 1 трлн).');
+  return n;
+}
 function edit(encodedId) {
   const id = decodeURIComponent(encodedId);
   current = id;
@@ -634,11 +652,24 @@ function edit(encodedId) {
       <div class="field">
         <label>Скидка, %</label>
         <input id="discount_percent" type="number" min="0" max="99" step="1" value="${Math.min(99, Math.max(0, Number(e.discount_percent || 0)))}" placeholder="0">
-        <div class="muted small">Укажи процент скидки от цены Eman. 0 — без скидки.</div>
+        <div class="muted small">Применяется к цене Eman, только если обе ручные цены пусты.</div>
       </div>
     </div>
+    <div class="field"><label>Текущая цена Eman.uz (автоматически)</label><div><b>${p.price?money(p.price):'—'}</b></div></div>
+    <div class="grid2">
+      <div class="field"><label for="manual_price">Цена вручную, сум</label><input id="manual_price" type="number" min="1" max="1000000000000" step="1" value="${esc(e.manual_price??'')}" placeholder="Автоматическая цена Eman"><div class="muted small">Приоритет над ценой Eman и процентной скидкой. Очистите для возврата к автоматической цене.</div></div>
+      <div class="field"><label for="old_price">Старая цена, сум</label><input id="old_price" type="number" min="1" max="1000000000000" step="1" value="${esc(e.old_price??'')}" placeholder="Необязательно"><div class="muted small">Зачёркивается, если выше текущей цены. Процент рассчитывается автоматически.</div></div>
+    </div>
+    <div class="field"><label>Предпросмотр цены</label><div id="pricePreview" aria-live="polite"></div></div>
   `;
 
+  const refreshPrice=()=>{
+    const price=calcPrice(p.price,$('#discount_percent').value,$('#manual_price').value,$('#old_price').value);
+    $('#pricePreview').innerHTML=price.current?(price.onSale?'<span style="color:#dc2626;font-weight:700">'+esc(money(price.current))+'</span> <s class="muted">'+esc(money(price.old))+'</s> '+(price.discount>0?'<span style="background:#dc2626;color:white;border-radius:5px;padding:3px 6px">−'+esc(String(price.discount).replace('.',','))+'%</span>':''):esc(money(price.current))):'Цена уточняется';
+    if(Number($('#old_price').value)>0&&Number($('#old_price').value)<=price.current)$('#pricePreview').innerHTML+='<div class="muted small">Старая цена не выше текущей — скидка не отображается.</div>';
+  };
+  ['#discount_percent','#manual_price','#old_price'].forEach(id=>$(id).addEventListener('input',refreshPrice));
+  refreshPrice();
   $('#saveError').textContent = '';
   $('#modal').classList.add('open');
 }
@@ -680,6 +711,8 @@ async function saveEdit() {
       throw new Error('Скидка должна быть целым числом от 0 до 99.');
     }
 
+    const manualPrice=optionalPrice('#manual_price');
+    const oldPrice=optionalPrice('#old_price');
     const specsRu = parseSpecs($('#specs_ru').value, 'RU');
     const specsUz = parseSpecs($('#specs_uz').value, 'UZ');
 
@@ -713,7 +746,9 @@ async function saveEdit() {
       additional_images: images,
       product_tags: $('#product_tags').value.split(',').map(x => x.trim()).filter(x => ['hit','new','sale'].includes(x)),
       is_featured: ($('#product_tags').value.split(',').map(x => x.trim()).filter(x => ['hit','new','sale'].includes(x)).length > 0),
-      discount_percent: Math.min(99, Math.max(0, Number($('#discount_percent').value || 0)))
+      manual_price: manualPrice,
+      old_price: oldPrice,
+      discount_percent: discount
     };
 
     const { error } = await sb
