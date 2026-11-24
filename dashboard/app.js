@@ -198,7 +198,14 @@ async function init() {
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
   $('#tagProductSearch').oninput = renderTagsManager;
-  $('#tagProductFilter').onchange = renderTagsManager;
+  document.querySelectorAll('[data-tag-filter]').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.tagFilter;
+      if (activeTagFilters.has(key)) activeTagFilters.delete(key);
+      else activeTagFilters.add(key);
+      renderTagsManager();
+    };
+  });
   $('#addBannerBtn').onclick = () => openBannerEditor();
   $('#previewDesktop').onclick = () => setBannerPreviewMode('desktop');
   $('#previewPhone').onclick = () => setBannerPreviewMode('phone');
@@ -385,11 +392,11 @@ async function loadData() {
   }
 }
 
-function matchesProductTag(tags, filter) {
+const activeTagFilters = new Set();
+
+function matchesProductTag(tags, filters) {
   const list = Array.isArray(tags) ? tags : [];
-  if (filter === 'untagged') return list.length === 0;
-  if (filter === 'tagged') return list.length > 0;
-  return filter === 'all' || list.includes(filter);
+  return filters.size === 0 || list.some(tag => filters.has(tag));
 }
 
 function renderTagsManager() {
@@ -397,23 +404,21 @@ function renderTagsManager() {
   const list = $('#taggedProductsList');
   if (!list) return;
   const labels = { hit: 'Хит продаж', new: 'Новинка', sale: 'Скидка' };
-  const select = $('#tagProductFilter');
-  const filter = select?.value || 'all';
-  const options = [['all','Все товары'],['tagged','С метками'],['hit',labels.hit],['new',labels.new],['sale',labels.sale],['untagged','Без меток']];
   const matchingSearch = products.filter(p => {
     const e = enrichment[p.eman_id] || {};
     const haystack = [p.name, p.sku, e.yechim_sku, p.brand, e.yechim_brand].map(normalize).join(' ');
     return !q || haystack.includes(q);
   });
-  if (select) {
-    select.innerHTML = options.map(([key,label]) => {
-      const count = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags,key)).length;
-      return '<option value="'+key+'">'+label+' ('+count+')</option>';
-    }).join('');
-    select.value = options.some(([key])=>key===filter) ? filter : 'all';
-  }
-  const shown = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags, filter));
-  const taggedCount = products.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags,'tagged')).length;
+  document.querySelectorAll('[data-tag-filter]').forEach(btn => {
+    const key = btn.dataset.tagFilter;
+    const active = activeTagFilters.has(key);
+    const count = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags, new Set([key]))).length;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', String(active));
+    btn.textContent = labels[key] + ' (' + count + ')';
+  });
+  const shown = matchingSearch.filter(p => matchesProductTag(enrichment[p.eman_id]?.product_tags, activeTagFilters));
+  const taggedCount = products.filter(p => Array.isArray(enrichment[p.eman_id]?.product_tags) && enrichment[p.eman_id].product_tags.length > 0).length;
   const summary = $('#tagProductsSummary');
   if (summary) summary.textContent = 'Всего товаров: ' + products.length + ' · С метками: ' + taggedCount + ' · Найдено: ' + shown.length;
   list.innerHTML = shown.map(p => {
