@@ -443,6 +443,8 @@ function mapCatalogProduct(p) {
     category: p.category || 'Без категории',
     subcategory: p.subcategory || '',
     price: p.price,
+    manual_price: p.specs?.pricing?.manual_price ?? null,
+    old_price: p.specs?.pricing?.old_price ?? null,
     currency: p.currency,
     image: p.image_url,
     stock_quantity: p.stock_quantity !== null && p.stock_quantity !== undefined ? p.stock_quantity : null,
@@ -1222,17 +1224,31 @@ function renderSearchResults() {
   updateCartBadge();
 
 }
+function calcPrice(base,discount,manual,old){
+ const positive=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:0;};
+ const source=positive(base),custom=positive(manual),reference=positive(old);
+ const percent=Math.min(99,Math.max(0,Number(discount)||0));
+ const explicit=Boolean(custom||reference);
+ const current=custom||(explicit?source:source&&Math.round(source*(100-percent)/100));
+ const previous=reference||(custom?source:(!explicit&&percent>0?source:0));
+ const onSale=current>0&&previous>current;
+ const pct=onSale?(explicit?Math.round((1-current/previous)*1000)/10:percent):0;
+ return {current,old:onSale?previous:0,discount:onSale?pct:0,onSale};
+}
+function productPricing(p) {
+  return calcPrice(p.price,p.discount_percent,p.manual_price,p.old_price);
+}
+function discountLabel(p) {
+  const price=productPricing(p);
+  return price.discount>0?'−'+String(price.discount).replace('.',',')+'%':'';
+}
 function priceMarkup(p, detail = false) {
-  const discount = Math.min(99, Math.max(0, Number(p.discount_percent || 0)));
-  const original = Number(p.price || 0);
-  if (!original) return '<span>Цена уточняется</span>';
-  if (!discount) return money(original);
-  const discounted = Math.round(original * (100 - discount) / 100);
-  return `
-    <span class="sale-price">${money(discounted)}</span>
-    <span class="old-price">${money(original)}</span>
-    <span class="discount-sticker">−${discount}%</span>
-  `;
+  const price=productPricing(p);
+  if(!price.current)return '<span>Цена уточняется</span>';
+  if(!price.onSale)return money(price.current);
+  return `<span class="sale-price">${money(price.current)}</span>
+    <span class="old-price">${money(price.old)}</span>
+    ${discountLabel(p)?'<span class="discount-sticker">'+discountLabel(p)+'</span>':''}`;
 }
 
 
@@ -1252,7 +1268,7 @@ function productCard(p, options = {}) {
       <a class="product-link" href="${productUrl(p.id)}">
         <div class="photo">
           ${tagMarkup ? `<div class="product-tags">${tagMarkup}</div>` : ''}
-          ${Number(p.discount_percent || 0) > 0 ? `<span class="discount-sticker photo-discount">−${Math.min(99, Number(p.discount_percent))}%</span>` : ''}
+          ${discountLabel(p) ? `<span class="discount-sticker photo-discount">${discountLabel(p)}</span>` : ''}
           ${p.image
             ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
             : '<span>Фото товара</span>'}
@@ -1265,7 +1281,7 @@ function productCard(p, options = {}) {
           </div>
           <h3>${esc(p.name)}</h3>
           ${stockMarkup(p)}
-          <div class="price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+          <div class="price ${productPricing(p).onSale ? 'price-sale' : ''}">
             ${priceMarkup(p)}
           </div>
         </div>
@@ -1600,7 +1616,7 @@ function renderDetail() {
           )}
 
 
-          <div class="price detail-price ${Number(p.discount_percent || 0) > 0 ? 'price-sale' : ''}">
+          <div class="price detail-price ${productPricing(p).onSale ? 'price-sale' : ''}">
             ${priceMarkup(p, true)}
           </div>
 
