@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="../assets/YECHIM%20FAVICON.png">
 <meta name="theme-color" content="#138353">
 <title>YECHIM Dashboard</title>
-<link rel="stylesheet" href="../styles.css?v=20261123-unified">
+<link rel="stylesheet" href="../styles.css?v=20261124-banner-preview-1">
 
 </head>
 <body class="dashboard-body">
@@ -50,11 +50,17 @@
         <section id="bannerManager" class="dashboard-page" hidden>
           <div class="dashboard-page-heading"><div><h1>Баннеры</h1></div><button id="addBannerBtn" class="btn btn-primary" type="button">＋ Добавить баннер</button></div>
           <div class="panel dashboard-panel"><div id="bannerList"></div>
-            <div id="bannerEditor" class="banner-editor" hidden><h3>Редактирование баннера</h3><input id="bannerId" type="hidden">
+            <div id="bannerEditor" class="banner-editor" hidden><h3 id="bannerEditorHeading">Новый баннер</h3><input id="bannerId" type="hidden">
               <div class="field"><label>Заголовок</label><input id="bannerTitle"></div><div class="field"><label>Подзаголовок</label><input id="bannerSubtitle"></div><div class="field"><label>Текст кнопки</label><input id="bannerButton"></div><div class="field"><label>Ссылка</label><input id="bannerLink" value="?catalog=1"></div>
               <div class="field"><label>Изображение</label><input id="bannerImage" type="file" accept="image/*"><input id="bannerImageUrl" placeholder="URL изображения"></div>
-              <div class="field"><label><input id="bannerActive" type="checkbox" checked> Активен</label></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div>
-              <div class="banner-form-actions"><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button></div><div id="bannerError" class="error-text"></div>
+              <div class="field"><label><input id="bannerActive" type="checkbox"> Показывать на сайте</label><div class="muted small">Новый баннер по умолчанию выключен. Включите его после проверки.</div></div><div class="field"><label>Порядок</label><input id="bannerOrder" type="number" value="0"></div>
+              <section class="banner-preview-panel" aria-label="Предпросмотр баннера">
+  <div class="banner-preview-top"><div><h3>Предпросмотр</h3><div id="bannerPreviewSize" class="muted small">ПК · 1440 px</div></div><div class="banner-preview-modes"><button type="button" id="previewDesktop" aria-pressed="true">ПК</button><button type="button" id="previewPhone" aria-pressed="false">Телефон</button></div></div>
+  <p id="bannerPreviewStatus" class="muted small"></p>
+  <div id="bannerPreviewEmpty" class="banner-preview-empty">Добавьте изображение или URL, чтобы увидеть баннер.</div>
+  <div id="bannerPreviewViewport" class="banner-preview-viewport" hidden><div id="bannerPreviewStage"><iframe id="bannerPreviewFrame" title="Предпросмотр баннера на сайте" sandbox="" scrolling="no"></iframe></div></div>
+  <p class="muted small">Используются стили сайта. Предпросмотр не публикует баннер.</p>
+</section><div class="banner-form-actions"><button id="saveBannerBtn" class="btn btn-primary" type="button">Сохранить</button><button id="cancelBannerBtn" class="btn btn-ghost" type="button">Отмена</button></div><div id="bannerError" class="error-text"></div>
             </div>
           </div>
         </section>
@@ -91,5 +97,5 @@
   </section>
 </main>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><div id="mbrand" class="muted"></div><h2 id="mtitle"></h2></div><button id="closeModal" class="btn btn-ghost" type="button">×</button></div><div id="fields"></div><div id="saveError" class="error-text"></div><div class="modal-actions"><button id="saveBtn" class="btn btn-primary" type="button">Сохранить</button></div></div></div>
-<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261124-edit-catalog-specs-1"></script>
+<script src="../supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js?v=20261124-banner-preview-1"></script>
 </body></html>
