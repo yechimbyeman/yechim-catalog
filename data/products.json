@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-23T05:15:33.911898+00:00",
+  "generated_at": "2026-11-24T08:41:55.185641+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -8128,7 +8128,7 @@
       "brand": "STARAX",
       "eman_group": "Starax",
       "category": "Starax",
-      "price": 356700,
+      "price": 285360,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/S-6013-A_dolu_acik.jpeg",
       "additional_images": [],
@@ -8200,7 +8200,7 @@
       "brand": "STARAX",
       "eman_group": "Starax",
       "category": "Starax",
-      "price": 356700,
+      "price": 285360,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/S-6013-G_dolu_Post.jpeg",
       "additional_images": [],
@@ -10720,14 +10720,7 @@
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_specs": [
-          {
-            "name": "Тип основы",
-            "value": "Универсальная установка"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/14884",
       "published": false
     },
@@ -11063,7 +11056,7 @@
       "brand": "STARAX",
       "eman_group": "Starax",
       "category": "Starax",
-      "price": 356700,
+      "price": 285360,
       "currency": "UZS",
       "image_url": "https://www.eman.uz/media/product_images/S-6013-W.webp",
       "additional_images": [],
@@ -12337,31 +12330,7 @@
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_description": "Угловая поворотная система STARAX S-3021-A предназначена для удобного хранения кухонной посуды, продуктов и принадлежностей в угловых шкафах. Две корзины формы 3/4 обеспечивают эффективное использование внутреннего …",
-        "eman_specs": [
-          {
-            "name": "Производитель",
-            "value": "STARAX"
-          },
-          {
-            "name": "Страна производитель",
-            "value": "Турция"
-          },
-          {
-            "name": "Ширина,мм",
-            "value": "740"
-          },
-          {
-            "name": "Цвет",
-            "value": "Антрацит"
-          },
-          {
-            "name": "Тип",
-            "value": "Вращение 360°"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/18479",
       "published": false
     },
@@ -12886,31 +12855,7 @@
       ],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_description": "Выдвижная гладильная система STARAX S-6615-A предназначена для удобной организации зоны глажки внутри мебельного шкафа. Благодаря выдвижной конструкции доска компактно размещается внутри шкафа и легко приводится …",
-        "eman_specs": [
-          {
-            "name": "Производитель",
-            "value": "STARAX"
-          },
-          {
-            "name": "Страна производитель",
-            "value": "Турция"
-          },
-          {
-            "name": "Ширина,мм",
-            "value": "400"
-          },
-          {
-            "name": "Цвет",
-            "value": "Антрацит"
-          },
-          {
-            "name": "Тип",
-            "value": "Выдвижная гладильная доска 180°"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/19427",
       "published": false
     },
@@ -12982,31 +12927,7 @@
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_description": "Двухуровневая выдвижная система STARAX S-2911-A предназначена для удобного хранения бутылок, специй и кухонных принадлежностей в верхних кухонных шкафах. Компактная конструкция позволяет эффективно использовать пространство узких …",
-        "eman_specs": [
-          {
-            "name": "Производитель",
-            "value": "STARAX"
-          },
-          {
-            "name": "Страна производитель",
-            "value": "Турция"
-          },
-          {
-            "name": "Ширина,мм",
-            "value": "150"
-          },
-          {
-            "name": "Цвет",
-            "value": "Антрацит"
-          },
-          {
-            "name": "Тип",
-            "value": "Полное выдвижение"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/19560",
       "published": false
     },
@@ -13024,31 +12945,7 @@
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_description": "Двухуровневая выдвижная система STARAX S-2911-C предназначена для удобного хранения бутылок, специй и кухонных принадлежностей в верхних кухонных шкафах. Компактная конструкция позволяет эффективно использовать пространство узких …",
-        "eman_specs": [
-          {
-            "name": "Производитель",
-            "value": "STARAX"
-          },
-          {
-            "name": "Страна производитель",
-            "value": "Турция"
-          },
-          {
-            "name": "Ширина,мм",
-            "value": "150"
-          },
-          {
-            "name": "Цвет",
-            "value": "Хром"
-          },
-          {
-            "name": "Тип",
-            "value": "Полное выдвижение"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/19561",
       "published": false
     },
@@ -19549,27 +19446,7 @@
       ],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_description": "Горизонтальная монтажная планка SAMET Master | Black Track для мебельных петель. Предназначена для установки петли с расстоянием 7 мм. Конструкция с потайным креплением обеспечивает аккуратную …",
-        "eman_specs": [
-          {
-            "name": "Производитель",
-            "value": "SAMET"
-          },
-          {
-            "name": "Тип материала",
-            "value": "Сталь и цинковый сплав (Zamak)"
-          },
-          {
-            "name": "Страна производитель",
-            "value": "Турция"
-          },
-          {
-            "name": "Цвет",
-            "value": "Чёрный"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/20906",
       "published": false
     },
@@ -19974,14 +19851,7 @@
       ],
       "stock_quantity": null,
       "stock_unit": "",
-      "extra": {
-        "eman_specs": [
-          {
-            "name": "Мощность",
-            "value": "36 W"
-          }
-        ]
-      },
+      "extra": {},
       "id": "/ru/product/19612",
       "published": false
     },
