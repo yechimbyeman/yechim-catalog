@@ -198,12 +198,18 @@ async function init() {
   $('#brandFilter').onchange = renderTable;
   $('#publishedFilter').onchange = renderTable;
   $('#tagProductSearch').oninput = renderTagsManager;
-  $('#addBannerBtn').onclick = () => { $('#bannerEditor').hidden = false; $('#bannerId').value = ''; $('#bannerTitle').value = ''; $('#bannerSubtitle').value = ''; $('#bannerButton').value = ''; $('#bannerLink').value = '?catalog=1'; $('#bannerImageUrl').value = ''; $('#bannerActive').checked = true; $('#bannerOrder').value = 0; };
+  $('#addBannerBtn').onclick = () => openBannerEditor();
+  $('#previewDesktop').onclick = () => setBannerPreviewMode('desktop');
+  $('#previewPhone').onclick = () => setBannerPreviewMode('phone');
+  ['#bannerTitle','#bannerButton','#bannerImageUrl','#bannerActive'].forEach(sel => $(sel).addEventListener('input', refreshBannerPreview));
+  $('#bannerImage').addEventListener('change', readBannerPreviewFile);
+  window.addEventListener('resize', fitBannerPreview);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fitBannerPreview).observe($('#bannerPreviewViewport'));
   $('#saveBannerBtn').onclick = saveBanner;
   $('#addBrandBtn').onclick = () => openBrandEditor();
   $('#saveBrandBtn').onclick = saveBrand;
   $('#cancelBrandBtn').onclick = () => $('#brandEditor').hidden = true;
-  $('#cancelBannerBtn').onclick = () => $('#bannerEditor').hidden = true;
+  $('#cancelBannerBtn').onclick = () => { $('#bannerEditor').hidden = true; bannerPreviewFileUrl = ''; $('#bannerImage').value = ''; };
   const pages = { products: '#productsManager', banners: '#bannerManager', brands: '#brandsManager', tags: '#tagsManager', sync: '#syncManager', settings: '#settingsManager' };
   function openDashboardPage(name) {
     Object.entries(pages).forEach(([key, selector]) => { const el = $(selector); if (el) el.hidden = key !== name; });
@@ -791,28 +797,153 @@ async function saveBrand() {
   } catch (e) { $('#brandError').textContent = e.message || String(e); }
 }
 
+
+let bannerPreviewMode = 'desktop';
+let bannerPreviewFileUrl = '';
+let bannerPreviewReadToken = 0;
+
+function openBannerEditor(b = null) {
+  ++bannerPreviewReadToken;
+  bannerPreviewFileUrl = '';
+  $('#bannerEditor').hidden = false;
+  $('#bannerId').value = b?.id || '';
+  $('#bannerTitle').value = b?.title || '';
+  $('#bannerSubtitle').value = b?.subtitle || '';
+  $('#bannerButton').value = b?.button_text || '';
+  $('#bannerLink').value = b?.link_url || '?catalog=1';
+  $('#bannerImageUrl').value = b?.image_url || '';
+  $('#bannerImage').value = '';
+  $('#bannerActive').checked = b?.active === true;
+  $('#bannerOrder').value = b?.sort_order || 0;
+  $('#bannerError').textContent = '';
+  $('#bannerEditorHeading').textContent = b ? 'Редактирование баннера' : 'Новый баннер';
+  setBannerPreviewMode(bannerPreviewMode);
+}
+
+function readBannerPreviewFile() {
+  const token = ++bannerPreviewReadToken;
+  const file = $('#bannerImage').files[0];
+  bannerPreviewFileUrl = '';
+  if (!file) { refreshBannerPreview(); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (token !== bannerPreviewReadToken) return;
+    bannerPreviewFileUrl = String(reader.result || '');
+    refreshBannerPreview();
+  };
+  reader.onerror = () => { if (token === bannerPreviewReadToken) $('#bannerError').textContent = 'Не удалось прочитать изображение.'; };
+  reader.readAsDataURL(file);
+}
+
+function setBannerPreviewMode(mode) {
+  bannerPreviewMode = mode === 'phone' ? 'phone' : 'desktop';
+  $('#previewDesktop').setAttribute('aria-pressed', String(bannerPreviewMode === 'desktop'));
+  $('#previewPhone').setAttribute('aria-pressed', String(bannerPreviewMode === 'phone'));
+  refreshBannerPreview();
+}
+
+function fitBannerPreview() {
+  const viewport = $('#bannerPreviewViewport');
+  const frame = $('#bannerPreviewFrame');
+  if (!viewport || !frame || viewport.clientWidth < 1 || $('#bannerEditor').hidden) return;
+  const width = bannerPreviewMode === 'phone' ? 390 : 1440;
+  const height = bannerPreviewMode === 'phone' ? 200 : 430;
+  const scale = Math.min(1, viewport.clientWidth / width);
+  frame.style.width = width + 'px';
+  frame.style.height = height + 'px';
+  frame.style.transform = 'scale(' + scale + ')';
+  $('#bannerPreviewStage').style.width = width * scale + 'px';
+  $('#bannerPreviewStage').style.height = height * scale + 'px';
+}
+
+function bannerPreviewMarkup(image, title, button, count, cssUrl) {
+  const dots = count > 1 ? Array.from({length:count}, (_,i) => '<button class="banner-carousel-dot'+(i===0?' is-active':'')+'" type="button" tabindex="-1"></button>').join('') : '';
+  const control = dots ? '<div class="banner-carousel-controls"><button class="banner-carousel-arrow" type="button" tabindex="-1">‹</button><div class="banner-carousel-dots">'+dots+'</div><button class="banner-carousel-arrow" type="button" tabindex="-1">›</button></div>' : '';
+  const style = 'background-image:url(' + JSON.stringify(image) + ')';
+  return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="'+esc(cssUrl)+'"><style>html,body{margin:0;overflow:hidden}body{pointer-events:none}.home-shell{margin-bottom:0!important;padding-bottom:0!important}.home-banner-carousel{margin-bottom:0!important}</style></head><body><div class="shell home-shell"><div class="home-banner-carousel"><section class="hero-banner" style="'+esc(style)+'"><img class="hero-banner-mobile-image" src="'+esc(image)+'" alt="'+esc(title)+'">'+(button?'<a class="hero-cta">'+esc(button)+' <span aria-hidden="true">→</span></a>':'')+'</section>'+control+'</div></div></body></html>';
+}
+
+function refreshBannerPreview() {
+  const frame = $('#bannerPreviewFrame'), empty = $('#bannerPreviewEmpty'), viewport = $('#bannerPreviewViewport');
+  const raw = bannerPreviewFileUrl || $('#bannerImageUrl').value.trim();
+  $('#bannerPreviewStatus').textContent = $('#bannerActive').checked ? 'Включён — будет показан после сохранения' : 'Выключен — скрыт с сайта';
+  $('#bannerPreviewSize').textContent = bannerPreviewMode === 'phone' ? 'Телефон · 390 px' : 'ПК · 1440 px';
+  let image = '';
+  try {
+    if (raw) {
+      const parsed = new URL(raw, new URL('../', location.href));
+      if (['https:','http:'].includes(parsed.protocol) || (parsed.protocol === 'data:' && /^data:image\/[a-z0-9.+-]+;base64,/i.test(raw))) image = parsed.href;
+    }
+  } catch (_) {}
+  if (!image) {
+    viewport.hidden = true; empty.hidden = false;
+    frame.removeAttribute('srcdoc');
+    return;
+  }
+  viewport.hidden = false; empty.hidden = true;
+  const id = $('#bannerId').value;
+  const activeOthers = (window.yechimBanners || []).filter(b => b.active === true && String(b.id) !== id && b.image_url).length;
+  const cssUrl = new URL('../styles.css?v=20261124-banner-preview-1', location.href).href;
+  frame.srcdoc = bannerPreviewMarkup(image,$('#bannerTitle').value,$('#bannerButton').value,activeOthers+1,cssUrl);
+  fitBannerPreview();
+}
+
 async function saveBanner() {
   $('#bannerError').textContent = '';
+  const save = $('#saveBannerBtn');
+  save.disabled = true;
   try {
     let image = $('#bannerImageUrl').value.trim();
     const file = $('#bannerImage').files[0];
     if (file) image = await uploadFile(file, 'banners');
     if (!image) throw new Error('Добавь изображение баннера.');
-    const row = { title: $('#bannerTitle').value.trim(), subtitle: $('#bannerSubtitle').value.trim(), button_text: $('#bannerButton').value.trim(), link_url: $('#bannerLink').value.trim() || '?catalog=1', image_url: image, active: $('#bannerActive').checked, sort_order: Number($('#bannerOrder').value || 0) };
+    const row = { title: $('#bannerTitle').value.trim(), subtitle: $('#bannerSubtitle').value.trim(), button_text: $('#bannerButton').value.trim(), link_url: $('#bannerLink').value.trim() || '?catalog=1', image_url: image, active: $('#bannerActive').checked === true, sort_order: Number($('#bannerOrder').value || 0) };
     const id = $('#bannerId').value;
-    const result = id ? await sb.from('yechim_banners').update(row).eq('id', id) : await sb.from('yechim_banners').insert(row);
+    const result = id ? await sb.from('yechim_banners').update(row).eq('id', id).select('id').single() : await sb.from('yechim_banners').insert(row).select('id').single();
     if (result.error) throw result.error;
+    if (!result.data) throw new Error('Сохранение не подтверждено.');
     $('#bannerEditor').hidden = true;
+    ++bannerPreviewReadToken;
+    bannerPreviewFileUrl = '';
+    $('#bannerImage').value = '';
     await loadBanners();
   } catch (e) { $('#bannerError').textContent = e.message || String(e); }
+  finally { save.disabled = false; }
 }
+
 async function loadBanners() {
   const { data, error } = await sb.from('yechim_banners').select('*').order('sort_order');
   if (error) { $('#bannerList').textContent = 'Ошибка загрузки баннеров: ' + error.message; return; }
   window.yechimBanners = data || [];
-  $('#bannerList').innerHTML = window.yechimBanners.map(b => '<div class="banner-row"><img src="'+esc(b.image_url)+'"><b>'+esc(b.title)+'</b><small class="banner-link-text">'+esc(b.link_url || '')+'</small><span>'+(b.active?'Активен':'Скрыт')+'</span><button class="btn btn-ghost" title="Изменить" data-edit-banner="'+b.id+'">✎</button><button class="btn btn-ghost" title="Удалить" data-delete-banner="'+b.id+'">🗑</button></div>').join('') || 'Баннеров пока нет.';
-  $('#bannerList').querySelectorAll('[data-edit-banner]').forEach(btn => btn.onclick = () => { const b = window.yechimBanners.find(x => x.id === btn.dataset.editBanner); if (!b) return; $('#bannerEditor').hidden = false; $('#bannerId').value = b.id; $('#bannerTitle').value = b.title || ''; $('#bannerSubtitle').value = b.subtitle || ''; $('#bannerButton').value = b.button_text || ''; $('#bannerLink').value = b.link_url || '?catalog=1'; $('#bannerImageUrl').value = b.image_url || ''; $('#bannerActive').checked = b.active !== false; $('#bannerOrder').value = b.sort_order || 0; });
-  $('#bannerList').querySelectorAll('[data-delete-banner]').forEach(btn => btn.onclick = async () => { if (!confirm('Удалить баннер?')) return; const res = await sb.from('yechim_banners').delete().eq('id', btn.dataset.deleteBanner); if (res.error) alert(res.error.message); else loadBanners(); });
+  $('#bannerList').innerHTML = window.yechimBanners.map(b => {
+    const active = b.active === true;
+    return '<div class="banner-admin-row"><img class="banner-admin-thumb" src="'+esc(b.image_url)+'" alt=""><div class="banner-admin-info"><b>'+esc(b.title || 'Без названия')+'</b><small>'+esc(b.link_url || '')+'</small></div><button type="button" class="banner-toggle'+(active?' is-on':'')+'" role="switch" aria-checked="'+active+'" aria-label="Показывать баннер '+esc(b.title)+'" data-toggle-banner="'+esc(b.id)+'"><i></i>'+ (active?'Включён':'Выключен')+'</button><div class="banner-admin-actions"><button class="btn btn-ghost" type="button" data-edit-banner="'+esc(b.id)+'">Предпросмотр / изменить</button><button class="btn btn-ghost" type="button" title="Удалить" aria-label="Удалить баннер" data-delete-banner="'+esc(b.id)+'">×</button></div></div>';
+  }).join('') || 'Баннеров пока нет.';
+  $('#bannerList').querySelectorAll('[data-edit-banner]').forEach(btn => btn.onclick = () => {
+    const b = window.yechimBanners.find(x => String(x.id) === btn.dataset.editBanner);
+    if (b) { openBannerEditor(b); $('#bannerEditor').scrollIntoView({block:'nearest'}); }
+  });
+  $('#bannerList').querySelectorAll('[data-toggle-banner]').forEach(btn => btn.onclick = async () => {
+    const b = window.yechimBanners.find(x => String(x.id) === btn.dataset.toggleBanner);
+    if (!b) return;
+    btn.disabled = true;
+    try {
+      const next = b.active !== true;
+      const result = await sb.from('yechim_banners').update({active:next}).eq('id',b.id).select('id,active').single();
+      if (result.error) throw result.error;
+      if (result.data?.active !== next) throw new Error('Изменение статуса не подтверждено.');
+      if ($('#bannerId').value === String(b.id)) $('#bannerActive').checked = next;
+      await loadBanners();
+      if (!$('#bannerEditor').hidden) refreshBannerPreview();
+    } catch(e) { alert('Не удалось изменить статус: '+(e.message||String(e))); }
+    finally { btn.disabled = false; }
+  });
+  $('#bannerList').querySelectorAll('[data-delete-banner]').forEach(btn => btn.onclick = async () => {
+    if (!confirm('Удалить баннер?')) return;
+    const res = await sb.from('yechim_banners').delete().eq('id', btn.dataset.deleteBanner);
+    if (res.error) alert(res.error.message);
+    else { if ($('#bannerId').value === btn.dataset.deleteBanner) $('#bannerEditor').hidden = true; await loadBanners(); }
+  });
 }
 
 /* =========================
