@@ -1317,6 +1317,43 @@ function getProduct() {
 }
 
 
+function splitCatalogDimensions(rows, language) {
+  const uz=language==='uz';
+  const names=uz?{l:'Uzunligi',w:'Eni',d:'Chuqurligi',h:'Balandligi',pl:'Qadoq uzunligi',pw:'Qadoq eni',ph:'Qadoq balandligi'}:{l:'Длина',w:'Ширина',d:'Глубина',h:'Высота',pl:'Длина упаковки',pw:'Ширина упаковки',ph:'Высота упаковки'};
+  const norm=s=>String(s??'').trim().toLowerCase().replace(/[‘’ʻʼ`]/g,"'").replace(/\s+/g,' ');
+  const aliases={ 'длина':'l','длина изделия':'l','uzunligi':'l','uzunlik':'l','ширина':'w','ширина изделия':'w','eni':'w','kengligi':'w','глубина':'d','глубина изделия':'d','chuqurligi':'d','высота':'h','высота изделия':'h','balandligi':'h','длина упаковки':'pl','qadoq uzunligi':'pl','ширина упаковки':'pw','qadoq eni':'pw','высота упаковки':'ph','qadoq balandligi':'ph','ширина модуля':'module','ширина шкафа':'module','modul kengligi':'module','страна производитель':'country','страна производства':'country','ishlab chiqarilgan mamlakat':'country','цвет':'color','rangi':'color'};
+  const key=n=>{const s=norm(n).replace(/\s*,\s*(?:мм|mm|см|sm|cm)$/,'');return Object.prototype.hasOwnProperty.call(aliases,s)?aliases[s]:s;};
+  const num=String.raw`\d+(?:[.,]\d+)?(?:\s*[-–—/]\s*\d+(?:[.,]\d+)?)*`;
+  const unit='(мм|mm|см|sm|cm)';
+  const dimension=new RegExp('^'+num+'$');
+  const labeled=new RegExp('^(?:длина|uzunligi)\\s*('+num+')\\s*[×xх]\\s*(?:ширина|eni|kengligi)\\s*('+num+')\\s*[×xх]\\s*(?:высота|balandligi)\\s*('+num+')\\s*'+unit+'$','i');
+  const full=new RegExp('^(.+?)\\s*'+unit+'$','i');
+  const displayUnit=u=>/^(см|sm|cm)$/i.test(u)?(uz?'sm':'см'):(uz?'mm':'мм');
+  const canonical=v=>norm(v).replace(/,/g,'.').replace(/[–—]/g,'-').replace(/\s/g,'').replace(/мм$/,'mm').replace(/(?:см|sm)$/,'cm');
+  const expanded=rows.flatMap(([name,value])=>{
+    const n=norm(name),v=String(value??'').trim();
+    if(!/^(?:размеры?|габариты|o'lcham|transport qadoq o'lchamlari)/.test(n))return [[name,value]];
+    const m=v.match(labeled);
+    if(m)return ['l','w','h'].map((k,i)=>[names[k],m[i+1]+' '+displayUnit(m[4])]);
+    const packed=/транспортной упаковки|transport qadoq/.test(n);
+    const order=/ш\s*[×xх]\s*г\s*[×xх]\s*в|e\s*[×xх]\s*ch\s*[×xх]\s*b/.test(n)?['w','d','h']:/д\s*[×xх]\s*ш\s*[×xх]\s*в|u\s*[×xх]\s*e\s*[×xх]\s*b/.test(n)?(packed?['pl','pw','ph']:['l','w','h']):null;
+    const f=v.match(full);
+    if(!order||!f)return [[name,value]];
+    const p=f[1].split(/\s*[×xх]\s*/i);
+    if(p.length!==3||!p.every(s=>dimension.test(s.trim())))return [[name,value]];
+    return order.map((k,i)=>[names[k],p[i].trim()+' '+displayUnit(f[2])]);
+  });
+  const out=[];
+  for(const [name,raw] of expanded){
+    let v=raw;
+    const m=String(name).match(/,\s*(мм|mm|см|sm|cm)$/i);
+    if(m&&dimension.test(String(raw).trim()))v=String(raw).trim()+' '+displayUnit(m[1]);
+    if(out.some(([n,x])=>key(n)===key(name)&&canonical(x)===canonical(v)))continue;
+    out.push([name,v]);
+  }
+  return out;
+}
+
 function getLocalizedSpecs(product) {
   if (!product) return [];
 
@@ -1390,9 +1427,9 @@ function getLocalizedSpecs(product) {
     'артикул', 'артикул модели', 'бренд',
     'artikul', 'model artikuli', 'brend'
   ]);
-  const cleanSpecs = (rows) => rows.filter(([name]) =>
+  const cleanSpecs = (rows) => splitCatalogDimensions(rows.filter(([name]) =>
     !excludedSpecNames.has(String(name || '').trim().toLocaleLowerCase())
-  );
+  ), currentLanguage);
 
   const rawSpecs = candidates.map(unwrap).find(hasContent);
   if (!rawSpecs) return cleanSpecs(manufacturerRows);
