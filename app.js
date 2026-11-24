@@ -692,6 +692,7 @@ function renderHomeBannerMarkup() {
       '" aria-hidden="' + (i !== 0) +
       '" style="display:' + (i === 0 ? 'flex' : 'none') +
       ';background-image:url(\'' + esc(b.image_url) + '\')">' +
+      '<img class="hero-banner-mobile-image" src="' + esc(b.image_url) + '" alt="' + esc(label) + '" decoding="async">' +
       (b.button_text ? '<a class="hero-cta" href="' + esc(b.link_url || '?catalog=1') +
         '">' + esc(b.button_text) + ' <span aria-hidden="true">→</span></a>' : '') +
       '</section>';
