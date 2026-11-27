@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T06:28:18.294442+00:00",
+  "generated_at": "2026-11-27T06:18:48.832514+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -6465,6 +6465,24 @@
       "published": false
     },
     {
+      "eman_id": "/ru/product/3646",
+      "source_url": "https://www.eman.uz/ru/product/3646/",
+      "sku": "S-1803-US-A",
+      "name": "125-140 40cm Система хранения, Плавное закрывание, Антрацит#/125-140 40cm Unique Slim Softclose Lard",
+      "brand": "STARAX",
+      "eman_group": "Starax",
+      "category": "Starax",
+      "price": 2583000,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/media/product_images/S-1804-C.jpeg",
+      "additional_images": [],
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/3646",
+      "published": false
+    },
+    {
       "eman_id": "/ru/product/3647",
       "source_url": "https://www.eman.uz/ru/product/3647/",
       "sku": "S-2213-C",
@@ -8478,6 +8496,24 @@
       "stock_unit": "",
       "extra": {},
       "id": "/ru/product/10906",
+      "published": false
+    },
+    {
+      "eman_id": "/ru/product/10907",
+      "source_url": "https://www.eman.uz/ru/product/10907/",
+      "sku": "S-1803-UB-A",
+      "name": "Выдвижная колонна с полками 125-140 40см, Антрацит#/125-140 40cm Unique Box Softclose Larder Anthrac",
+      "brand": "STARAX",
+      "eman_group": "Starax",
+      "category": "Starax",
+      "price": 2706000,
+      "currency": "UZS",
+      "image_url": "https://www.eman.uz/ru/product/104/list/?page=6",
+      "additional_images": [],
+      "stock_quantity": null,
+      "stock_unit": "",
+      "extra": {},
+      "id": "/ru/product/10907",
       "published": false
     },
     {
