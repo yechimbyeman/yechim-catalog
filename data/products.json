@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T06:18:48.832514+00:00",
+  "generated_at": "2026-11-28T05:58:56.270410+00:00",
   "source": "https://www.eman.uz",
   "products": [
     {
@@ -16420,14 +16420,14 @@
     {
       "eman_id": "/ru/product/11883",
       "source_url": "https://www.eman.uz/ru/product/11883/",
-      "sku": "105-83-53-309",
+      "sku": "",
       "name": "Лоток для кухонных принадлежностей TRAYBOND 105-83-53-309",
       "brand": "MESAN",
       "eman_group": "Mesan",
       "category": "Mesan",
-      "price": 65042,
+      "price": 0.065042,
       "currency": "UZS",
-      "image_url": "https://www.eman.uz/media/product_images/%D0%9B%D0%BE%D1%82%D0%BE%D0%BA_105-83-53-309.jpg",
+      "image_url": "https://www.eman.uz/media/product_thumbnails/89edf781d78bc3efa7a80f5c.jpg",
       "additional_images": [],
       "stock_quantity": null,
       "stock_unit": "",
